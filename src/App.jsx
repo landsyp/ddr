@@ -108,6 +108,29 @@ const copy = {
       success: "Subscription request saved.",
       securityError: "The security answer must be 70.",
     },
+    settings: {
+      title: "Organization settings",
+      subtitle: "Update the charity profile fields used for receipts, replies, and deposit slips.",
+      profile: "Charity profile",
+      users: "Users",
+      save: "Update profile",
+      saved: "Organization profile updated.",
+    },
+    support: {
+      title: "Support and tutorials",
+      subtitle: "The original DDR tutorials are mapped to the working React screens.",
+      setup: "How to set up DDR2",
+      account: "Add an account",
+      donor: "Add a donor",
+      donation: "Add a gift",
+      report: "Produce reports",
+      receipt: "Produce receipts",
+      helpText: "Need a hand? Use these shortcuts or contact CQOC for account support.",
+    },
+    alerts: {
+      none: "No pending alerts. Receipt and donation data are current.",
+      forgot: "If this email is active, reset instructions will be sent by the DDR administrator.",
+    },
     footer: "Suite 106, 5425 Boulevard Laurier O, Saint-Hyacinthe, QC J2S 3V6",
   },
   fr: {
@@ -186,6 +209,29 @@ const copy = {
       success: "Demande d'abonnement enregistree.",
       securityError: "La reponse de securite doit etre 70.",
     },
+    settings: {
+      title: "Parametres de l'organisme",
+      subtitle: "Mettez a jour les champs utilises pour les recus, les reponses et les depots.",
+      profile: "Profil de l'organisme",
+      users: "Utilisateurs",
+      save: "Mettre a jour le profil",
+      saved: "Profil de l'organisme mis a jour.",
+    },
+    support: {
+      title: "Support et tutoriels",
+      subtitle: "Les tutoriels DDR originaux sont relies aux ecrans React fonctionnels.",
+      setup: "Configurer DDR2",
+      account: "Ajouter un compte",
+      donor: "Ajouter un donateur",
+      donation: "Ajouter un don",
+      report: "Produire des rapports",
+      receipt: "Produire des recus",
+      helpText: "Besoin d'aide? Utilisez ces raccourcis ou contactez le CQOC pour le soutien.",
+    },
+    alerts: {
+      none: "Aucune alerte en attente. Les dons et recus sont a jour.",
+      forgot: "Si ce courriel est actif, les instructions seront envoyees par l'administrateur DDR.",
+    },
     footer: "Suite 106, 5425 Boulevard Laurier O, Saint-Hyacinthe, QC J2S 3V6",
   },
 };
@@ -223,6 +269,18 @@ async function api(path, options = {}) {
 
 function formObject(form) {
   return Object.fromEntries(new FormData(form).entries());
+}
+
+function focusTarget(id) {
+  const element = document.getElementById(id);
+  if (!element) {
+    return;
+  }
+
+  element.scrollIntoView({ behavior: "smooth", block: "start" });
+  window.setTimeout(() => {
+    element.querySelector("input, select, textarea, button")?.focus();
+  }, 180);
 }
 
 function App() {
@@ -287,11 +345,13 @@ function App() {
   }
 
   function showNotice(message) {
+    setError("");
     setNotice(message);
     window.setTimeout(() => setNotice(""), 2800);
   }
 
   function showError(message) {
+    setNotice("");
     setError(message);
     window.setTimeout(() => setError(""), 4200);
   }
@@ -313,9 +373,19 @@ function App() {
     }
   }
 
+  async function handleForgotPassword(email) {
+    const result = await api("/api/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+    return result.message || t.alerts.forgot;
+  }
+
   function logout() {
     localStorage.removeItem("ddr-user");
     setCurrentUser(null);
+    setActiveView("overview");
+    setQuery("");
   }
 
   async function handleAddDonor(event) {
@@ -377,6 +447,10 @@ function App() {
   }
 
   async function deleteAccount(account) {
+    if (!window.confirm(`Delete account ${account.noCompte} - ${account.nom}?`)) {
+      return;
+    }
+
     try {
       await api(`/api/accounts/${account.compteID}`, { method: "DELETE" });
       await refresh("Account deleted.");
@@ -401,6 +475,10 @@ function App() {
   }
 
   async function deleteDonation(donation) {
+    if (!window.confirm(`Delete donation ${donation.donID} from ${donation.donorName}?`)) {
+      return;
+    }
+
     try {
       await api(`/api/donations/${donation.donID}`, { method: "DELETE" });
       await refresh("Donation deleted.");
@@ -475,16 +553,44 @@ function App() {
     }
   }
 
+  async function handleUpdateOrganization(event) {
+    event.preventDefault();
+    try {
+      const data = formObject(event.currentTarget);
+      await api("/api/organization", {
+        method: "PUT",
+        body: JSON.stringify({
+          ...data,
+          actif: data.actif === "on",
+          membre: data.membre === "on",
+        }),
+      });
+      await refresh(t.settings.saved);
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
   async function handleSearch(event) {
     const value = event.target.value;
     setQuery(value);
-    if (activeView === "donors") {
-      try {
-        const donorData = await api(`/api/donors?search=${encodeURIComponent(value)}`);
-        setDonors(donorData);
-      } catch (searchError) {
-        showError(searchError.message);
-      }
+    try {
+      const term = value.trim().toLowerCase();
+      const [donorData, donationData, accountData, receiptData] = await Promise.all([
+        api(`/api/donors?search=${encodeURIComponent(value)}`),
+        api(`/api/donations?search=${encodeURIComponent(value)}&limit=500`),
+        api("/api/accounts"),
+        api("/api/receipts"),
+      ]);
+
+      setDonors(donorData);
+      setDonations(donationData);
+      setAccounts(activeView === "accounts" && term ? accountData.filter((account) => `${account.noCompte} ${account.nom}`.toLowerCase().includes(term)) : accountData);
+      setReceipts(activeView === "receipts" && term
+        ? receiptData.filter((receipt) => `${receipt.noRecu || receipt.recuID} ${receipt.prenom} ${receipt.nom} ${receipt.statut} ${receipt.dateDebut} ${receipt.dateFin}`.toLowerCase().includes(term))
+        : receiptData);
+    } catch (searchError) {
+      showError(searchError.message);
     }
   }
 
@@ -501,6 +607,7 @@ function App() {
       <LoginScreen
         error={error}
         language={language}
+        onForgotPassword={handleForgotPassword}
         onLanguageChange={setLanguage}
         onLogin={handleLogin}
         t={t}
@@ -544,11 +651,11 @@ function App() {
         </nav>
 
         <div className="sidebar-footer">
-          <button className="ghost-button" type="button">
+          <button className={activeView === "support" ? "ghost-button active" : "ghost-button"} type="button" onClick={() => openView("support")}>
             <HelpCircle size={16} />
             <span>Support</span>
           </button>
-          <button className="ghost-button" type="button">
+          <button className={activeView === "settings" ? "ghost-button active" : "ghost-button"} type="button" onClick={() => openView("settings")}>
             <Settings size={16} />
             <span>Settings</span>
           </button>
@@ -564,6 +671,8 @@ function App() {
           language={language}
           onLanguageChange={setLanguage}
           onMenuClick={() => setMobileOpen(true)}
+          onNotifications={() => showNotice(t.alerts.none)}
+          onProfileClick={() => openView("settings")}
           onSearch={handleSearch}
           query={query}
           t={t}
@@ -655,12 +764,40 @@ function App() {
             onSubmit={handleSubscription}
           />
         )}
+        {!loading && activeView === "settings" && (
+          <SettingsView
+            bootstrap={bootstrap}
+            t={t}
+            user={displayUser}
+            onSubmit={handleUpdateOrganization}
+          />
+        )}
+        {!loading && activeView === "support" && (
+          <SupportView
+            t={t}
+            onViewChange={openView}
+          />
+        )}
       </main>
     </div>
   );
 }
 
-function LoginScreen({ error, language, onLanguageChange, onLogin, t }) {
+function LoginScreen({ error, language, onForgotPassword, onLanguageChange, onLogin, t }) {
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("admin@ddr.local");
+  const [forgotStatus, setForgotStatus] = useState("");
+
+  async function submitForgotPassword() {
+    setForgotStatus("");
+    try {
+      const message = await onForgotPassword(forgotEmail);
+      setForgotStatus(message);
+    } catch (forgotError) {
+      setForgotStatus(forgotError.message);
+    }
+  }
+
   return (
     <main className="login-screen">
       <section className="intro-band login-shell">
@@ -697,13 +834,29 @@ function LoginScreen({ error, language, onLanguageChange, onLogin, t }) {
             <LockKeyhole size={16} />
             <span>Log in</span>
           </button>
+          <button className="link-button light-link" type="button" onClick={() => setForgotOpen((open) => !open)}>
+            {t.overview.forgot}
+          </button>
+          {forgotOpen && (
+            <div className="forgot-form">
+              <label>
+                Email
+                <input name="forgotEmail" type="email" value={forgotEmail} onChange={(event) => setForgotEmail(event.target.value)} required />
+              </label>
+              <button className="light-button" type="button" onClick={submitForgotPassword}>
+                <Mail size={16} />
+                <span>Send reset</span>
+              </button>
+              {forgotStatus && <div className="inline-hint">{forgotStatus}</div>}
+            </div>
+          )}
         </form>
       </section>
     </main>
   );
 }
 
-function Topbar({ language, onLanguageChange, onMenuClick, onSearch, query, t, user }) {
+function Topbar({ language, onLanguageChange, onMenuClick, onNotifications, onProfileClick, onSearch, query, t, user }) {
   return (
     <header className="topbar">
       <button className="icon-button menu-button" type="button" onClick={onMenuClick} aria-label="Open menu">
@@ -719,17 +872,17 @@ function Topbar({ language, onLanguageChange, onMenuClick, onSearch, query, t, u
         <button className="language-toggle" type="button" onClick={() => onLanguageChange(language === "en" ? "fr" : "en")}>
           {language === "en" ? "FR" : "EN"}
         </button>
-        <button className="icon-button" type="button" aria-label="Notifications">
+        <button className="icon-button" type="button" aria-label="Notifications" onClick={onNotifications}>
           <Bell size={18} />
         </button>
-        <div className="profile-chip">
+        <button className="profile-chip" type="button" onClick={onProfileClick} aria-label="Open organization settings">
           <span>{initials(user)}</span>
           <div>
             <strong>{user?.prenom || "Admin"}</strong>
             <small>{user?.admin ? "Admin" : "User"}</small>
           </div>
           <ChevronDown size={16} />
-        </div>
+        </button>
       </div>
     </header>
   );
@@ -848,11 +1001,12 @@ function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubm
         title={t.nav.donations}
         subtitle="Register gifts, assign accounts, and move receipt status forward."
         action={t.donationForm.add}
+        actionTargetId="donation-form"
         icon={CircleDollarSign}
       />
 
       <div className="two-column form-layout">
-        <Panel title={t.donationForm.title} icon={Plus}>
+        <Panel id="donation-form" title={t.donationForm.title} icon={Plus}>
           <form className="form-grid" onSubmit={onSubmit}>
             <label>
               {t.donationForm.donor}
@@ -944,11 +1098,12 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
         title={t.donorDirectory}
         subtitle="Keep donor contact, giving history, and segmentation ready for receipting."
         action="New donor"
+        actionTargetId="donor-form"
         icon={Users}
       />
 
       <div className="two-column form-layout">
-        <Panel title={t.donorForm.title} icon={UserPlus}>
+        <Panel id="donor-form" title={t.donorForm.title} icon={UserPlus}>
           <form className="form-grid" onSubmit={onSubmit}>
             <label>
               Number
@@ -1066,11 +1221,12 @@ function Accounts({ accounts, t, onDelete, onSubmit, onToggle }) {
         title={t.accounts.title}
         subtitle={t.accounts.subtitle}
         action="Add account"
+        actionTargetId="account-form"
         icon={ClipboardList}
       />
 
       <div className="two-column form-layout">
-        <Panel title="Add account" icon={Plus}>
+        <Panel id="account-form" title="Add account" icon={Plus}>
           <form className="form-grid" onSubmit={onSubmit}>
             <label>
               Account number
@@ -1135,6 +1291,7 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
         title={t.receipts.title}
         subtitle={t.receipts.subtitle}
         action="Generate"
+        actionTargetId="receipt-generator"
         icon={ReceiptText}
       />
 
@@ -1147,7 +1304,7 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
             <p>{readyRows.length} donation rows are ready and {reviewRows.length} are excluded by donor/account receipt settings.</p>
           </div>
         </div>
-        <form className="receipt-actions compact-form" onSubmit={onGenerate}>
+        <form id="receipt-generator" className="receipt-actions compact-form" onSubmit={onGenerate}>
           <input name="dateDebut" type="date" defaultValue={defaultReceiptPeriod.dateDebut} aria-label="Start date" />
           <input name="dateFin" type="date" defaultValue={defaultReceiptPeriod.dateFin} aria-label="End date" />
           <select name="mode" defaultValue="email" aria-label="Mode">
@@ -1230,10 +1387,11 @@ function Reports({ reportResult, t, onRunReport }) {
         title={t.reports.title}
         subtitle={t.reports.subtitle}
         action={t.reports.run}
+        actionTargetId="report-builder"
         icon={BarChart3}
       />
 
-      <Panel title="Report builder" icon={FileText}>
+      <Panel id="report-builder" title="Report builder" icon={FileText}>
         <form className="form-grid report-form" onSubmit={onRunReport}>
           <label>
             Report
@@ -1265,7 +1423,7 @@ function Reports({ reportResult, t, onRunReport }) {
             <BarChart3 size={17} />
             <span>{t.reports.run}</span>
           </button>
-          <button className="secondary-button form-submit" type="button" onClick={() => downloadCSV("ddr-report.csv", downloadableRows)}>
+          <button className="secondary-button form-submit" type="button" disabled={!downloadableRows.length} onClick={() => downloadCSV("ddr-report.csv", downloadableRows)}>
             <Download size={17} />
             <span>{t.reports.export}</span>
           </button>
@@ -1300,6 +1458,7 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
         title={t.subscription.title}
         subtitle={t.subscription.subtitle}
         action={t.subscription.submit}
+        actionTargetId="subscription-form"
         icon={Building2}
       />
 
@@ -1315,7 +1474,7 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
           </div>
         </Panel>
 
-        <Panel title={t.subscription.title} icon={ClipboardList}>
+        <Panel id="subscription-form" title={t.subscription.title} icon={ClipboardList}>
           <form className="form-grid subscription-form" onSubmit={onSubmit}>
             <label>
               Charity name
@@ -1379,7 +1538,159 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
   );
 }
 
-function ViewHeader({ title, subtitle, action, icon: Icon }) {
+function SettingsView({ bootstrap, t, user, onSubmit }) {
+  const organization = bootstrap?.organisme || {};
+  const users = bootstrap?.users?.length ? bootstrap.users : [user].filter(Boolean);
+
+  return (
+    <section className="view-stack">
+      <ViewHeader
+        title={t.settings.title}
+        subtitle={t.settings.subtitle}
+        action={t.settings.save}
+        actionTargetId="organization-profile"
+        icon={Settings}
+      />
+
+      <div className="two-column form-layout">
+        <Panel id="organization-profile" title={t.settings.profile} icon={Building2}>
+          <form className="form-grid" onSubmit={onSubmit} key={`${organization.organismeID}-${organization.organisme}-${organization.responsable_courriel}`}>
+            <label>
+              Organization name
+              <input name="organisme" required maxLength="150" defaultValue={organization.organisme || ""} />
+            </label>
+            <label>
+              Registration number
+              <input name="enregistrement" required maxLength="30" defaultValue={organization.enregistrement || ""} />
+            </label>
+            <label>
+              Contact name
+              <input name="responsable" required maxLength="50" defaultValue={organization.responsable || ""} />
+            </label>
+            <label>
+              Contact email
+              <input name="responsable_courriel" required type="email" defaultValue={organization.responsable_courriel || ""} />
+            </label>
+            <label>
+              Reply email
+              <input name="reponse_courriel" type="email" defaultValue={organization.reponse_courriel || ""} />
+            </label>
+            <label>
+              Phone
+              <input name="telephone" maxLength="30" defaultValue={organization.telephone || ""} />
+            </label>
+            <label className="full-field">
+              Address
+              <input name="adresse" maxLength="150" defaultValue={organization.adresse || ""} />
+            </label>
+            <label>
+              City
+              <input name="ville" required maxLength="50" defaultValue={organization.ville || ""} />
+            </label>
+            <label>
+              Postal code
+              <input name="code_postal" maxLength="20" defaultValue={organization.code_postal || ""} />
+            </label>
+            <label>
+              Province
+              <select name="provinceID" defaultValue={organization.provinceID || 1}>
+                {bootstrap?.provinces?.map((province) => (
+                  <option value={province.provinceID} key={province.provinceID}>
+                    {province.abreviation} - {province.provinceEtat_en}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Currency
+              <input name="devise" readOnly defaultValue={organization.devise || "CAD"} />
+            </label>
+            <label>
+              Transit
+              <input name="transit" maxLength="20" defaultValue={organization.transit || ""} />
+            </label>
+            <label>
+              Folio
+              <input name="folio" maxLength="30" defaultValue={organization.folio || ""} />
+            </label>
+            <label className="checkbox-label">
+              <input name="membre" type="checkbox" defaultChecked={Boolean(organization.membre)} />
+              <span>CQOC member</span>
+            </label>
+            <label className="checkbox-label">
+              <input name="actif" type="checkbox" defaultChecked={organization.actif !== false} />
+              <span>Organization active</span>
+            </label>
+            <button className="primary-button form-submit" type="submit">
+              <Settings size={17} />
+              <span>{t.settings.save}</span>
+            </button>
+          </form>
+        </Panel>
+
+        <Panel title={t.settings.users} icon={Users}>
+          <DataTable
+            columns={["Name", "Email", "Language", "Role", "Active"]}
+            rows={users.map((account) => [
+              `${account.prenom || ""} ${account.nom || ""}`.trim() || "User",
+              account.courriel || "-",
+              String(account.langue || "en").toUpperCase(),
+              account.admin ? "Admin" : "User",
+              account.actif === false ? "No" : "Yes",
+            ])}
+          />
+        </Panel>
+      </div>
+    </section>
+  );
+}
+
+function SupportView({ t, onViewChange }) {
+  const cards = [
+    [BookOpenCheck, t.support.setup, "settings"],
+    [ClipboardList, t.support.account, "accounts"],
+    [Users, t.support.donor, "donors"],
+    [Plus, t.support.donation, "donations"],
+    [BarChart3, t.support.report, "reports"],
+    [ReceiptText, t.support.receipt, "receipts"],
+  ];
+
+  return (
+    <section className="view-stack">
+      <ViewHeader
+        title={t.support.title}
+        subtitle={t.support.subtitle}
+        icon={HelpCircle}
+      />
+
+      <Panel title={t.support.title} icon={BookOpenCheck}>
+        <p className="panel-copy">{t.support.helpText}</p>
+        <div className="action-grid support-grid">
+          {cards.map(([Icon, label, view]) => (
+            <button className="quick-action" type="button" key={label} onClick={() => onViewChange(view)}>
+              <Icon size={19} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      </Panel>
+
+      <Panel title="CQOC" icon={Mail}>
+        <div className="support-contact">
+          <p>{copy.en.footer}</p>
+          <a className="secondary-button" href="mailto:info@cqoc.org">
+            <Mail size={16} />
+            <span>info@cqoc.org</span>
+          </a>
+        </div>
+      </Panel>
+    </section>
+  );
+}
+
+function ViewHeader({ title, subtitle, action, actionTargetId, icon: Icon, onAction }) {
+  const handleAction = onAction || (actionTargetId ? () => focusTarget(actionTargetId) : null);
+
   return (
     <div className="view-header">
       <div>
@@ -1387,17 +1698,19 @@ function ViewHeader({ title, subtitle, action, icon: Icon }) {
         <h1>{title}</h1>
         <p>{subtitle}</p>
       </div>
-      <button className="primary-button" type="button">
-        <Plus size={17} />
-        <span>{action}</span>
-      </button>
+      {action && handleAction && (
+        <button className="primary-button" type="button" onClick={handleAction}>
+          <Plus size={17} />
+          <span>{action}</span>
+        </button>
+      )}
     </div>
   );
 }
 
-function Panel({ title, icon: Icon, children }) {
+function Panel({ id, title, icon: Icon, children }) {
   return (
-    <section className="panel">
+    <section className="panel" id={id}>
       <div className="panel-header">
         <div>
           <Icon size={18} />

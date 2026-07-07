@@ -123,8 +123,24 @@ async function handleAPI(request, response, pathname) {
     return;
   }
 
+  if (method === "POST" && pathname === "/api/auth/forgot-password") {
+    const body = await readJSON(request);
+    sendJSON(response, 200, store.requestPasswordReset(body.courriel || body.email));
+    return;
+  }
+
   if (method === "GET" && pathname === "/api/bootstrap") {
     sendJSON(response, 200, store.getBootstrap());
+    return;
+  }
+
+  if (method === "GET" && pathname === "/api/organization") {
+    sendJSON(response, 200, store.getOrganization());
+    return;
+  }
+
+  if (method === "PUT" && pathname === "/api/organization") {
+    sendJSON(response, 200, store.updateOrganization(await readJSON(request)));
     return;
   }
 

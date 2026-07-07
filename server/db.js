@@ -378,6 +378,18 @@ function normalizeAccount(row) {
   };
 }
 
+function normalizeOrganization(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    ...row,
+    actif: Boolean(row.actif),
+    membre: Boolean(row.membre),
+  };
+}
+
 function normalizeDonation(row) {
   if (!row) {
     return row;
@@ -391,6 +403,20 @@ function normalizeDonation(row) {
     donateurRecu: Boolean(row.donateurRecu),
     donorName: `${row.prenom || ""} ${row.nom || ""}`.trim(),
     receiptStatus: row.recuID ? "Issued" : receiptable ? "Ready" : "No receipt",
+  };
+}
+
+function requestPasswordReset(courriel) {
+  get(
+    `SELECT utilisateurID
+     FROM utilisateurs
+     WHERE lower(courriel) = lower(?) AND actif = 1`,
+    [courriel || ""],
+  );
+
+  return {
+    ok: true,
+    message: "If this email is active, reset instructions will be sent by the DDR administrator.",
   };
 }
 
@@ -426,21 +452,70 @@ function login(courriel, password) {
   };
 }
 
-function getBootstrap() {
-  const organisme = get(
+function getOrganization() {
+  return normalizeOrganization(get(
     `SELECT o.*, p.abreviation AS province
      FROM organismes AS o
      LEFT JOIN provinces AS p ON o.provinceID = p.provinceID
      WHERE o.organismeID = ?`,
     [organizationID()],
+  ));
+}
+
+function listUsers() {
+  return all(
+    `SELECT utilisateurID, actif, admin, courriel, langue, nom, organismeID, prenom, utilisateurStatutID
+     FROM utilisateurs
+     WHERE organismeID = ?
+     ORDER BY admin DESC, nom, prenom`,
+    [organizationID()],
+  ).map((user) => ({
+    ...user,
+    actif: Boolean(user.actif),
+    admin: Boolean(user.admin),
+  }));
+}
+
+function updateOrganization(data) {
+  run(
+    `UPDATE organismes
+     SET actif = ?, adresse = ?, code_postal = ?, devise = ?, enregistrement = ?,
+         folio = ?, membre = ?, organisme = ?, provinceID = ?, reponse_courriel = ?,
+         responsable = ?, responsable_courriel = ?, telephone = ?, transit = ?, ville = ?
+     WHERE organismeID = ?`,
+    [
+      data.actif === false ? 0 : 1,
+      data.adresse || "",
+      data.code_postal || "",
+      data.devise || "CAD",
+      data.enregistrement || "",
+      data.folio || "",
+      bool(data.membre),
+      String(data.organisme || "").trim(),
+      Number(data.provinceID) || 1,
+      data.reponse_courriel || "",
+      String(data.responsable || "").trim(),
+      data.responsable_courriel || "",
+      data.telephone || "",
+      data.transit || "",
+      data.ville || "",
+      organizationID(),
+    ],
   );
+
+  return getOrganization();
+}
+
+function getBootstrap() {
+  const organisme = getOrganization();
   const user = get("SELECT utilisateurID, admin, courriel, langue, nom, prenom, organismeID FROM utilisateurs WHERE organismeID = ? ORDER BY admin DESC LIMIT 1", [organizationID()]);
   const provinces = all("SELECT provinceID, pays_en, pays_fr, provinceEtat_en, provinceEtat_fr, abreviation FROM provinces ORDER BY ordre, provinceEtat_en");
   const methods = all("SELECT methodeDonID, methode_fr, methode_en, methode_intuit, ordre FROM methodesDon ORDER BY ordre");
 
   return {
-    organisme: { ...organisme, actif: Boolean(organisme.actif), membre: Boolean(organisme.membre) },
+    organisme,
     user: { ...user, admin: Boolean(user.admin) },
+    users: listUsers(),
     provinces,
     methods,
   };
@@ -931,8 +1006,12 @@ function createSubscriptionRequest(data) {
 export const store = {
   databasePath,
   login,
+  requestPasswordReset,
   getBootstrap,
+  getOrganization,
+  updateOrganization,
   getDashboard,
+  listUsers,
   listDonors,
   nextDonorNumber,
   createDonor,
