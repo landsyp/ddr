@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DDR2 SaaS User Manual</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f7fb;
+        --panel: #ffffff;
+        --panel-soft: #eef5ff;
+        --ink: #172033;
+        --muted: #65758b;
+        --line: #d9e4f2;
+        --brand: #146c5f;
+        --brand-dark: #0b4d45;
+        --accent: #f3a51d;
+        --blue: #2563eb;
+        --red: #dc2626;
+        --green: #15803d;
+        --shadow: 0 24px 60px rgba(18, 38, 63, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at top left, rgba(20, 108, 95, 0.14), transparent 34rem),
+          linear-gradient(180deg, #f9fbff 0%, var(--bg) 46%, #eef3f8 100%);
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        line-height: 1.6;
+      }
+
+      a {
+        color: var(--brand);
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .manual-shell {
+        display: grid;
+        grid-template-columns: 18rem minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        align-self: start;
+        background: #0c302c;
+        color: #effaf6;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 1.4rem;
+        position: sticky;
+        top: 0;
+      }
+
+      .brand {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+        margin-bottom: 1.2rem;
+        padding-bottom: 1rem;
+      }
+
+      .brand strong {
+        display: block;
+        font-size: 1.3rem;
+        letter-spacing: -0.03em;
+      }
+
+      .brand span {
+        color: rgba(255, 255, 255, 0.72);
+        display: block;
+        font-size: 0.88rem;
+        margin-top: 0.2rem;
+      }
+
+      .toc-title {
+        color: rgba(255, 255, 255, 0.68);
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        margin: 0 0 0.75rem;
+        text-transform: uppercase;
+      }
+
+      .sidebar nav {
+        display: grid;
+        gap: 0.25rem;
+      }
+
+      .sidebar a {
+        border-radius: 0.8rem;
+        color: rgba(255, 255, 255, 0.86);
+        display: block;
+        font-weight: 650;
+        padding: 0.62rem 0.72rem;
+      }
+
+      .sidebar a:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+        text-decoration: none;
+      }
+
+      main {
+        padding: 2.2rem;
+      }
+
+      .hero {
+        background:
+          linear-gradient(135deg, rgba(12, 48, 44, 0.94), rgba(20, 108, 95, 0.88)),
+          linear-gradient(90deg, rgba(243, 165, 29, 0.26), transparent);
+        border-radius: 2rem;
+        box-shadow: var(--shadow);
+        color: #ffffff;
+        margin: 0 auto 1.5rem;
+        max-width: 72rem;
+        overflow: hidden;
+        padding: clamp(2rem, 4vw, 4rem);
+        position: relative;
+      }
+
+      .hero::after {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+        content: "";
+        height: 16rem;
+        position: absolute;
+        right: -5rem;
+        top: -6rem;
+        width: 16rem;
+      }
+
+      .eyebrow {
+        align-items: center;
+        color: var(--accent);
+        display: inline-flex;
+        font-size: 0.78rem;
+        font-weight: 900;
+        gap: 0.45rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3 {
+        letter-spacing: -0.035em;
+        line-height: 1.12;
+      }
+
+      h1 {
+        font-size: clamp(2.2rem, 5vw, 4.8rem);
+        margin: 0.6rem 0 1rem;
+        max-width: 56rem;
+      }
+
+      h2 {
+        font-size: clamp(1.75rem, 3vw, 2.6rem);
+        margin: 0 0 1rem;
+      }
+
+      h3 {
+        font-size: 1.28rem;
+        margin: 1.3rem 0 0.4rem;
+      }
+
+      p {
+        margin: 0 0 1rem;
+      }
+
+      .hero p {
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 1.1rem;
+        max-width: 48rem;
+      }
+
+      .meta-grid,
+      .card-grid,
+      .two-col {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .meta-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-top: 2rem;
+      }
+
+      .meta-card {
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 1.2rem;
+        padding: 1rem;
+      }
+
+      .meta-card strong {
+        display: block;
+        font-size: 1.2rem;
+      }
+
+      .meta-card span {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 0.88rem;
+      }
+
+      .content {
+        display: grid;
+        gap: 1.1rem;
+        margin: 0 auto;
+        max-width: 72rem;
+      }
+
+      section.panel {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid var(--line);
+        border-radius: 1.6rem;
+        box-shadow: 0 18px 42px rgba(18, 38, 63, 0.08);
+        padding: clamp(1.2rem, 2.3vw, 2rem);
+      }
+
+      .lead {
+        color: var(--muted);
+        font-size: 1.02rem;
+      }
+
+      .card-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .two-col {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .feature-card,
+      .callout,
+      .workflow,
+      .field-box {
+        background: var(--panel-soft);
+        border: 1px solid #d7e8ff;
+        border-radius: 1rem;
+        padding: 1rem;
+      }
+
+      .feature-card h3,
+      .workflow h3,
+      .field-box h3 {
+        margin-top: 0;
+      }
+
+      .callout {
+        background: #fff9ea;
+        border-color: #f7d68a;
+      }
+
+      .callout strong {
+        color: #7a4b00;
+      }
+
+      .success {
+        background: #ecfdf3;
+        border-color: #b9efcf;
+      }
+
+      .danger {
+        background: #fff1f2;
+        border-color: #fecdd3;
+      }
+
+      .api {
+        background: #101828;
+        border-radius: 1rem;
+        color: #d7e2f0;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.9rem;
+        line-height: 1.7;
+        overflow-x: auto;
+        padding: 1rem;
+        white-space: pre-wrap;
+      }
+
+      ul,
+      ol {
+        margin: 0.35rem 0 1rem 1.2rem;
+        padding: 0;
+      }
+
+      li {
+        margin: 0.32rem 0;
+      }
+
+      table {
+        border-collapse: collapse;
+        margin-top: 0.8rem;
+        width: 100%;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 0.72rem;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 0.76rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      code,
+      kbd {
+        background: #e8edf5;
+        border-radius: 0.4rem;
+        color: #0f172a;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.9em;
+        padding: 0.15rem 0.35rem;
+      }
+
+      .status-list {
+        display: grid;
+        gap: 0.65rem;
+        list-style: none;
+        margin-left: 0;
+      }
+
+      .status-list li {
+        background: #f8fbff;
+        border: 1px solid var(--line);
+        border-radius: 0.85rem;
+        padding: 0.75rem;
+      }
+
+      .footer {
+        color: var(--muted);
+        font-size: 0.92rem;
+        margin: 1.5rem auto 0;
+        max-width: 72rem;
+        text-align: center;
+      }
+
+      @media print {
+        body {
+          background: #ffffff;
+        }
+
+        .manual-shell {
+          display: block;
+        }
+
+        .sidebar {
+          display: none;
+        }
+
+        main {
+          padding: 0;
+        }
+
+        .hero,
+        section.panel {
+          box-shadow: none;
+          break-inside: avoid;
+        }
+      }
+
+      @media (max-width: 980px) {
+        .manual-shell {
+          display: block;
+        }
+
+        .sidebar {
+          height: auto;
+          position: static;
+        }
+
+        .sidebar nav {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .meta-grid,
+        .card-grid,
+        .two-col {
+          grid-template-columns: 1fr;
+        }
+
+        main {
+          padding: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="manual-shell">
+      <aside class="sidebar" aria-label="Manual navigation">
+        <div class="brand">
+          <strong>DDR2 SaaS</strong>
+          <span>User Manual</span>
+        </div>
+        <p class="toc-title">Contents</p>
+        <nav>
+          <a href="#overview">Overview</a>
+          <a href="#quick-start">Quick Start</a>
+          <a href="#navigation">Navigation</a>
+          <a href="#dashboard">Dashboard</a>
+          <a href="#donors">Donors</a>
+          <a href="#donations">Donations</a>
+          <a href="#accounts">Accounts</a>
+          <a href="#receipts">Receipts</a>
+          <a href="#reports">Reports</a>
+          <a href="#settings">Settings & Users</a>
+          <a href="#subscription">Subscription</a>
+          <a href="#support">Support</a>
+          <a href="#admin">Admin Notes</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main>
+        <header class="hero">
+          <span class="eyebrow">Donation • Donor • Receipt Management</span>
+          <h1>DDR2 SaaS User Manual</h1>
+          <p>
+            A practical guide for operating the React and SQLite version of DDR2: secure login,
+            organization workspaces, donors, donations, accounts, receipt batches, reports,
+            users, settings, and support workflows.
+          </p>
+          <div class="meta-grid" aria-label="Manual summary">
+            <div class="meta-card">
+              <strong>React UI</strong>
+              <span>Vite application</span>
+            </div>
+            <div class="meta-card">
+              <strong>SQLite</strong>
+              <span>Tenant-scoped data</span>
+            </div>
+            <div class="meta-card">
+              <strong>EN / FR</strong>
+              <span>Language toggle</span>
+            </div>
+            <div class="meta-card">
+              <strong>SaaS</strong>
+              <span>Multiple organizations</span>
+            </div>
+          </div>
+        </header>
+
+        <div class="content">
+          <section class="panel" id="overview">
+            <h2>Overview</h2>
+            <p class="lead">
+              DDR2 SaaS helps charities record gifts, maintain donor records, manage receiptable
+              accounts, generate official receipt batches, export reports, and administer users
+              inside an organization-specific workspace.
+            </p>
+            <div class="card-grid">
+              <article class="feature-card">
+                <h3>For operators</h3>
+                <p>Add donors, record donations, search records, generate receipts, mark receipts sent, and export CSV files.</p>
+              </article>
+              <article class="feature-card">
+                <h3>For administrators</h3>
+                <p>Update organization profile fields, manage user access, add accounts, and control account receipt eligibility.</p>
+              </article>
+              <article class="feature-card">
+                <h3>For SaaS workspaces</h3>
+                <p>Each organization has isolated users, donors, accounts, donations, receipts, reports, and settings.</p>
+              </article>
+            </div>
+            <div class="callout">
+              <strong>Important:</strong> The app keeps the original ColdFusion source for reference, but the working SaaS app runs from the React UI and Node/SQLite API.
+            </div>
+          </section>
+
+          <section class="panel" id="quick-start">
+            <h2>Quick Start</h2>
+            <div class="two-col">
+              <div>
+                <h3>Start locally</h3>
+                <ol>
+                  <li>Install packages with <code>npm install</code>.</li>
+                  <li>Start the app with <code>npm run dev -- --host 127.0.0.1</code>.</li>
+                  <li>Open <code>http://127.0.0.1:5173/</code> in the browser.</li>
+                </ol>
+              </div>
+              <div>
+                <h3>Default development login</h3>
+                <ul>
+                  <li>Email: <code>admin@ddr.local</code></li>
+                  <li>Password: <code>password</code></li>
+                  <li>The API runs at <code>http://127.0.0.1:5174/</code>.</li>
+                </ul>
+              </div>
+            </div>
+            <h3>Create a new organization workspace</h3>
+            <ol>
+              <li>On the login screen, select <strong>Create organization workspace</strong>.</li>
+              <li>Enter charity name, registration number, admin name, admin email, password, city, and phone.</li>
+              <li>Use a password with at least 8 characters.</li>
+              <li>Submit the form to create a new isolated SaaS workspace with default accounts.</li>
+            </ol>
+            <h3>Forgot password</h3>
+            <p>
+              Select <strong>Forgot password</strong>, enter the email address, and submit.
+              The app confirms that reset instructions will be handled by the DDR administrator
+              when the email belongs to an active user.
+            </p>
+          </section>
+
+          <section class="panel" id="navigation">
+            <h2>Navigation</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Area</th>
+                  <th>What it does</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Sidebar</td>
+                  <td>Opens Overview, Donations, Donors, Accounts, Receipts, Reports, Subscription, Support, Settings, and Logout.</td>
+                </tr>
+                <tr>
+                  <td>Top search</td>
+                  <td>Searches donors and donations, and filters account or receipt rows when those screens are active.</td>
+                </tr>
+                <tr>
+                  <td>Language toggle</td>
+                  <td>Switches the visible interface between English and French.</td>
+                </tr>
+                <tr>
+                  <td>Notification bell</td>
+                  <td>Shows the current alert status. In the local app it reports that donation and receipt data are current.</td>
+                </tr>
+                <tr>
+                  <td>Profile chip</td>
+                  <td>Opens Organization Settings for profile and user management.</td>
+                </tr>
+                <tr>
+                  <td>Header action buttons</td>
+                  <td>Jump to the relevant form, or in Receipts, submit the receipt generator directly.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="panel" id="dashboard">
+            <h2>Overview Dashboard</h2>
+            <p class="lead">
+              The dashboard summarizes the current organization’s donation and receipt activity for the current year.
+            </p>
+            <div class="card-grid">
+              <article class="field-box">
+                <h3>Metrics</h3>
+                <ul>
+                  <li>Year-to-date donations</li>
+                  <li>Total stored receipts</li>
+                  <li>Active donors</li>
+                  <li>Pending receipt rows</li>
+                </ul>
+              </article>
+              <article class="field-box">
+                <h3>Charts and summaries</h3>
+                <ul>
+                  <li>Recent donations table</li>
+                  <li>Monthly income bar chart</li>
+                  <li>Receipt readiness percentage</li>
+                  <li>Receiptable account count</li>
+                </ul>
+              </article>
+              <article class="field-box">
+                <h3>Quick actions</h3>
+                <ul>
+                  <li>Add donation</li>
+                  <li>Add donor</li>
+                  <li>Generate receipts</li>
+                  <li>Export report</li>
+                </ul>
+              </article>
+            </div>
+          </section>
+
+          <section class="panel" id="donors">
+            <h2>Donors</h2>
+            <p class="lead">
+              The Donors screen stores contact details, donor numbers, receipt preferences, member status, lifetime giving totals, and notes.
+            </p>
+            <h3>Add a donor</h3>
+            <ol>
+              <li>Open <strong>Donors</strong> and use <strong>New donor</strong> or the Add Donor panel.</li>
+              <li>Enter donor number or leave it blank to use the next available number.</li>
+              <li>Enter first name, last name, email, address, city, postal code, province, phone numbers, and notes.</li>
+              <li>Enable <strong>Member</strong> when the donor is a member.</li>
+              <li>Keep <strong>Receipts enabled</strong> checked if donations for this donor should appear in receipt batches.</li>
+              <li>Submit the form. The donor directory refreshes automatically.</li>
+            </ol>
+            <h3>Search, export, archive</h3>
+            <ul>
+              <li>Use <strong>Filter donors</strong> or the top search bar to find donors by number, name, email, or city.</li>
+              <li>Select <strong>CSV</strong> to download the current donor list as <code>donors.csv</code>.</li>
+              <li>Select <strong>Archive</strong> to hide a donor from active lists; select <strong>Activate</strong> to restore access.</li>
+              <li>Archived donors are not included in active receipt generation.</li>
+            </ul>
+          </section>
+
+          <section class="panel" id="donations">
+            <h2>Donations</h2>
+            <p class="lead">
+              The Donations screen records gifts, assigns each gift to a donor and account, and displays receipt readiness.
+            </p>
+            <h3>Record a donation</h3>
+            <ol>
+              <li>Open <strong>Donations</strong>.</li>
+              <li>Select the donor and account.</li>
+              <li>Enter amount, gift date, payment method, and optional description.</li>
+              <li>Submit with <strong>Add donation</strong>.</li>
+            </ol>
+            <h3>Donation register</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Meaning</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Ready</td>
+                  <td>The donor and account both allow receipts, and no receipt has been issued yet.</td>
+                </tr>
+                <tr>
+                  <td>Issued</td>
+                  <td>The donation has already been linked to a receipt.</td>
+                </tr>
+                <tr>
+                  <td>No receipt</td>
+                  <td>The donor or the selected account is not eligible for receipts.</td>
+                </tr>
+              </tbody>
+            </table>
+            <h3>Delete a donation</h3>
+            <p>
+              Use the trash button in the register and confirm the prompt. The row is removed from the database for the active organization.
+            </p>
+          </section>
+
+          <section class="panel" id="accounts">
+            <h2>Accounts</h2>
+            <p class="lead">
+              Accounts group donations and control whether donations assigned to an account can generate official receipt amounts.
+            </p>
+            <h3>Add an account</h3>
+            <ol>
+              <li>Open <strong>Accounts</strong>.</li>
+              <li>Enter account number and account name.</li>
+              <li>Check <strong>Eligible for receipts</strong> when gifts to this account should be receiptable.</li>
+              <li>Submit with <strong>Add account</strong>.</li>
+            </ol>
+            <h3>Manage accounts</h3>
+            <ul>
+              <li>Select the <strong>Receiptable</strong> or <strong>No receipt</strong> pill to toggle eligibility.</li>
+              <li>Use the trash button to delete an account only when it has no linked donations.</li>
+              <li>If an account has donations, the API blocks deletion to protect historical records.</li>
+            </ul>
+          </section>
+
+          <section class="panel" id="receipts">
+            <h2>Receipts</h2>
+            <p class="lead">
+              The Receipt Center generates receipt batches from eligible donors and receiptable accounts for a selected date period.
+            </p>
+            <div class="callout success">
+              <strong>Eligibility rule:</strong> A donation is included when the donor is active, the donor has receipts enabled, the account is receiptable, and the gift date falls within the selected period.
+            </div>
+            <h3>Generate a receipt batch</h3>
+            <ol>
+              <li>Open <strong>Receipts</strong>.</li>
+              <li>Choose start date and end date. The default period is January 1 to December 31, 2026.</li>
+              <li>Choose <strong>Email</strong> or <strong>Print</strong> mode.</li>
+              <li>Select <strong>Generate</strong>. The app creates one receipt per eligible donor for the period.</li>
+            </ol>
+            <h3>What generation does</h3>
+            <ul>
+              <li>Sums eligible gifts by donor for the selected period.</li>
+              <li>Replaces any existing receipt for the same donor and exact period.</li>
+              <li>Locks included donations by linking them to the generated receipt.</li>
+              <li>Creates an email/print delivery row and assigns receipt numbers from the delivery ID.</li>
+              <li>Shows a message when no eligible receipt rows exist for the period.</li>
+            </ul>
+            <h3>Receipt statuses</h3>
+            <ul class="status-list">
+              <li><strong>Email mode with valid email:</strong> status starts as <code>In progress</code>.</li>
+              <li><strong>Email mode without valid email:</strong> status starts as <code>Invalid email</code>.</li>
+              <li><strong>Print mode:</strong> status starts as <code>To print</code>.</li>
+              <li><strong>Mark sent:</strong> updates the delivery status to delivered.</li>
+            </ul>
+            <h3>Batches</h3>
+            <p>
+              The Batches table groups generated receipts by creation time and period, showing count and total amount for each batch.
+            </p>
+          </section>
+
+          <section class="panel" id="reports">
+            <h2>Reports</h2>
+            <p class="lead">
+              Reports are generated directly from the SQLite data for the active organization and can be exported to CSV.
+            </p>
+            <h3>Run a report</h3>
+            <ol>
+              <li>Open <strong>Reports</strong>.</li>
+              <li>Select report type: Donations, Donors, Accounts, or Receipts.</li>
+              <li>For donation reports, choose grouping by date, account, donor, or method.</li>
+              <li>Choose start and end dates when applicable.</li>
+              <li>Select <strong>Run report</strong>.</li>
+            </ol>
+            <h3>Export report</h3>
+            <p>
+              After rows load, select <strong>Export</strong> to download <code>ddr-report.csv</code>.
+              The export uses the rows currently returned by the report builder.
+            </p>
+          </section>
+
+          <section class="panel" id="settings">
+            <h2>Settings & Users</h2>
+            <p class="lead">
+              Settings store the charity profile used by receipts, replies, and deposit-related organization fields. User management is available to administrators.
+            </p>
+            <div class="two-col">
+              <article class="workflow">
+                <h3>Organization profile</h3>
+                <ul>
+                  <li>Organization name</li>
+                  <li>Registration number</li>
+                  <li>Contact name and contact email</li>
+                  <li>Reply email</li>
+                  <li>Phone, address, city, postal code, province</li>
+                  <li>Currency, transit, folio</li>
+                  <li>CQOC member flag and organization active flag</li>
+                </ul>
+                <p>Select <strong>Update profile</strong> to save changes.</p>
+              </article>
+              <article class="workflow">
+                <h3>User management</h3>
+                <ul>
+                  <li>Add first name, last name, email, and temporary password.</li>
+                  <li>Use passwords with at least 8 characters.</li>
+                  <li>Check <strong>Admin access</strong> to allow settings, accounts, and user management.</li>
+                  <li>Deactivate or reactivate other users from the user table.</li>
+                </ul>
+                <p>The current signed-in user cannot deactivate their own account from the table.</p>
+              </article>
+            </div>
+            <div class="callout danger">
+              <strong>Admin-only:</strong> Profile updates, account creation/deletion, and user management require admin access.
+            </div>
+          </section>
+
+          <section class="panel" id="subscription">
+            <h2>Subscription Request</h2>
+            <p class="lead">
+              The Subscription screen stores access requests for CQOC follow-up. In the React app,
+              it is available from the sidebar after login, and the API endpoint also accepts
+              unauthenticated subscription request submissions.
+            </p>
+            <h3>Pricing shown in the app</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Annual revenue</th>
+                  <th>CQOC member</th>
+                  <th>Non-member</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>$0 - $50,000</td>
+                  <td>$60/year</td>
+                  <td>$70/year</td>
+                </tr>
+                <tr>
+                  <td>$50,001 +</td>
+                  <td>$70/year</td>
+                  <td>$85/year</td>
+                </tr>
+              </tbody>
+            </table>
+            <h3>Submit a request</h3>
+            <ol>
+              <li>Enter charity name, registration number, responsible person, email, address, city, province, and phone.</li>
+              <li>Check <strong>CQOC member</strong> if applicable and enter the member number.</li>
+              <li>Answer the security question <strong>50 + 20</strong> with <code>70</code>.</li>
+              <li>Submit the request. The record is stored in SQLite for follow-up.</li>
+            </ol>
+          </section>
+
+          <section class="panel" id="support">
+            <h2>Support & Tutorials</h2>
+            <p class="lead">
+              Support cards map the original DDR tutorial topics to the working React screens.
+            </p>
+            <div class="card-grid">
+              <article class="feature-card">
+                <h3>Setup DDR2</h3>
+                <p>Opens Settings for organization profile and users.</p>
+              </article>
+              <article class="feature-card">
+                <h3>Add an account</h3>
+                <p>Opens Accounts.</p>
+              </article>
+              <article class="feature-card">
+                <h3>Add a donor</h3>
+                <p>Opens Donors.</p>
+              </article>
+              <article class="feature-card">
+                <h3>Add a gift</h3>
+                <p>Opens Donations.</p>
+              </article>
+              <article class="feature-card">
+                <h3>Produce reports</h3>
+                <p>Opens Reports.</p>
+              </article>
+              <article class="feature-card">
+                <h3>Produce receipts</h3>
+                <p>Opens Receipts.</p>
+              </article>
+            </div>
+            <p>For CQOC support, use the in-app email link to contact <a href="mailto:info@cqoc.org">info@cqoc.org</a>.</p>
+          </section>
+
+          <section class="panel" id="admin">
+            <h2>Administrator Notes</h2>
+            <h3>Database and sessions</h3>
+            <ul>
+              <li>The default database is <code>data/ddr.sqlite</code>.</li>
+              <li>Use <code>DDR_DATABASE_PATH=/path/to/ddr.sqlite</code> to override the database location.</li>
+              <li>Session tokens are stored client-side in browser local storage and are sent as bearer tokens to the API.</li>
+              <li>Sessions expire after approximately 30 days.</li>
+              <li>The server derives organization scope from the authenticated session, not from client-provided organization IDs.</li>
+            </ul>
+            <h3>Core API map</h3>
+            <div class="api">POST /api/auth/login
+POST /api/auth/register
+POST /api/auth/logout
+POST /api/auth/forgot-password
+GET  /api/bootstrap
+GET  /api/dashboard
+GET  /api/organization
+PUT  /api/organization
+GET  /api/users
+POST /api/users
+PATCH /api/users/:id/status
+GET  /api/donors
+GET  /api/donors/next-number
+POST /api/donors
+PUT  /api/donors/:id
+PATCH /api/donors/:id/archive
+GET  /api/accounts
+POST /api/accounts
+PUT  /api/accounts/:id
+DELETE /api/accounts/:id
+GET  /api/donations
+POST /api/donations
+PUT  /api/donations/:id
+DELETE /api/donations/:id
+GET  /api/receipts
+GET  /api/receipt-batches
+POST /api/receipts/generate
+PATCH /api/envois/:id/status
+GET  /api/reports
+POST /api/subscription-requests</div>
+          </section>
+
+          <section class="panel" id="troubleshooting">
+            <h2>Troubleshooting</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Issue</th>
+                  <th>What to check</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Cannot log in</td>
+                  <td>Confirm email/password, active user status, active organization status, and license date.</td>
+                </tr>
+                <tr>
+                  <td>Receipt generation creates zero rows</td>
+                  <td>Check that the period contains eligible gifts and confirm active donor status, donor receipt flag, and account receipt flag.</td>
+                </tr>
+                <tr>
+                  <td>Donation cannot be added</td>
+                  <td>Confirm the selected donor and account belong to the active organization.</td>
+                </tr>
+                <tr>
+                  <td>Account cannot be deleted</td>
+                  <td>Accounts with linked donations are protected. Keep the account and toggle receipt eligibility if needed.</td>
+                </tr>
+                <tr>
+                  <td>User cannot be created</td>
+                  <td>Use a unique email address and a password with at least 8 characters.</td>
+                </tr>
+                <tr>
+                  <td>Subscription form fails</td>
+                  <td>Answer the security question with <code>70</code> and ensure required charity/contact fields are filled.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+
+        <p class="footer">
+          DDR2 SaaS user manual. Last updated for the React/SQLite app in this repository.
+        </p>
+      </main>
+    </div>
+  </body>
+</html>
