@@ -1,0 +1,955 @@
+import { existsSync, mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { DatabaseSync } from "node:sqlite";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const dataDir = join(__dirname, "..", "data");
+const databasePath = process.env.DDR_DATABASE_PATH || join(dataDir, "ddr.sqlite");
+
+if (!existsSync(dataDir)) {
+  mkdirSync(dataDir, { recursive: true });
+}
+
+const db = new DatabaseSync(databasePath);
+db.exec("PRAGMA foreign_keys = ON");
+db.exec("PRAGMA journal_mode = WAL");
+
+function hashPassword(password, salt = randomBytes(16).toString("hex")) {
+  const hash = scryptSync(password, salt, 64).toString("hex");
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, storedHash) {
+  const [salt, hash] = String(storedHash || "").split(":");
+  if (!salt || !hash) {
+    return false;
+  }
+
+  const candidate = scryptSync(password, salt, 64);
+  const saved = Buffer.from(hash, "hex");
+
+  return saved.length === candidate.length && timingSafeEqual(saved, candidate);
+}
+
+function setupSchema() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS provinces (
+      provinceID INTEGER PRIMARY KEY,
+      pays_fr TEXT NOT NULL,
+      pays_en TEXT NOT NULL,
+      provinceEtat_fr TEXT NOT NULL,
+      provinceEtat_en TEXT NOT NULL,
+      abreviation TEXT NOT NULL,
+      ordre INTEGER NOT NULL DEFAULT 1
+    );
+
+    CREATE TABLE IF NOT EXISTS organismes (
+      organismeID INTEGER PRIMARY KEY AUTOINCREMENT,
+      actif INTEGER NOT NULL DEFAULT 1,
+      adresse TEXT,
+      code_postal TEXT,
+      date_fin_licence TEXT NOT NULL,
+      devise TEXT NOT NULL DEFAULT 'CAD',
+      enregistrement TEXT NOT NULL,
+      folio TEXT,
+      membre INTEGER NOT NULL DEFAULT 0,
+      organisme TEXT NOT NULL,
+      provinceID INTEGER REFERENCES provinces(provinceID),
+      reponse_courriel TEXT,
+      responsable TEXT NOT NULL,
+      responsable_courriel TEXT,
+      telephone TEXT,
+      transit TEXT,
+      ville TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS utilisateurs (
+      utilisateurID INTEGER PRIMARY KEY AUTOINCREMENT,
+      actif INTEGER NOT NULL DEFAULT 1,
+      admin INTEGER NOT NULL DEFAULT 0,
+      courriel TEXT NOT NULL,
+      langue TEXT NOT NULL DEFAULT 'en',
+      mot_de_passe TEXT NOT NULL,
+      nom TEXT NOT NULL,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID),
+      prenom TEXT NOT NULL,
+      utilisateurStatutID INTEGER NOT NULL DEFAULT 1
+    );
+
+    CREATE TABLE IF NOT EXISTS comptes (
+      compteID INTEGER PRIMARY KEY AUTOINCREMENT,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      noCompte INTEGER NOT NULL,
+      nom TEXT NOT NULL,
+      recu INTEGER NOT NULL DEFAULT 1,
+      UNIQUE (organismeID, noCompte)
+    );
+
+    CREATE TABLE IF NOT EXISTS donateurs (
+      donateurID INTEGER PRIMARY KEY AUTOINCREMENT,
+      actif INTEGER NOT NULL DEFAULT 1,
+      adresse TEXT,
+      code_postal TEXT,
+      courriel TEXT,
+      membre INTEGER NOT NULL DEFAULT 0,
+      nom TEXT NOT NULL,
+      notes TEXT,
+      numero TEXT NOT NULL,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      prenom TEXT NOT NULL DEFAULT '',
+      provinceID INTEGER REFERENCES provinces(provinceID),
+      recu INTEGER NOT NULL DEFAULT 1,
+      tel_bureau TEXT,
+      tel_cellulaire TEXT,
+      tel_residence TEXT,
+      ville TEXT,
+      UNIQUE (organismeID, numero)
+    );
+
+    CREATE TABLE IF NOT EXISTS methodesDon (
+      methodeDonID INTEGER PRIMARY KEY,
+      methode_fr TEXT NOT NULL,
+      methode_en TEXT NOT NULL,
+      methode_intuit TEXT,
+      ordre INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS dons (
+      donID INTEGER PRIMARY KEY AUTOINCREMENT,
+      compteID INTEGER NOT NULL REFERENCES comptes(compteID),
+      dateEntree TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      dateDon TEXT NOT NULL,
+      description TEXT,
+      donateurID INTEGER NOT NULL REFERENCES donateurs(donateurID),
+      montant REAL NOT NULL,
+      methodeDonID INTEGER REFERENCES methodesDon(methodeDonID),
+      recuID INTEGER REFERENCES recus(recuID),
+      verouille INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS recus (
+      recuID INTEGER PRIMARY KEY AUTOINCREMENT,
+      dateCreation TEXT NOT NULL,
+      dateDebut TEXT NOT NULL,
+      dateFin TEXT NOT NULL,
+      donateurID INTEGER NOT NULL REFERENCES donateurs(donateurID),
+      montant REAL NOT NULL,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID)
+    );
+
+    CREATE TABLE IF NOT EXISTS envois (
+      envoiID INTEGER PRIMARY KEY AUTOINCREMENT,
+      envoiIDOrigine INTEGER,
+      dateDebut TEXT,
+      dateFin TEXT,
+      donateurID INTEGER NOT NULL REFERENCES donateurs(donateurID),
+      envoiCode TEXT NOT NULL,
+      montant REAL NOT NULL,
+      noRecu INTEGER,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID),
+      statut TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS abonnement_demandes (
+      demandeID INTEGER PRIMARY KEY AUTOINCREMENT,
+      createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      organisme TEXT NOT NULL,
+      enregistrement TEXT NOT NULL,
+      responsable TEXT NOT NULL,
+      responsable_courriel TEXT NOT NULL,
+      adresse TEXT,
+      ville TEXT,
+      province TEXT,
+      code_postal TEXT,
+      telephone TEXT,
+      membre INTEGER NOT NULL DEFAULT 0,
+      nomembre TEXT,
+      langue TEXT NOT NULL DEFAULT 'en',
+      statut TEXT NOT NULL DEFAULT 'new'
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_dons_donateur ON dons(donateurID);
+    CREATE INDEX IF NOT EXISTS idx_dons_date ON dons(dateDon);
+    CREATE INDEX IF NOT EXISTS idx_recus_org_period ON recus(organismeID, dateDebut, dateFin);
+    CREATE INDEX IF NOT EXISTS idx_envois_org_code ON envois(organismeID, envoiCode);
+  `);
+}
+
+function seedDatabase() {
+  const provinceCount = db.prepare("SELECT COUNT(*) AS count FROM provinces").get().count;
+  if (!provinceCount) {
+    const insertProvince = db.prepare(`
+      INSERT INTO provinces (provinceID, pays_fr, pays_en, provinceEtat_fr, provinceEtat_en, abreviation, ordre)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    [
+      [1, "Canada", "Canada", "Quebec", "Quebec", "QC", 1],
+      [2, "Canada", "Canada", "Ontario", "Ontario", "ON", 1],
+      [3, "Canada", "Canada", "Nouveau-Brunswick", "New Brunswick", "NB", 1],
+      [4, "Canada", "Canada", "Nouvelle-Ecosse", "Nova Scotia", "NS", 1],
+      [5, "Canada", "Canada", "Manitoba", "Manitoba", "MB", 1],
+      [6, "Canada", "Canada", "Alberta", "Alberta", "AB", 1],
+      [7, "Etats-Unis", "United States", "New York", "New York", "NY", 2],
+    ].forEach((row) => insertProvince.run(...row));
+  }
+
+  const methodCount = db.prepare("SELECT COUNT(*) AS count FROM methodesDon").get().count;
+  if (!methodCount) {
+    const insertMethod = db.prepare(`
+      INSERT INTO methodesDon (methodeDonID, methode_fr, methode_en, methode_intuit, ordre)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+
+    [
+      [1, "Cheque", "Cheque", "Check", 1],
+      [2, "Comptant", "Cash", "Cash", 2],
+      [3, "Virement", "Transfer", "Transfer", 3],
+      [4, "Carte", "Card", "Card", 4],
+      [5, "Prelevement", "Pre-authorized debit", "PAD", 5],
+    ].forEach((row) => insertMethod.run(...row));
+  }
+
+  const orgCount = db.prepare("SELECT COUNT(*) AS count FROM organismes").get().count;
+  if (!orgCount) {
+    db.prepare(`
+      INSERT INTO organismes (
+        organismeID, actif, adresse, code_postal, date_fin_licence, devise, enregistrement,
+        folio, membre, organisme, provinceID, reponse_courriel, responsable,
+        responsable_courriel, telephone, transit, ville
+      )
+      VALUES (1, 1, ?, ?, ?, 'CAD', ?, ?, 1, ?, 1, ?, ?, ?, ?, ?, ?)
+    `).run(
+      "5425 Boulevard Laurier O, Suite 106",
+      "J2S 3V6",
+      "2027-12-31",
+      "123456789RR0001",
+      "FOL-2026",
+      "Grace Community Church",
+      "receipts@grace.example.org",
+      "Francois Brouillet",
+      "admin@ddr.local",
+      "(450) 778-7177",
+      "12345",
+      "Saint-Hyacinthe",
+    );
+  }
+
+  const userCount = db.prepare("SELECT COUNT(*) AS count FROM utilisateurs").get().count;
+  if (!userCount) {
+    db.prepare(`
+      INSERT INTO utilisateurs (actif, admin, courriel, langue, mot_de_passe, nom, organismeID, prenom, utilisateurStatutID)
+      VALUES (1, 1, 'admin@ddr.local', 'en', ?, 'Brouillet', 1, 'Francois', 1)
+    `).run(hashPassword("password"));
+  }
+
+  const accountCount = db.prepare("SELECT COUNT(*) AS count FROM comptes").get().count;
+  if (!accountCount) {
+    const insertAccount = db.prepare("INSERT INTO comptes (organismeID, noCompte, nom, recu) VALUES (1, ?, ?, ?)");
+    [
+      [100, "General offerings", 1],
+      [200, "Community aid", 1],
+      [300, "Missions", 1],
+      [400, "Building fund", 1],
+      [900, "Administration fees", 0],
+    ].forEach((row) => insertAccount.run(...row));
+  }
+
+  const donorCount = db.prepare("SELECT COUNT(*) AS count FROM donateurs").get().count;
+  if (!donorCount) {
+    const insertDonor = db.prepare(`
+      INSERT INTO donateurs (
+        actif, adresse, code_postal, courriel, membre, nom, notes, numero,
+        organismeID, prenom, provinceID, recu, tel_cellulaire, tel_residence, ville
+      )
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, 1, ?, ?, ?)
+    `);
+
+    [
+      ["120 Rue Principale", "J2S 1A1", "amelie.gagnon@example.org", 1, "Gagnon", "Monthly donor", "1", "Amelie", 1, "514-555-0101", "450-555-0101", "Saint-Hyacinthe"],
+      ["84 Rue Saint-Paul", "J4K 2B2", "marc.tremblay@example.org", 0, "Tremblay", "", "2", "Marc", 1, "514-555-0102", "450-555-0102", "Longueuil"],
+      ["900 Avenue du Parc", "H2V 4E5", "sophie.chen@example.org", 0, "Chen", "New family", "3", "Sophie", 1, "514-555-0103", "514-555-0104", "Montreal"],
+      ["25 Rue Saint-Jean", "G1R 1R1", "noah.williams@example.org", 1, "Williams", "Major gifts", "4", "Noah", 1, "418-555-0104", "418-555-0105", "Quebec"],
+    ].forEach((row) => insertDonor.run(...row));
+  }
+
+  const donationCount = db.prepare("SELECT COUNT(*) AS count FROM dons").get().count;
+  if (!donationCount) {
+    const donorByNumber = db.prepare("SELECT donateurID FROM donateurs WHERE organismeID = 1 AND numero = ?");
+    const accountByNumber = db.prepare("SELECT compteID FROM comptes WHERE organismeID = 1 AND noCompte = ?");
+    const insertDonation = db.prepare(`
+      INSERT INTO dons (compteID, dateDon, description, donateurID, montant, methodeDonID, verouille)
+      VALUES (?, ?, ?, ?, ?, ?, 0)
+    `);
+
+    [
+      ["1", 100, "2026-01-14", "Opening gift", 250, 1],
+      ["2", 200, "2026-02-07", "Community program", 120, 3],
+      ["3", 300, "2026-03-17", "Mission support", 85, 4],
+      ["4", 400, "2026-04-09", "Building campaign", 500, 2],
+      ["1", 100, "2026-05-22", "Monthly offering", 250, 5],
+      ["2", 900, "2026-06-24", "Administration reimbursement", 60, 3],
+      ["1", 100, "2026-06-28", "Monthly offering", 250, 5],
+      ["4", 400, "2026-07-02", "Capital gift", 775, 1],
+    ].forEach(([donorNumber, accountNumber, dateDon, description, amount, methodID]) => {
+      insertDonation.run(
+        accountByNumber.get(accountNumber).compteID,
+        dateDon,
+        description,
+        donorByNumber.get(donorNumber).donateurID,
+        amount,
+        methodID,
+      );
+    });
+  }
+}
+
+setupSchema();
+seedDatabase();
+
+function all(sql, params = []) {
+  return db.prepare(sql).all(...params);
+}
+
+function get(sql, params = []) {
+  return db.prepare(sql).get(...params);
+}
+
+function run(sql, params = []) {
+  const result = db.prepare(sql).run(...params);
+  return {
+    changes: result.changes,
+    lastInsertRowid: Number(result.lastInsertRowid),
+  };
+}
+
+function transaction(callback) {
+  db.exec("BEGIN");
+  try {
+    const result = callback();
+    db.exec("COMMIT");
+    return result;
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
+function bool(value) {
+  return value ? 1 : 0;
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function currentTimestampCode() {
+  return new Date().toISOString().replace("T", "-").replaceAll(":", "-").slice(0, 19);
+}
+
+function organizationID() {
+  return 1;
+}
+
+function normalizeDonor(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    ...row,
+    actif: Boolean(row.actif),
+    membre: Boolean(row.membre),
+    recu: Boolean(row.recu),
+    fullName: `${row.prenom || ""} ${row.nom || ""}`.trim(),
+  };
+}
+
+function normalizeAccount(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    ...row,
+    recu: Boolean(row.recu),
+  };
+}
+
+function normalizeDonation(row) {
+  if (!row) {
+    return row;
+  }
+
+  const receiptable = Boolean(row.compteRecu) && Boolean(row.donateurRecu);
+  return {
+    ...row,
+    verouille: Boolean(row.verouille),
+    compteRecu: Boolean(row.compteRecu),
+    donateurRecu: Boolean(row.donateurRecu),
+    donorName: `${row.prenom || ""} ${row.nom || ""}`.trim(),
+    receiptStatus: row.recuID ? "Issued" : receiptable ? "Ready" : "No receipt",
+  };
+}
+
+function login(courriel, password) {
+  const user = get(
+    `SELECT u.*, o.organisme, o.devise, o.date_fin_licence, o.actif AS organismeActif
+     FROM utilisateurs AS u
+     INNER JOIN organismes AS o ON u.organismeID = o.organismeID
+     WHERE lower(u.courriel) = lower(?) AND u.actif = 1`,
+    [courriel],
+  );
+
+  if (!user || !verifyPassword(password, user.mot_de_passe)) {
+    return null;
+  }
+
+  if (!user.organismeActif || user.date_fin_licence < todayISO()) {
+    const error = new Error("License expired or organization inactive");
+    error.status = 403;
+    throw error;
+  }
+
+  return {
+    utilisateurID: user.utilisateurID,
+    admin: Boolean(user.admin),
+    courriel: user.courriel,
+    langue: user.langue,
+    nom: user.nom,
+    prenom: user.prenom,
+    organismeID: user.organismeID,
+    organisme: user.organisme,
+    devise: user.devise,
+  };
+}
+
+function getBootstrap() {
+  const organisme = get(
+    `SELECT o.*, p.abreviation AS province
+     FROM organismes AS o
+     LEFT JOIN provinces AS p ON o.provinceID = p.provinceID
+     WHERE o.organismeID = ?`,
+    [organizationID()],
+  );
+  const user = get("SELECT utilisateurID, admin, courriel, langue, nom, prenom, organismeID FROM utilisateurs WHERE organismeID = ? ORDER BY admin DESC LIMIT 1", [organizationID()]);
+  const provinces = all("SELECT provinceID, pays_en, pays_fr, provinceEtat_en, provinceEtat_fr, abreviation FROM provinces ORDER BY ordre, provinceEtat_en");
+  const methods = all("SELECT methodeDonID, methode_fr, methode_en, methode_intuit, ordre FROM methodesDon ORDER BY ordre");
+
+  return {
+    organisme: { ...organisme, actif: Boolean(organisme.actif), membre: Boolean(organisme.membre) },
+    user: { ...user, admin: Boolean(user.admin) },
+    provinces,
+    methods,
+  };
+}
+
+function getDashboard() {
+  const orgID = organizationID();
+  const year = new Date().getFullYear().toString();
+  const totals = get(
+    `SELECT
+      COALESCE(SUM(CASE WHEN substr(d.dateDon, 1, 4) = ? THEN d.montant END), 0) AS ytdDonations,
+      COUNT(DISTINCT CASE WHEN dt.actif = 1 THEN dt.donateurID END) AS activeDonors,
+      COUNT(DISTINCT r.recuID) AS receiptCount,
+      COALESCE(SUM(CASE WHEN c.recu = 1 THEN d.montant END), 0) AS receiptableTotal
+     FROM donateurs AS dt
+     LEFT JOIN dons AS d ON d.donateurID = dt.donateurID
+     LEFT JOIN comptes AS c ON d.compteID = c.compteID
+     LEFT JOIN recus AS r ON r.donateurID = dt.donateurID
+     WHERE dt.organismeID = ?`,
+    [year, orgID],
+  );
+  const pending = get(
+    `SELECT COUNT(*) AS count
+     FROM dons AS d
+     INNER JOIN donateurs AS dt ON d.donateurID = dt.donateurID
+     INNER JOIN comptes AS c ON d.compteID = c.compteID
+     WHERE dt.organismeID = ? AND c.recu = 1 AND dt.recu = 1 AND d.recuID IS NULL`,
+    [orgID],
+  ).count;
+  const monthly = all(
+    `SELECT substr(d.dateDon, 1, 7) AS month, COALESCE(SUM(d.montant), 0) AS amount
+     FROM dons AS d
+     INNER JOIN donateurs AS dt ON d.donateurID = dt.donateurID
+     WHERE dt.organismeID = ? AND substr(d.dateDon, 1, 4) = ?
+     GROUP BY substr(d.dateDon, 1, 7)
+     ORDER BY month`,
+    [orgID, year],
+  );
+  const recentDonations = listDonations({ limit: 6 });
+  const accountMix = all(
+    `SELECT c.compteID, c.noCompte, c.nom, c.recu, COALESCE(SUM(d.montant), 0) AS total
+     FROM comptes AS c
+     LEFT JOIN dons AS d ON c.compteID = d.compteID
+     WHERE c.organismeID = ?
+     GROUP BY c.compteID
+     ORDER BY total DESC`,
+    [orgID],
+  ).map(normalizeAccount);
+
+  return {
+    totals: {
+      ytdDonations: totals.ytdDonations || 0,
+      receiptCount: totals.receiptCount || 0,
+      activeDonors: totals.activeDonors || 0,
+      pendingReceipts: pending || 0,
+      receiptableTotal: totals.receiptableTotal || 0,
+    },
+    monthly,
+    recentDonations,
+    accountMix,
+  };
+}
+
+function listDonors({ search = "", active = "active", limit = 100 } = {}) {
+  const params = [organizationID()];
+  let where = "d.organismeID = ?";
+
+  if (active === "active") {
+    where += " AND d.actif = 1";
+  } else if (active === "archived") {
+    where += " AND d.actif = 0";
+  }
+
+  if (search) {
+    where += " AND (d.numero LIKE ? OR d.nom LIKE ? OR d.prenom LIKE ? OR d.courriel LIKE ? OR d.ville LIKE ?)";
+    const term = `%${search}%`;
+    params.push(term, term, term, term, term);
+  }
+
+  params.push(Number(limit));
+
+  return all(
+    `SELECT d.*, p.abreviation AS province,
+      COALESCE(SUM(ds.montant), 0) AS totalDonations,
+      MAX(ds.dateDon) AS lastGift
+     FROM donateurs AS d
+     LEFT JOIN provinces AS p ON d.provinceID = p.provinceID
+     LEFT JOIN dons AS ds ON ds.donateurID = d.donateurID
+     WHERE ${where}
+     GROUP BY d.donateurID
+     ORDER BY CAST(d.numero AS INTEGER), d.nom, d.prenom
+     LIMIT ?`,
+    params,
+  ).map(normalizeDonor);
+}
+
+function nextDonorNumber() {
+  const row = get(
+    "SELECT MAX(CAST(numero AS INTEGER)) AS dernier FROM donateurs WHERE organismeID = ?",
+    [organizationID()],
+  );
+  return String((Number(row?.dernier) || 0) + 1);
+}
+
+function createDonor(data) {
+  const numero = String(data.numero || nextDonorNumber()).trim();
+  const duplicate = get("SELECT donateurID FROM donateurs WHERE organismeID = ? AND numero = ?", [organizationID(), numero]);
+  if (duplicate) {
+    const error = new Error("Donor number already exists");
+    error.status = 409;
+    throw error;
+  }
+
+  const result = run(
+    `INSERT INTO donateurs (
+      actif, adresse, code_postal, courriel, membre, nom, notes, numero,
+      organismeID, prenom, provinceID, recu, tel_cellulaire, tel_residence, ville
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      data.actif === false ? 0 : 1,
+      data.adresse || "",
+      data.code_postal || "",
+      data.courriel || "",
+      bool(data.membre),
+      String(data.nom || "").trim(),
+      data.notes || "",
+      numero,
+      organizationID(),
+      String(data.prenom || "").trim(),
+      Number(data.provinceID) || 1,
+      data.recu === false ? 0 : 1,
+      data.tel_cellulaire || "",
+      data.tel_residence || "",
+      data.ville || "",
+    ],
+  );
+
+  return getDonor(result.lastInsertRowid);
+}
+
+function updateDonor(id, data) {
+  run(
+    `UPDATE donateurs
+     SET actif = ?, adresse = ?, code_postal = ?, courriel = ?, membre = ?, nom = ?, notes = ?,
+         numero = ?, prenom = ?, provinceID = ?, recu = ?, tel_cellulaire = ?, tel_residence = ?, ville = ?
+     WHERE donateurID = ? AND organismeID = ?`,
+    [
+      data.actif === false ? 0 : 1,
+      data.adresse || "",
+      data.code_postal || "",
+      data.courriel || "",
+      bool(data.membre),
+      String(data.nom || "").trim(),
+      data.notes || "",
+      String(data.numero || "").trim(),
+      String(data.prenom || "").trim(),
+      Number(data.provinceID) || 1,
+      data.recu === false ? 0 : 1,
+      data.tel_cellulaire || "",
+      data.tel_residence || "",
+      data.ville || "",
+      Number(id),
+      organizationID(),
+    ],
+  );
+
+  return getDonor(id);
+}
+
+function archiveDonor(id, actif) {
+  run("UPDATE donateurs SET actif = ? WHERE donateurID = ? AND organismeID = ?", [bool(actif), Number(id), organizationID()]);
+  return getDonor(id);
+}
+
+function getDonor(id) {
+  return normalizeDonor(get(
+    `SELECT d.*, p.abreviation AS province,
+      COALESCE(SUM(ds.montant), 0) AS totalDonations,
+      MAX(ds.dateDon) AS lastGift
+     FROM donateurs AS d
+     LEFT JOIN provinces AS p ON d.provinceID = p.provinceID
+     LEFT JOIN dons AS ds ON ds.donateurID = d.donateurID
+     WHERE d.donateurID = ? AND d.organismeID = ?
+     GROUP BY d.donateurID`,
+    [Number(id), organizationID()],
+  ));
+}
+
+function listAccounts() {
+  return all(
+    `SELECT c.*, COUNT(d.donID) AS donationCount, COALESCE(SUM(d.montant), 0) AS total
+     FROM comptes AS c
+     LEFT JOIN dons AS d ON c.compteID = d.compteID
+     WHERE c.organismeID = ?
+     GROUP BY c.compteID
+     ORDER BY c.noCompte`,
+    [organizationID()],
+  ).map(normalizeAccount);
+}
+
+function createAccount(data) {
+  const result = run(
+    "INSERT INTO comptes (organismeID, noCompte, nom, recu) VALUES (?, ?, ?, ?)",
+    [organizationID(), Number(data.noCompte), String(data.nom || "").trim(), data.recu === false ? 0 : 1],
+  );
+  return listAccounts().find((account) => account.compteID === result.lastInsertRowid);
+}
+
+function updateAccount(id, data) {
+  run(
+    "UPDATE comptes SET noCompte = ?, nom = ?, recu = ? WHERE compteID = ? AND organismeID = ?",
+    [Number(data.noCompte), String(data.nom || "").trim(), data.recu === false ? 0 : 1, Number(id), organizationID()],
+  );
+  return listAccounts().find((account) => account.compteID === Number(id));
+}
+
+function deleteAccount(id) {
+  const count = get("SELECT COUNT(*) AS count FROM dons WHERE compteID = ?", [Number(id)]).count;
+  if (count) {
+    const error = new Error("This account is linked to at least one donation");
+    error.status = 409;
+    throw error;
+  }
+  run("DELETE FROM comptes WHERE compteID = ? AND organismeID = ?", [Number(id), organizationID()]);
+  return { deleted: true };
+}
+
+function listDonations({ search = "", dateDebut = "", dateFin = "", limit = 100 } = {}) {
+  const params = [organizationID()];
+  let where = "dt.organismeID = ?";
+
+  if (dateDebut) {
+    where += " AND d.dateDon >= ?";
+    params.push(dateDebut);
+  }
+  if (dateFin) {
+    where += " AND d.dateDon <= ?";
+    params.push(dateFin);
+  }
+  if (search) {
+    where += " AND (dt.numero LIKE ? OR dt.nom LIKE ? OR dt.prenom LIKE ? OR c.nom LIKE ? OR d.description LIKE ?)";
+    const term = `%${search}%`;
+    params.push(term, term, term, term, term);
+  }
+
+  params.push(Number(limit));
+
+  return all(
+    `SELECT d.*, dt.numero, dt.nom, dt.prenom, dt.courriel, dt.recu AS donateurRecu,
+      c.noCompte, c.nom AS libelleCompte, c.recu AS compteRecu,
+      m.methode_fr, m.methode_en
+     FROM dons AS d
+     INNER JOIN donateurs AS dt ON d.donateurID = dt.donateurID
+     INNER JOIN comptes AS c ON d.compteID = c.compteID
+     LEFT JOIN methodesDon AS m ON d.methodeDonID = m.methodeDonID
+     WHERE ${where}
+     ORDER BY d.dateDon DESC, d.donID DESC
+     LIMIT ?`,
+    params,
+  ).map(normalizeDonation);
+}
+
+function createDonation(data) {
+  const donateurID = Number(data.donateurID || get("SELECT donateurID FROM donateurs WHERE organismeID = ? AND numero = ?", [organizationID(), data.numero])?.donateurID);
+  const compteID = Number(data.compteID || get("SELECT compteID FROM comptes WHERE organismeID = ? AND noCompte = ?", [organizationID(), Number(data.noCompte)])?.compteID);
+
+  if (!donateurID || !compteID) {
+    const error = new Error("The account number or donor number cannot be recognized");
+    error.status = 400;
+    throw error;
+  }
+
+  const result = run(
+    `INSERT INTO dons (compteID, dateDon, description, donateurID, montant, methodeDonID)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      compteID,
+      data.dateDon || todayISO(),
+      data.description || "",
+      donateurID,
+      Number(data.montant),
+      Number(data.methodeDonID) || null,
+    ],
+  );
+
+  return listDonations({ limit: 500 }).find((donation) => donation.donID === result.lastInsertRowid);
+}
+
+function updateDonation(id, data) {
+  run(
+    `UPDATE dons
+     SET compteID = ?, dateDon = ?, description = ?, donateurID = ?, montant = ?, methodeDonID = ?, recuID = NULL
+     WHERE donID = ?`,
+    [
+      Number(data.compteID),
+      data.dateDon,
+      data.description || "",
+      Number(data.donateurID),
+      Number(data.montant),
+      Number(data.methodeDonID) || null,
+      Number(id),
+    ],
+  );
+
+  return listDonations({ limit: 500 }).find((donation) => donation.donID === Number(id));
+}
+
+function deleteDonation(id) {
+  run("DELETE FROM dons WHERE donID = ?", [Number(id)]);
+  return { deleted: true };
+}
+
+function generateReceipts({ dateDebut, dateFin, mode = "email" }) {
+  const orgID = organizationID();
+  const code = currentTimestampCode();
+  const dateCreation = new Date().toISOString();
+
+  return transaction(() => {
+    const candidates = all(
+      `SELECT dt.donateurID, dt.nom, dt.prenom, dt.numero, dt.courriel, COALESCE(SUM(d.montant), 0) AS montant
+       FROM dons AS d
+       INNER JOIN donateurs AS dt ON d.donateurID = dt.donateurID
+       INNER JOIN comptes AS c ON d.compteID = c.compteID
+       WHERE dt.organismeID = ?
+         AND dt.actif = 1
+         AND dt.recu = 1
+         AND c.recu = 1
+         AND d.dateDon >= ?
+         AND d.dateDon <= ?
+       GROUP BY dt.donateurID
+       HAVING montant > 0
+       ORDER BY CAST(dt.numero AS INTEGER), dt.nom, dt.prenom`,
+      [orgID, dateDebut, dateFin],
+    );
+
+    const created = [];
+    for (const donor of candidates) {
+      const existingReceipts = all(
+        "SELECT recuID FROM recus WHERE organismeID = ? AND dateDebut = ? AND dateFin = ? AND donateurID = ?",
+        [orgID, dateDebut, dateFin, donor.donateurID],
+      );
+      for (const receipt of existingReceipts) {
+        run("UPDATE dons SET recuID = NULL WHERE recuID = ?", [receipt.recuID]);
+      }
+      run("DELETE FROM recus WHERE organismeID = ? AND dateDebut = ? AND dateFin = ? AND donateurID = ?", [orgID, dateDebut, dateFin, donor.donateurID]);
+      const receipt = run(
+        "INSERT INTO recus (dateCreation, dateDebut, dateFin, donateurID, montant, organismeID) VALUES (?, ?, ?, ?, ?, ?)",
+        [dateCreation, dateDebut, dateFin, donor.donateurID, donor.montant, orgID],
+      );
+      run(
+        `UPDATE dons
+         SET recuID = ?, verouille = 1
+         WHERE donateurID = ? AND dateDon >= ? AND dateDon <= ?
+           AND compteID IN (SELECT compteID FROM comptes WHERE organismeID = ? AND recu = 1)`,
+        [receipt.lastInsertRowid, donor.donateurID, dateDebut, dateFin, orgID],
+      );
+
+      const hasEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(donor.courriel || "");
+      const status = mode === "print" ? "2-a-imprimer" : hasEmail ? "1-en-cours" : "0-courriel-non-valide";
+      const envoi = run(
+        "INSERT INTO envois (dateDebut, dateFin, donateurID, envoiCode, montant, organismeID, statut) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [dateDebut, dateFin, donor.donateurID, code, donor.montant, orgID, status],
+      );
+      const noRecu = envoi.lastInsertRowid + 1000;
+      run("UPDATE envois SET noRecu = ? WHERE envoiID = ?", [noRecu, envoi.lastInsertRowid]);
+      created.push({ ...donor, recuID: receipt.lastInsertRowid, envoiID: envoi.lastInsertRowid, noRecu, statut: status });
+    }
+
+    return {
+      envoiCode: code,
+      dateDebut,
+      dateFin,
+      count: created.length,
+      receipts: created,
+    };
+  });
+}
+
+function listReceipts({ dateDebut = "", dateFin = "" } = {}) {
+  const params = [organizationID()];
+  let where = "r.organismeID = ?";
+  if (dateDebut) {
+    where += " AND r.dateDebut >= ?";
+    params.push(dateDebut);
+  }
+  if (dateFin) {
+    where += " AND r.dateFin <= ?";
+    params.push(dateFin);
+  }
+
+  return all(
+    `SELECT r.*, dt.nom, dt.prenom, dt.numero, dt.courriel,
+      e.envoiID, e.envoiCode, e.noRecu, e.statut
+     FROM recus AS r
+     INNER JOIN donateurs AS dt ON r.donateurID = dt.donateurID
+     LEFT JOIN envois AS e ON e.envoiID = (
+      SELECT MAX(e2.envoiID)
+      FROM envois AS e2
+      WHERE e2.donateurID = r.donateurID
+        AND e2.organismeID = r.organismeID
+        AND e2.dateDebut = r.dateDebut
+        AND e2.dateFin = r.dateFin
+     )
+     WHERE ${where}
+     ORDER BY r.dateCreation DESC, CAST(dt.numero AS INTEGER)`,
+    params,
+  );
+}
+
+function listReceiptBatches() {
+  return all(
+    `SELECT r.dateCreation, r.dateDebut, r.dateFin, COUNT(*) AS recusCount, COALESCE(SUM(r.montant), 0) AS total
+     FROM recus AS r
+     WHERE r.organismeID = ?
+     GROUP BY r.dateCreation, r.dateDebut, r.dateFin
+     ORDER BY r.dateCreation DESC`,
+    [organizationID()],
+  );
+}
+
+function patchEnvoiStatus(id, status) {
+  run("UPDATE envois SET statut = ? WHERE envoiID = ? AND organismeID = ?", [status, Number(id), organizationID()]);
+  return get("SELECT * FROM envois WHERE envoiID = ?", [Number(id)]);
+}
+
+function report(type, params = {}) {
+  if (type === "donors") {
+    return listDonors({ active: params.active || "all", limit: 1000 });
+  }
+
+  if (type === "accounts") {
+    return listAccounts();
+  }
+
+  if (type === "receipts") {
+    return listReceipts(params);
+  }
+
+  const rows = listDonations({ dateDebut: params.dateDebut, dateFin: params.dateFin, limit: 1000 });
+  const groupBy = params.groupBy || "date";
+  const grouped = new Map();
+
+  for (const row of rows) {
+    const key = groupBy === "account"
+      ? `${row.noCompte} - ${row.libelleCompte}`
+      : groupBy === "donor"
+        ? row.donorName
+        : groupBy === "method"
+          ? row.methode_en || "Unspecified"
+          : row.dateDon;
+    const current = grouped.get(key) || { label: key, count: 0, total: 0 };
+    current.count += 1;
+    current.total += row.montant;
+    grouped.set(key, current);
+  }
+
+  return {
+    rows,
+    summary: Array.from(grouped.values()),
+  };
+}
+
+function createSubscriptionRequest(data) {
+  const result = run(
+    `INSERT INTO abonnement_demandes (
+      organisme, enregistrement, responsable, responsable_courriel, adresse, ville,
+      province, code_postal, telephone, membre, nomembre, langue
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      data.organisme,
+      data.enregistrement,
+      data.responsable,
+      data.responsable_courriel,
+      data.adresse || "",
+      data.ville || "",
+      data.province || "",
+      data.code_postal || "",
+      data.telephone || "",
+      bool(data.membre),
+      data.nomembre || "",
+      data.langue || "en",
+    ],
+  );
+
+  return get("SELECT * FROM abonnement_demandes WHERE demandeID = ?", [result.lastInsertRowid]);
+}
+
+export const store = {
+  databasePath,
+  login,
+  getBootstrap,
+  getDashboard,
+  listDonors,
+  nextDonorNumber,
+  createDonor,
+  updateDonor,
+  archiveDonor,
+  listAccounts,
+  createAccount,
+  updateAccount,
+  deleteAccount,
+  listDonations,
+  createDonation,
+  updateDonation,
+  deleteDonation,
+  generateReceipts,
+  listReceipts,
+  listReceiptBatches,
+  patchEnvoiStatus,
+  report,
+  createSubscriptionRequest,
+};

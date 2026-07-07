@@ -1,0 +1,13 @@
+node_modules
+dist
+.DS_Store
+data/*.sqlite
+data/*.sqlite-*
+npm-debug.log*
+temp/
+sns/*.log
+**/__history/
+_utilisateurs/logos/
+_utilisateurs/signatures/
+.well-known/pki-validation/
+_well-known/
