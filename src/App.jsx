@@ -288,6 +288,13 @@ function focusTarget(id) {
   }, 180);
 }
 
+function submitTarget(id) {
+  const form = document.getElementById(id);
+  if (form?.requestSubmit) {
+    form.requestSubmit();
+  }
+}
+
 function App() {
   const [language, setLanguage] = useState("en");
   const [activeView, setActiveView] = useState("overview");
@@ -540,7 +547,10 @@ function App() {
         method: "POST",
         body: JSON.stringify(data),
       });
-      await refresh(`${t.receipts.generated} ${result.count} created.`);
+      const message = result.count
+        ? `${t.receipts.generated} ${result.count} created.`
+        : "No eligible receipt rows found for this period.";
+      await refresh(message);
     } catch (saveError) {
       showError(saveError.message);
     }
@@ -1422,6 +1432,7 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
         action="Generate"
         actionTargetId="receipt-generator"
         icon={ReceiptText}
+        onAction={() => submitTarget("receipt-generator")}
       />
 
       <div className="receipt-band">
