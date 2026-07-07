@@ -252,8 +252,13 @@ const defaultReceiptPeriod = {
 };
 
 async function api(path, options = {}) {
+  const token = localStorage.getItem("ddr-token");
   const response = await fetch(path, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
     ...options,
   });
 
@@ -290,7 +295,11 @@ function App() {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [authToken, setAuthToken] = useState(() => localStorage.getItem("ddr-token") || "");
   const [currentUser, setCurrentUser] = useState(() => {
+    if (!localStorage.getItem("ddr-token")) {
+      return null;
+    }
     const saved = localStorage.getItem("ddr-user");
     return saved ? JSON.parse(saved) : null;
   });
@@ -331,11 +340,19 @@ function App() {
   }
 
   useEffect(() => {
+    if (!currentUser || !authToken) {
+      setLoading(false);
+      return;
+    }
+
     loadWorkspace().catch((loadError) => {
       setError(loadError.message);
+      if (loadError.message === "Authentication required") {
+        clearSession();
+      }
       setLoading(false);
     });
-  }, []);
+  }, [authToken, currentUser?.utilisateurID]);
 
   async function refresh(message) {
     await loadWorkspace();
@@ -365,11 +382,32 @@ function App() {
         body: JSON.stringify(body),
       });
       setCurrentUser(result.user);
+      setAuthToken(result.token);
       setLanguage(result.user.langue || "en");
       localStorage.setItem("ddr-user", JSON.stringify(result.user));
+      localStorage.setItem("ddr-token", result.token);
       showNotice("Logged in.");
     } catch (loginError) {
       showError(loginError.message);
+    }
+  }
+
+  async function handleRegister(event) {
+    event.preventDefault();
+    try {
+      const data = formObject(event.currentTarget);
+      const result = await api("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ ...data, langue: language }),
+      });
+      setCurrentUser(result.user);
+      setAuthToken(result.token);
+      setLanguage(result.user.langue || "en");
+      localStorage.setItem("ddr-user", JSON.stringify(result.user));
+      localStorage.setItem("ddr-token", result.token);
+      showNotice("Organization workspace created.");
+    } catch (registerError) {
+      showError(registerError.message);
     }
   }
 
@@ -381,11 +419,18 @@ function App() {
     return result.message || t.alerts.forgot;
   }
 
-  function logout() {
+  function clearSession() {
     localStorage.removeItem("ddr-user");
+    localStorage.removeItem("ddr-token");
+    setAuthToken("");
     setCurrentUser(null);
     setActiveView("overview");
     setQuery("");
+  }
+
+  async function logout() {
+    await api("/api/auth/logout", { method: "POST" }).catch(() => {});
+    clearSession();
   }
 
   async function handleAddDonor(event) {
@@ -571,6 +616,41 @@ function App() {
     }
   }
 
+  async function handleCreateUser(event) {
+    event.preventDefault();
+    try {
+      const data = formObject(event.currentTarget);
+      await api("/api/users", {
+        method: "POST",
+        body: JSON.stringify({
+          ...data,
+          admin: data.admin === "on",
+          actif: true,
+          langue: language,
+        }),
+      });
+      event.currentTarget.reset();
+      await refresh("User added to this workspace.");
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
+  async function toggleUser(userAccount) {
+    try {
+      await api(`/api/users/${userAccount.utilisateurID}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          actif: !userAccount.actif,
+          admin: userAccount.admin,
+        }),
+      });
+      await refresh("User access updated.");
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
   async function handleSearch(event) {
     const value = event.target.value;
     setQuery(value);
@@ -610,6 +690,7 @@ function App() {
         onForgotPassword={handleForgotPassword}
         onLanguageChange={setLanguage}
         onLogin={handleLogin}
+        onRegister={handleRegister}
         t={t}
       />
     );
@@ -769,7 +850,9 @@ function App() {
             bootstrap={bootstrap}
             t={t}
             user={displayUser}
+            onCreateUser={handleCreateUser}
             onSubmit={handleUpdateOrganization}
+            onUserStatus={toggleUser}
           />
         )}
         {!loading && activeView === "support" && (
@@ -783,8 +866,9 @@ function App() {
   );
 }
 
-function LoginScreen({ error, language, onForgotPassword, onLanguageChange, onLogin, t }) {
+function LoginScreen({ error, language, onForgotPassword, onLanguageChange, onLogin, onRegister, t }) {
   const [forgotOpen, setForgotOpen] = useState(false);
+  const [signupOpen, setSignupOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("admin@ddr.local");
   const [forgotStatus, setForgotStatus] = useState("");
 
@@ -806,13 +890,13 @@ function LoginScreen({ error, language, onForgotPassword, onLanguageChange, onLo
           <h1>{t.overview.title}</h1>
           <p>{t.overview.subtitle}</p>
           <div className="login-facts">
-            <span><Check size={16} /> SQLite persistence</span>
+            <span><Check size={16} /> Multi-tenant SaaS</span>
             <span><Check size={16} /> Donors and gifts</span>
             <span><Check size={16} /> Receipt batches</span>
           </div>
         </div>
 
-        <form className="login-panel" onSubmit={onLogin}>
+        <div className="login-panel">
           <img src={whiteLogo} alt="DDR2" />
           <div className="login-panel-title">
             <h2>{t.overview.loginTitle}</h2>
@@ -822,18 +906,20 @@ function LoginScreen({ error, language, onForgotPassword, onLanguageChange, onLo
           </div>
           <p>{t.overview.loginHelp}</p>
           {error && <div className="inline-error">{error}</div>}
-          <label>
-            Email
-            <input name="email" type="email" defaultValue="admin@ddr.local" required />
-          </label>
-          <label>
-            Password
-            <input name="password" type="password" defaultValue="password" required />
-          </label>
-          <button className="light-button" type="submit">
-            <LockKeyhole size={16} />
-            <span>Log in</span>
-          </button>
+          <form className="login-form" onSubmit={onLogin}>
+            <label>
+              Email
+              <input name="email" type="email" defaultValue="admin@ddr.local" required />
+            </label>
+            <label>
+              Password
+              <input name="password" type="password" defaultValue="password" required />
+            </label>
+            <button className="light-button" type="submit">
+              <LockKeyhole size={16} />
+              <span>Log in</span>
+            </button>
+          </form>
           <button className="link-button light-link" type="button" onClick={() => setForgotOpen((open) => !open)}>
             {t.overview.forgot}
           </button>
@@ -850,7 +936,50 @@ function LoginScreen({ error, language, onForgotPassword, onLanguageChange, onLo
               {forgotStatus && <div className="inline-hint">{forgotStatus}</div>}
             </div>
           )}
-        </form>
+          <button className="link-button light-link" type="button" onClick={() => setSignupOpen((open) => !open)}>
+            Create organization workspace
+          </button>
+          {signupOpen && (
+            <form className="forgot-form signup-form" onSubmit={onRegister}>
+              <label>
+                Charity name
+                <input name="organisme" required maxLength="150" placeholder="Grace Community Church" />
+              </label>
+              <label>
+                Registration number
+                <input name="enregistrement" required maxLength="30" placeholder="123456789RR0001" />
+              </label>
+              <label>
+                First name
+                <input name="prenom" required maxLength="50" />
+              </label>
+              <label>
+                Last name
+                <input name="nom" required maxLength="50" />
+              </label>
+              <label>
+                Admin email
+                <input name="email" required type="email" />
+              </label>
+              <label>
+                Password
+                <input name="password" required minLength="8" type="password" />
+              </label>
+              <label>
+                City
+                <input name="ville" maxLength="50" />
+              </label>
+              <label>
+                Phone
+                <input name="telephone" maxLength="30" />
+              </label>
+              <button className="light-button" type="submit">
+                <Building2 size={16} />
+                <span>Start SaaS workspace</span>
+              </button>
+            </form>
+          )}
+        </div>
       </section>
     </main>
   );
@@ -1538,7 +1667,7 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
   );
 }
 
-function SettingsView({ bootstrap, t, user, onSubmit }) {
+function SettingsView({ bootstrap, t, user, onCreateUser, onSubmit, onUserStatus }) {
   const organization = bootstrap?.organisme || {};
   const users = bootstrap?.users?.length ? bootstrap.users : [user].filter(Boolean);
 
@@ -1629,14 +1758,45 @@ function SettingsView({ bootstrap, t, user, onSubmit }) {
         </Panel>
 
         <Panel title={t.settings.users} icon={Users}>
+          <form className="form-grid user-form" onSubmit={onCreateUser}>
+            <label>
+              First name
+              <input name="prenom" required maxLength="50" />
+            </label>
+            <label>
+              Last name
+              <input name="nom" required maxLength="50" />
+            </label>
+            <label>
+              Email
+              <input name="email" required type="email" />
+            </label>
+            <label>
+              Temporary password
+              <input name="password" required minLength="8" type="password" />
+            </label>
+            <label className="checkbox-label">
+              <input name="admin" type="checkbox" />
+              <span>Admin access</span>
+            </label>
+            <button className="primary-button form-submit" type="submit">
+              <UserPlus size={17} />
+              <span>Add user</span>
+            </button>
+          </form>
           <DataTable
-            columns={["Name", "Email", "Language", "Role", "Active"]}
+            columns={["Name", "Email", "Language", "Role", "Active", ""]}
             rows={users.map((account) => [
               `${account.prenom || ""} ${account.nom || ""}`.trim() || "User",
               account.courriel || "-",
               String(account.langue || "en").toUpperCase(),
               account.admin ? "Admin" : "User",
               account.actif === false ? "No" : "Yes",
+              account.utilisateurID === user?.utilisateurID ? "-" : (
+                <button className="secondary-button compact" type="button" onClick={() => onUserStatus(account)} key={`user-${account.utilisateurID}`}>
+                  {account.actif === false ? "Activate" : "Deactivate"}
+                </button>
+              ),
             ])}
           />
         </Panel>

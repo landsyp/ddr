@@ -78,6 +78,14 @@ function setupSchema() {
       utilisateurStatutID INTEGER NOT NULL DEFAULT 1
     );
 
+    CREATE TABLE IF NOT EXISTS sessions (
+      sessionID INTEGER PRIMARY KEY AUTOINCREMENT,
+      token_hash TEXT NOT NULL UNIQUE,
+      utilisateurID INTEGER NOT NULL REFERENCES utilisateurs(utilisateurID) ON DELETE CASCADE,
+      createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      expiresAt TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS comptes (
       compteID INTEGER PRIMARY KEY AUTOINCREMENT,
       organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
@@ -174,6 +182,7 @@ function setupSchema() {
     CREATE INDEX IF NOT EXISTS idx_dons_date ON dons(dateDon);
     CREATE INDEX IF NOT EXISTS idx_recus_org_period ON recus(organismeID, dateDebut, dateFin);
     CREATE INDEX IF NOT EXISTS idx_envois_org_code ON envois(organismeID, envoiCode);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_utilisateurs_courriel_unique ON utilisateurs(courriel);
   `);
 }
 
@@ -349,8 +358,43 @@ function currentTimestampCode() {
   return new Date().toISOString().replace("T", "-").replaceAll(":", "-").slice(0, 19);
 }
 
-function organizationID() {
-  return 1;
+function futureDateISO(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function sessionExpiryISO() {
+  const date = new Date();
+  date.setDate(date.getDate() + 30);
+  return date.toISOString();
+}
+
+function tokenHash(token) {
+  return createHash("sha256").update(String(token || "")).digest("hex");
+}
+
+function organizationID(context = {}) {
+  return Number(context?.organismeID || context?.organizationID || 1);
+}
+
+function sanitizeUser(user) {
+  if (!user) {
+    return null;
+  }
+
+  return {
+    utilisateurID: user.utilisateurID,
+    actif: Boolean(user.actif ?? true),
+    admin: Boolean(user.admin),
+    courriel: user.courriel,
+    langue: user.langue,
+    nom: user.nom,
+    prenom: user.prenom,
+    organismeID: user.organismeID,
+    organisme: user.organisme,
+    devise: user.devise,
+  };
 }
 
 function normalizeDonor(row) {
@@ -420,6 +464,46 @@ function requestPasswordReset(courriel) {
   };
 }
 
+function createSession(utilisateurID) {
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = sessionExpiryISO();
+  run(
+    "INSERT INTO sessions (token_hash, utilisateurID, expiresAt) VALUES (?, ?, ?)",
+    [tokenHash(token), Number(utilisateurID), expiresAt],
+  );
+  return { token, expiresAt };
+}
+
+function authenticate(token) {
+  if (!token) {
+    return null;
+  }
+
+  const user = get(
+    `SELECT u.*, o.organisme, o.devise, o.date_fin_licence, o.actif AS organismeActif
+     FROM sessions AS s
+     INNER JOIN utilisateurs AS u ON s.utilisateurID = u.utilisateurID
+     INNER JOIN organismes AS o ON u.organismeID = o.organismeID
+     WHERE s.token_hash = ? AND s.expiresAt > ? AND u.actif = 1`,
+    [tokenHash(token), new Date().toISOString()],
+  );
+
+  if (!user || !user.organismeActif || user.date_fin_licence < todayISO()) {
+    return null;
+  }
+
+  return sanitizeUser(user);
+}
+
+function deleteSession(token) {
+  if (!token) {
+    return { deleted: false };
+  }
+
+  run("DELETE FROM sessions WHERE token_hash = ?", [tokenHash(token)]);
+  return { deleted: true };
+}
+
 function login(courriel, password) {
   const user = get(
     `SELECT u.*, o.organisme, o.devise, o.date_fin_licence, o.actif AS organismeActif
@@ -439,36 +523,104 @@ function login(courriel, password) {
     throw error;
   }
 
-  return {
-    utilisateurID: user.utilisateurID,
-    admin: Boolean(user.admin),
-    courriel: user.courriel,
-    langue: user.langue,
-    nom: user.nom,
-    prenom: user.prenom,
-    organismeID: user.organismeID,
-    organisme: user.organisme,
-    devise: user.devise,
-  };
+  return sanitizeUser(user);
 }
 
-function getOrganization() {
+function addDefaultAccounts(orgID) {
+  const insertAccount = db.prepare("INSERT INTO comptes (organismeID, noCompte, nom, recu) VALUES (?, ?, ?, ?)");
+  [
+    [100, "General offerings", 1],
+    [200, "Community aid", 1],
+    [300, "Missions", 1],
+    [400, "Building fund", 1],
+    [900, "Administration fees", 0],
+  ].forEach((row) => insertAccount.run(orgID, ...row));
+}
+
+function registerOrganization(data) {
+  const email = String(data.email || data.courriel || data.responsable_courriel || "").trim().toLowerCase();
+  const password = String(data.password || data.mdp || "");
+  if (!email || password.length < 8) {
+    const error = new Error("A valid email and an 8 character password are required");
+    error.status = 400;
+    throw error;
+  }
+
+  const duplicate = get("SELECT utilisateurID FROM utilisateurs WHERE lower(courriel) = lower(?)", [email]);
+  if (duplicate) {
+    const error = new Error("An account already exists for this email");
+    error.status = 409;
+    throw error;
+  }
+
+  return transaction(() => {
+    const orgResult = run(
+      `INSERT INTO organismes (
+        actif, adresse, code_postal, date_fin_licence, devise, enregistrement,
+        folio, membre, organisme, provinceID, reponse_courriel, responsable,
+        responsable_courriel, telephone, transit, ville
+      ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        data.adresse || "",
+        data.code_postal || "",
+        futureDateISO(365),
+        data.devise || "CAD",
+        data.enregistrement || "",
+        data.folio || "",
+        bool(data.membre),
+        String(data.organisme || "").trim(),
+        Number(data.provinceID) || 1,
+        data.reponse_courriel || email,
+        String(data.responsable || `${data.prenom || ""} ${data.nom || ""}`.trim() || "Administrator").trim(),
+        email,
+        data.telephone || "",
+        data.transit || "",
+        data.ville || "",
+      ],
+    );
+
+    const orgID = orgResult.lastInsertRowid;
+    addDefaultAccounts(orgID);
+    const userResult = run(
+      `INSERT INTO utilisateurs (actif, admin, courriel, langue, mot_de_passe, nom, organismeID, prenom, utilisateurStatutID)
+       VALUES (1, 1, ?, ?, ?, ?, ?, ?, 1)`,
+      [
+        email,
+        data.langue || "en",
+        hashPassword(password),
+        String(data.nom || "Admin").trim(),
+        orgID,
+        String(data.prenom || "SaaS").trim(),
+      ],
+    );
+
+    return sanitizeUser(get(
+      `SELECT u.*, o.organisme, o.devise
+       FROM utilisateurs AS u
+       INNER JOIN organismes AS o ON u.organismeID = o.organismeID
+       WHERE u.utilisateurID = ?`,
+      [userResult.lastInsertRowid],
+    ));
+  });
+}
+
+function getOrganization(context = {}) {
   return normalizeOrganization(get(
     `SELECT o.*, p.abreviation AS province
      FROM organismes AS o
      LEFT JOIN provinces AS p ON o.provinceID = p.provinceID
      WHERE o.organismeID = ?`,
-    [organizationID()],
+    [organizationID(context)],
   ));
 }
 
-function listUsers() {
+function listUsers(context = {}) {
   return all(
     `SELECT utilisateurID, actif, admin, courriel, langue, nom, organismeID, prenom, utilisateurStatutID
      FROM utilisateurs
      WHERE organismeID = ?
      ORDER BY admin DESC, nom, prenom`,
-    [organizationID()],
+    [organizationID(context)],
   ).map((user) => ({
     ...user,
     actif: Boolean(user.actif),
@@ -476,7 +628,49 @@ function listUsers() {
   }));
 }
 
-function updateOrganization(data) {
+function createUser(data, context = {}) {
+  const email = String(data.courriel || data.email || "").trim().toLowerCase();
+  const password = String(data.password || data.mdp || "");
+  if (!email || password.length < 8) {
+    const error = new Error("A valid email and an 8 character password are required");
+    error.status = 400;
+    throw error;
+  }
+
+  const duplicate = get("SELECT utilisateurID FROM utilisateurs WHERE lower(courriel) = lower(?)", [email]);
+  if (duplicate) {
+    const error = new Error("A user already exists for this email");
+    error.status = 409;
+    throw error;
+  }
+
+  const result = run(
+    `INSERT INTO utilisateurs (actif, admin, courriel, langue, mot_de_passe, nom, organismeID, prenom, utilisateurStatutID)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+    [
+      data.actif === false ? 0 : 1,
+      bool(data.admin),
+      email,
+      data.langue || "en",
+      hashPassword(password),
+      String(data.nom || "").trim(),
+      organizationID(context),
+      String(data.prenom || "").trim(),
+    ],
+  );
+
+  return listUsers(context).find((user) => user.utilisateurID === result.lastInsertRowid);
+}
+
+function updateUserStatus(id, data, context = {}) {
+  run(
+    "UPDATE utilisateurs SET actif = ?, admin = ? WHERE utilisateurID = ? AND organismeID = ?",
+    [data.actif === false ? 0 : 1, bool(data.admin), Number(id), organizationID(context)],
+  );
+  return listUsers(context).find((user) => user.utilisateurID === Number(id));
+}
+
+function updateOrganization(data, context = {}) {
   run(
     `UPDATE organismes
      SET actif = ?, adresse = ?, code_postal = ?, devise = ?, enregistrement = ?,
@@ -499,30 +693,30 @@ function updateOrganization(data) {
       data.telephone || "",
       data.transit || "",
       data.ville || "",
-      organizationID(),
+      organizationID(context),
     ],
   );
 
-  return getOrganization();
+  return getOrganization(context);
 }
 
-function getBootstrap() {
-  const organisme = getOrganization();
-  const user = get("SELECT utilisateurID, admin, courriel, langue, nom, prenom, organismeID FROM utilisateurs WHERE organismeID = ? ORDER BY admin DESC LIMIT 1", [organizationID()]);
+function getBootstrap(context = {}) {
+  const organisme = getOrganization(context);
+  const user = get("SELECT utilisateurID, admin, courriel, langue, nom, prenom, organismeID FROM utilisateurs WHERE organismeID = ? ORDER BY admin DESC LIMIT 1", [organizationID(context)]);
   const provinces = all("SELECT provinceID, pays_en, pays_fr, provinceEtat_en, provinceEtat_fr, abreviation FROM provinces ORDER BY ordre, provinceEtat_en");
   const methods = all("SELECT methodeDonID, methode_fr, methode_en, methode_intuit, ordre FROM methodesDon ORDER BY ordre");
 
   return {
     organisme,
     user: { ...user, admin: Boolean(user.admin) },
-    users: listUsers(),
+    users: listUsers(context),
     provinces,
     methods,
   };
 }
 
-function getDashboard() {
-  const orgID = organizationID();
+function getDashboard(context = {}) {
+  const orgID = organizationID(context);
   const year = new Date().getFullYear().toString();
   const totals = get(
     `SELECT
@@ -554,7 +748,7 @@ function getDashboard() {
      ORDER BY month`,
     [orgID, year],
   );
-  const recentDonations = listDonations({ limit: 6 });
+  const recentDonations = listDonations({ limit: 6 }, context);
   const accountMix = all(
     `SELECT c.compteID, c.noCompte, c.nom, c.recu, COALESCE(SUM(d.montant), 0) AS total
      FROM comptes AS c
@@ -579,8 +773,8 @@ function getDashboard() {
   };
 }
 
-function listDonors({ search = "", active = "active", limit = 100 } = {}) {
-  const params = [organizationID()];
+function listDonors({ search = "", active = "active", limit = 100 } = {}, context = {}) {
+  const params = [organizationID(context)];
   let where = "d.organismeID = ?";
 
   if (active === "active") {
@@ -612,17 +806,18 @@ function listDonors({ search = "", active = "active", limit = 100 } = {}) {
   ).map(normalizeDonor);
 }
 
-function nextDonorNumber() {
+function nextDonorNumber(context = {}) {
   const row = get(
     "SELECT MAX(CAST(numero AS INTEGER)) AS dernier FROM donateurs WHERE organismeID = ?",
-    [organizationID()],
+    [organizationID(context)],
   );
   return String((Number(row?.dernier) || 0) + 1);
 }
 
-function createDonor(data) {
-  const numero = String(data.numero || nextDonorNumber()).trim();
-  const duplicate = get("SELECT donateurID FROM donateurs WHERE organismeID = ? AND numero = ?", [organizationID(), numero]);
+function createDonor(data, context = {}) {
+  const orgID = organizationID(context);
+  const numero = String(data.numero || nextDonorNumber(context)).trim();
+  const duplicate = get("SELECT donateurID FROM donateurs WHERE organismeID = ? AND numero = ?", [orgID, numero]);
   if (duplicate) {
     const error = new Error("Donor number already exists");
     error.status = 409;
@@ -643,7 +838,7 @@ function createDonor(data) {
       String(data.nom || "").trim(),
       data.notes || "",
       numero,
-      organizationID(),
+      orgID,
       String(data.prenom || "").trim(),
       Number(data.provinceID) || 1,
       data.recu === false ? 0 : 1,
@@ -653,10 +848,10 @@ function createDonor(data) {
     ],
   );
 
-  return getDonor(result.lastInsertRowid);
+  return getDonor(result.lastInsertRowid, context);
 }
 
-function updateDonor(id, data) {
+function updateDonor(id, data, context = {}) {
   run(
     `UPDATE donateurs
      SET actif = ?, adresse = ?, code_postal = ?, courriel = ?, membre = ?, nom = ?, notes = ?,
@@ -678,19 +873,19 @@ function updateDonor(id, data) {
       data.tel_residence || "",
       data.ville || "",
       Number(id),
-      organizationID(),
+      organizationID(context),
     ],
   );
 
-  return getDonor(id);
+  return getDonor(id, context);
 }
 
-function archiveDonor(id, actif) {
-  run("UPDATE donateurs SET actif = ? WHERE donateurID = ? AND organismeID = ?", [bool(actif), Number(id), organizationID()]);
-  return getDonor(id);
+function archiveDonor(id, actif, context = {}) {
+  run("UPDATE donateurs SET actif = ? WHERE donateurID = ? AND organismeID = ?", [bool(actif), Number(id), organizationID(context)]);
+  return getDonor(id, context);
 }
 
-function getDonor(id) {
+function getDonor(id, context = {}) {
   return normalizeDonor(get(
     `SELECT d.*, p.abreviation AS province,
       COALESCE(SUM(ds.montant), 0) AS totalDonations,
@@ -700,11 +895,11 @@ function getDonor(id) {
      LEFT JOIN dons AS ds ON ds.donateurID = d.donateurID
      WHERE d.donateurID = ? AND d.organismeID = ?
      GROUP BY d.donateurID`,
-    [Number(id), organizationID()],
+    [Number(id), organizationID(context)],
   ));
 }
 
-function listAccounts() {
+function listAccounts(context = {}) {
   return all(
     `SELECT c.*, COUNT(d.donID) AS donationCount, COALESCE(SUM(d.montant), 0) AS total
      FROM comptes AS c
@@ -712,39 +907,46 @@ function listAccounts() {
      WHERE c.organismeID = ?
      GROUP BY c.compteID
      ORDER BY c.noCompte`,
-    [organizationID()],
+    [organizationID(context)],
   ).map(normalizeAccount);
 }
 
-function createAccount(data) {
+function createAccount(data, context = {}) {
+  const orgID = organizationID(context);
   const result = run(
     "INSERT INTO comptes (organismeID, noCompte, nom, recu) VALUES (?, ?, ?, ?)",
-    [organizationID(), Number(data.noCompte), String(data.nom || "").trim(), data.recu === false ? 0 : 1],
+    [orgID, Number(data.noCompte), String(data.nom || "").trim(), data.recu === false ? 0 : 1],
   );
-  return listAccounts().find((account) => account.compteID === result.lastInsertRowid);
+  return listAccounts(context).find((account) => account.compteID === result.lastInsertRowid);
 }
 
-function updateAccount(id, data) {
+function updateAccount(id, data, context = {}) {
   run(
     "UPDATE comptes SET noCompte = ?, nom = ?, recu = ? WHERE compteID = ? AND organismeID = ?",
-    [Number(data.noCompte), String(data.nom || "").trim(), data.recu === false ? 0 : 1, Number(id), organizationID()],
+    [Number(data.noCompte), String(data.nom || "").trim(), data.recu === false ? 0 : 1, Number(id), organizationID(context)],
   );
-  return listAccounts().find((account) => account.compteID === Number(id));
+  return listAccounts(context).find((account) => account.compteID === Number(id));
 }
 
-function deleteAccount(id) {
-  const count = get("SELECT COUNT(*) AS count FROM dons WHERE compteID = ?", [Number(id)]).count;
+function deleteAccount(id, context = {}) {
+  const count = get(
+    `SELECT COUNT(*) AS count
+     FROM dons AS d
+     INNER JOIN comptes AS c ON d.compteID = c.compteID
+     WHERE d.compteID = ? AND c.organismeID = ?`,
+    [Number(id), organizationID(context)],
+  ).count;
   if (count) {
     const error = new Error("This account is linked to at least one donation");
     error.status = 409;
     throw error;
   }
-  run("DELETE FROM comptes WHERE compteID = ? AND organismeID = ?", [Number(id), organizationID()]);
+  run("DELETE FROM comptes WHERE compteID = ? AND organismeID = ?", [Number(id), organizationID(context)]);
   return { deleted: true };
 }
 
-function listDonations({ search = "", dateDebut = "", dateFin = "", limit = 100 } = {}) {
-  const params = [organizationID()];
+function listDonations({ search = "", dateDebut = "", dateFin = "", limit = 100 } = {}, context = {}) {
+  const params = [organizationID(context)];
   let where = "dt.organismeID = ?";
 
   if (dateDebut) {
@@ -778,11 +980,14 @@ function listDonations({ search = "", dateDebut = "", dateFin = "", limit = 100 
   ).map(normalizeDonation);
 }
 
-function createDonation(data) {
-  const donateurID = Number(data.donateurID || get("SELECT donateurID FROM donateurs WHERE organismeID = ? AND numero = ?", [organizationID(), data.numero])?.donateurID);
-  const compteID = Number(data.compteID || get("SELECT compteID FROM comptes WHERE organismeID = ? AND noCompte = ?", [organizationID(), Number(data.noCompte)])?.compteID);
+function createDonation(data, context = {}) {
+  const orgID = organizationID(context);
+  const donateurID = Number(data.donateurID || get("SELECT donateurID FROM donateurs WHERE organismeID = ? AND numero = ?", [orgID, data.numero])?.donateurID);
+  const compteID = Number(data.compteID || get("SELECT compteID FROM comptes WHERE organismeID = ? AND noCompte = ?", [orgID, Number(data.noCompte)])?.compteID);
+  const donorOwned = donateurID ? get("SELECT donateurID FROM donateurs WHERE donateurID = ? AND organismeID = ?", [donateurID, orgID]) : null;
+  const accountOwned = compteID ? get("SELECT compteID FROM comptes WHERE compteID = ? AND organismeID = ?", [compteID, orgID]) : null;
 
-  if (!donateurID || !compteID) {
+  if (!donateurID || !compteID || !donorOwned || !accountOwned) {
     const error = new Error("The account number or donor number cannot be recognized");
     error.status = 400;
     throw error;
@@ -801,10 +1006,31 @@ function createDonation(data) {
     ],
   );
 
-  return listDonations({ limit: 500 }).find((donation) => donation.donID === result.lastInsertRowid);
+  return listDonations({ limit: 500 }, context).find((donation) => donation.donID === result.lastInsertRowid);
 }
 
-function updateDonation(id, data) {
+function updateDonation(id, data, context = {}) {
+  const orgID = organizationID(context);
+  const ownsDonation = get(
+    `SELECT d.donID
+     FROM dons AS d
+     INNER JOIN donateurs AS dt ON d.donateurID = dt.donateurID
+     WHERE d.donID = ? AND dt.organismeID = ?`,
+    [Number(id), orgID],
+  );
+  if (!ownsDonation) {
+    const error = new Error("Donation not found");
+    error.status = 404;
+    throw error;
+  }
+  const donorOwned = get("SELECT donateurID FROM donateurs WHERE donateurID = ? AND organismeID = ?", [Number(data.donateurID), orgID]);
+  const accountOwned = get("SELECT compteID FROM comptes WHERE compteID = ? AND organismeID = ?", [Number(data.compteID), orgID]);
+  if (!donorOwned || !accountOwned) {
+    const error = new Error("The account number or donor number cannot be recognized");
+    error.status = 400;
+    throw error;
+  }
+
   run(
     `UPDATE dons
      SET compteID = ?, dateDon = ?, description = ?, donateurID = ?, montant = ?, methodeDonID = ?, recuID = NULL
@@ -820,16 +1046,21 @@ function updateDonation(id, data) {
     ],
   );
 
-  return listDonations({ limit: 500 }).find((donation) => donation.donID === Number(id));
+  return listDonations({ limit: 500 }, context).find((donation) => donation.donID === Number(id));
 }
 
-function deleteDonation(id) {
-  run("DELETE FROM dons WHERE donID = ?", [Number(id)]);
+function deleteDonation(id, context = {}) {
+  run(
+    `DELETE FROM dons
+     WHERE donID = ?
+       AND donateurID IN (SELECT donateurID FROM donateurs WHERE organismeID = ?)`,
+    [Number(id), organizationID(context)],
+  );
   return { deleted: true };
 }
 
-function generateReceipts({ dateDebut, dateFin, mode = "email" }) {
-  const orgID = organizationID();
+function generateReceipts({ dateDebut, dateFin, mode = "email" }, context = {}) {
+  const orgID = organizationID(context);
   const code = currentTimestampCode();
   const dateCreation = new Date().toISOString();
 
@@ -894,8 +1125,8 @@ function generateReceipts({ dateDebut, dateFin, mode = "email" }) {
   });
 }
 
-function listReceipts({ dateDebut = "", dateFin = "" } = {}) {
-  const params = [organizationID()];
+function listReceipts({ dateDebut = "", dateFin = "" } = {}, context = {}) {
+  const params = [organizationID(context)];
   let where = "r.organismeID = ?";
   if (dateDebut) {
     where += " AND r.dateDebut >= ?";
@@ -925,36 +1156,36 @@ function listReceipts({ dateDebut = "", dateFin = "" } = {}) {
   );
 }
 
-function listReceiptBatches() {
+function listReceiptBatches(context = {}) {
   return all(
     `SELECT r.dateCreation, r.dateDebut, r.dateFin, COUNT(*) AS recusCount, COALESCE(SUM(r.montant), 0) AS total
      FROM recus AS r
      WHERE r.organismeID = ?
      GROUP BY r.dateCreation, r.dateDebut, r.dateFin
      ORDER BY r.dateCreation DESC`,
-    [organizationID()],
+    [organizationID(context)],
   );
 }
 
-function patchEnvoiStatus(id, status) {
-  run("UPDATE envois SET statut = ? WHERE envoiID = ? AND organismeID = ?", [status, Number(id), organizationID()]);
-  return get("SELECT * FROM envois WHERE envoiID = ?", [Number(id)]);
+function patchEnvoiStatus(id, status, context = {}) {
+  run("UPDATE envois SET statut = ? WHERE envoiID = ? AND organismeID = ?", [status, Number(id), organizationID(context)]);
+  return get("SELECT * FROM envois WHERE envoiID = ? AND organismeID = ?", [Number(id), organizationID(context)]);
 }
 
-function report(type, params = {}) {
+function report(type, params = {}, context = {}) {
   if (type === "donors") {
-    return listDonors({ active: params.active || "all", limit: 1000 });
+    return listDonors({ active: params.active || "all", limit: 1000 }, context);
   }
 
   if (type === "accounts") {
-    return listAccounts();
+    return listAccounts(context);
   }
 
   if (type === "receipts") {
-    return listReceipts(params);
+    return listReceipts(params, context);
   }
 
-  const rows = listDonations({ dateDebut: params.dateDebut, dateFin: params.dateFin, limit: 1000 });
+  const rows = listDonations({ dateDebut: params.dateDebut, dateFin: params.dateFin, limit: 1000 }, context);
   const groupBy = params.groupBy || "date";
   const grouped = new Map();
 
@@ -1006,12 +1237,18 @@ function createSubscriptionRequest(data) {
 export const store = {
   databasePath,
   login,
+  authenticate,
+  createSession,
+  deleteSession,
+  registerOrganization,
   requestPasswordReset,
   getBootstrap,
   getOrganization,
   updateOrganization,
   getDashboard,
   listUsers,
+  createUser,
+  updateUserStatus,
   listDonors,
   nextDonorNumber,
   createDonor,

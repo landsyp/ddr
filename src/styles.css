@@ -456,6 +456,18 @@ button {
   border-top: 1px solid rgba(255, 255, 255, 0.22);
 }
 
+.login-form,
+.signup-form {
+  display: grid;
+  gap: 12px;
+}
+
+.signup-form {
+  max-height: min(54vh, 520px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
 .inline-hint {
   padding: 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.24);
@@ -853,6 +865,12 @@ td {
 
 .report-form {
   align-items: end;
+}
+
+.user-form {
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
 }
 
 .panel-copy {

@@ -1,11 +1,15 @@
 # DDR React SaaS
 
-DDR React SaaS is a modernized React and SQLite version of the original DDR2 donation management application. It keeps the legacy ColdFusion source in the repository for reference while providing a functional local SaaS-style workspace for donors, donations, accounts, receipts, reports, organization settings, support, and subscription requests.
+DDR React SaaS is a modernized React and SQLite version of the original DDR2 donation management application. It keeps the legacy ColdFusion source in the repository for reference while providing a functional SaaS-style workspace for multiple charities with isolated donors, donations, accounts, receipts, reports, organization settings, support, and subscription requests.
 
 ## Features
 
 - React/Vite dashboard for DDR operations.
-- SQLite-backed API for donors, gifts, accounts, receipts, reports, organization profile, and subscription requests.
+- SQLite-backed API for tenant-scoped donors, gifts, accounts, receipts, reports, organization profile, and subscription requests.
+- Bearer-token sessions for authenticated API access.
+- Self-service organization registration from the login screen.
+- Per-organization workspace isolation.
+- Admin user management for adding and deactivating workspace users.
 - Secure local login seeded for development.
 - Receipt batch generation with email/print status tracking.
 - CSV exports for donors and reports.
@@ -58,6 +62,8 @@ Email: admin@ddr.local
 Password: password
 ```
 
+New organizations can also be created from the login screen with **Create organization workspace**. Each new organization receives its own isolated accounts, users, donors, donations, receipts, and reports.
+
 ## Scripts
 
 ```bash
@@ -87,11 +93,16 @@ DDR_DATABASE_PATH=/path/to/ddr.sqlite npm run dev
 Core endpoints include:
 
 - `POST /api/auth/login`
+- `POST /api/auth/register`
+- `POST /api/auth/logout`
 - `POST /api/auth/forgot-password`
 - `GET /api/bootstrap`
 - `GET /api/dashboard`
 - `GET /api/organization`
 - `PUT /api/organization`
+- `GET /api/users`
+- `POST /api/users`
+- `PATCH /api/users/:id/status`
 - `GET /api/donors`
 - `POST /api/donors`
 - `GET /api/accounts`
@@ -102,6 +113,14 @@ Core endpoints include:
 - `POST /api/receipts/generate`
 - `GET /api/reports`
 - `POST /api/subscription-requests`
+
+All endpoints except health, login, register, forgot password, and subscription requests require:
+
+```text
+Authorization: Bearer <session-token>
+```
+
+The server derives tenant scope from the session token, so organization IDs are not trusted from client request bodies.
 
 ## Project Layout
 
