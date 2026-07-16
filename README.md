@@ -1,10 +1,10 @@
-# DDR React SaaS
+# WeSERVE SaaS
 
-DDR React SaaS is a modernized React and SQLite version of the original DDR2 donation management application. It keeps the legacy ColdFusion source in the repository for reference while providing a functional SaaS-style workspace for multiple charities with isolated donors, donations, accounts, receipts, reports, organization settings, support, and subscription requests.
+WeSERVE SaaS is a modernized React and SQLite donation management application. It keeps legacy ColdFusion source in the repository for reference while providing a functional SaaS-style workspace for multiple charities with isolated donors, donations, accounts, receipts, reports, organization settings, support, and subscription requests.
 
 ## Features
 
-- React/Vite dashboard for DDR operations.
+- React/Vite dashboard for donation management operations.
 - SQLite-backed API for tenant-scoped donors, gifts, accounts, receipts, reports, organization profile, and subscription requests.
 - Bearer-token sessions for authenticated API access.
 - Self-service organization registration from the login screen.
@@ -13,8 +13,8 @@ DDR React SaaS is a modernized React and SQLite version of the original DDR2 don
 - Secure local login seeded for development.
 - Receipt batch generation with email/print status tracking.
 - CSV exports for donors and reports.
-- Organization profile/settings screen based on the original DDR profile flow.
-- Support/tutorial shortcuts mapped to the original DDR workflows.
+- Organization profile/settings screen for receipt and account administration.
+- Support/tutorial shortcuts mapped to the working WeSERVE screens.
 
 ## Tech Stack
 
@@ -129,7 +129,7 @@ src/        React app and styles
 server/     Node API and SQLite store
 scripts/    Development server runner
 data/       Local SQLite database location
-images/     Legacy DDR image assets used by React
+images/     Legacy image assets retained for reference
 cfc/        Original ColdFusion components
 _utilisateurs/ Original protected ColdFusion screens
 ```
@@ -146,6 +146,6 @@ The current React/SQLite flows have been checked for login, dashboard navigation
 
 ## Notes
 
-- This project is intended as a local functional modernization of the original DDR codebase.
+- This project is intended as a local functional modernization of the donation management codebase.
 - The legacy ColdFusion files remain useful for feature mapping and parity checks.
 - Do not commit local database files or secrets.

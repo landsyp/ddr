@@ -11,11 +11,14 @@ import {
   Download,
   FileCheck2,
   FileText,
+  Maximize2,
   HelpCircle,
   LayoutDashboard,
   LockKeyhole,
   Mail,
   Menu,
+  Minimize2,
+  Pencil,
   Plus,
   Printer,
   ReceiptText,
@@ -26,15 +29,12 @@ import {
   Users,
   X,
 } from "lucide-react";
-import brandLogo from "../images/CQOC-DDR2_vert.png";
-import whiteLogo from "../images/DDR2_blanc.png";
-import brochureImage from "../images/depliant.png";
 import receiptImage from "../images/recu.png";
 
 const copy = {
   en: {
-    product: "DDR2",
-    organization: "Quebec Council of Christian Charities",
+    product: "WeSERVE",
+    organization: "WeSERVE",
     nav: {
       overview: "Overview",
       donations: "Donations",
@@ -48,7 +48,7 @@ const copy = {
       eyebrow: "Operations dashboard",
       title: "Donation, donor, and receipt work in one secure workspace.",
       subtitle:
-        "A local SQLite-backed DDR workspace for charities that need accurate giving records, CRA-ready receipts, and fast yearly reporting.",
+        "A local SQLite-backed WeSERVE workspace for charities that need accurate giving records, CRA-ready receipts, and fast yearly reporting.",
       search: "Search donor, receipt, account, or gift",
       period: "Fiscal year 2026",
       quickActions: "Quick actions",
@@ -58,28 +58,122 @@ const copy = {
       loginTitle: "Secure portal access",
       loginHelp: "Use your organization email to access the workspace.",
       forgot: "Forgot password",
+      loading: "Loading WeSERVE data...",
+      facts: ["WeSERVE SaaS", "Donors and gifts", "Receipt batches"],
+      readinessText: "Donation rows already issued or excluded from receipting",
+      receiptableAccounts: "receiptable accounts",
+      donationsReady: "donations ready for receipts",
+      receiptsStored: "receipts stored",
     },
-    actions: ["Add donation", "Add donor", "Generate receipts", "Export report"],
-    metrics: ["YTD donations", "Receipts", "Active donors", "Pending receipts"],
+    common: {
+      email: "Email",
+      password: "Password",
+      login: "Log in",
+      sendReset: "Send reset",
+      createWorkspace: "Create organization workspace",
+      startWorkspace: "Start WeSERVE workspace",
+      openMenu: "Open menu",
+      closeMenu: "Close menu",
+      notifications: "Notifications",
+      openSettings: "Open organization settings",
+      support: "Support",
+      settings: "Settings",
+      logout: "Log out",
+      admin: "Admin",
+      user: "User",
+      active: "Active",
+      yes: "Yes",
+      no: "No",
+      member: "Member",
+      nonMember: "Non-member",
+      csv: "CSV",
+      noRecords: "No records found",
+      status: "Status",
+      name: "Name",
+      unspecified: "Unspecified",
+      delete: "Delete",
+      activate: "Activate",
+      deactivate: "Deactivate",
+      archive: "Archive",
+      view: "View",
+      edit: "Edit",
+      save: "Save",
+      cancel: "Cancel",
+      confirm: "Confirm",
+      generated: "Generated",
+      queued: "Queued",
+      delivered: "Delivered",
+      print: "Print",
+      invalidEmail: "Invalid email",
+      to: "to",
+    },
+    actions: ["Add donation", "Add donor", "Generate receipts", "Generate report"],
+    metrics: ["Year-to-date donations", "Receipts", "Active donors", "Pending receipts"],
     donorForm: {
       title: "Add donor",
       success: "Donor saved.",
+      new: "New donor",
+      subtitle: "Keep donor contact details, giving history, and segmentation ready for receipting.",
+      number: "Number",
+      autoNumber: "Auto if blank",
+      firstName: "First name",
+      lastName: "Last name",
+      address: "Address",
+      city: "City",
+      postalCode: "Postal code",
+      province: "Province",
+      cell: "Mobile",
+      residence: "Home phone",
+      receiptsEnabled: "Receipts enabled",
+      notes: "Notes",
+      totals: "Donor totals",
+      directory: "Directory",
+      filter: "Filter donors",
+      lifetime: "Lifetime",
+      lastGift: "Last gift",
+      reactivated: "Donor reactivated.",
+      archived: "Donor archived.",
     },
     donationForm: {
       title: "Record a donation",
+      subtitle: "Register gifts, assign accounts, and move receipt status forward.",
       donor: "Donor",
       account: "Account",
       amount: "Amount",
       date: "Date",
       method: "Method",
       description: "Description",
+      descriptionPlaceholder: "Offering, campaign, batch note",
       add: "Add donation",
       success: "Donation added to the register.",
+      accountMix: "Account mix",
+      register: "Donation register",
+      deleted: "Donation deleted.",
+      confirmDelete: "Delete donation {id} from {name}?",
     },
     accounts: {
-      title: "Chart of accounts",
+      title: "Account list",
       subtitle: "Accounts control how donations are grouped and whether they are receipt eligible.",
       success: "Account saved.",
+      add: "Add account",
+      accountNumber: "Account number",
+      name: "Name",
+      eligible: "Eligible for receipts",
+      eligibility: "Receipt eligibility",
+      eligibilityText: "Accounts generate official receipt amounts",
+      receiptable: "Receiptable",
+      noReceipt: "No receipt",
+      deleted: "Account deleted.",
+      confirmDelete: "Delete account {number} - {name}?",
+      details: "Account details",
+      donationsList: "Donations in this account",
+      editTitle: "Edit account",
+      emptyDonations: "No donations recorded in this account yet.",
+      donationSingular: "donation",
+      donationPlural: "donations",
+      duplicate: "An account with this number already exists.",
+      deleteTitle: "Delete this account?",
+      deleteBody: "Are you sure you want to delete account {number} - {name}? This action cannot be undone.",
     },
     donorDirectory: "Donor directory",
     receipts: {
@@ -92,21 +186,67 @@ const copy = {
       print: "Print batch",
       email: "Email batch",
       generated: "Receipt batch generated.",
+      action: "Generate",
+      annualBatch: "Annual receipt batch",
+      batchSummary: "{ready} donation rows are ready and {review} are excluded by donor/account receipt settings.",
+      startDate: "Start date",
+      endDate: "End date",
+      mode: "Mode",
+      stored: "Stored receipts",
+      readyGifts: "Ready gifts",
+      eligibleRows: "Eligible rows",
+      batches: "Batches",
+      generatedLabel: "Generated",
+      notReceiptable: "Not receiptable",
+      markSent: "Mark sent",
+      created: "Created",
+      period: "Period",
+      count: "Count",
+      total: "Total",
+      noEligibleRows: "No eligible receipt rows found for this period.",
+      statusUpdated: "Receipt status updated.",
     },
     reports: {
       title: "Reports",
       subtitle: "Build donor, donation, receipt, and account reports from the SQLite database.",
       run: "Run report",
       export: "Export",
+      builder: "Report builder",
+      report: "Report",
+      groupBy: "Group by",
+      date: "Date",
+      account: "Account",
+      donor: "Donor",
+      method: "Method",
+      start: "Start",
+      end: "End",
+      donations: "Donations",
+      donors: "Donors",
+      accounts: "Accounts",
+      receipts: "Receipts",
+      summary: "Summary",
+      group: "Group",
+      rows: "Rows",
+      refreshed: "Report refreshed.",
     },
     subscription: {
       title: "Subscription request",
       subtitle:
-        "Request access for a charity and store the request in SQLite for CQOC follow-up.",
+        "Request access for a charity and store the request in SQLite for follow-up.",
       pricing: "Annual plans",
       submit: "Submit request",
       success: "Subscription request saved.",
       securityError: "The security answer must be 70.",
+      charityName: "Charity name",
+      registrationNumber: "Registration number",
+      personInCharge: "Person in charge",
+      address: "Address",
+      city: "City",
+      province: "Province",
+      phone: "Phone",
+      memberNumber: "Member number",
+      security: "Security: 50 + 20",
+      annualRevenue: "Annual revenue",
     },
     settings: {
       title: "Organization settings",
@@ -115,122 +255,310 @@ const copy = {
       users: "Users",
       save: "Update profile",
       saved: "Organization profile updated.",
+      organizationName: "Organization name",
+      registrationNumber: "Registration number",
+      contactName: "Contact name",
+      contactEmail: "Contact email",
+      replyEmail: "Reply email",
+      phone: "Phone",
+      address: "Address",
+      city: "City",
+      postalCode: "Postal code",
+      province: "Province",
+      currency: "Currency",
+      transit: "Transit",
+      folio: "Folio",
+      organizationActive: "Organization active",
+      temporaryPassword: "Temporary password",
+      adminAccess: "Admin access",
+      addUser: "Add user",
+      language: "Language",
+      role: "Role",
+      userAdded: "User added to this workspace.",
+      userUpdated: "User access updated.",
     },
     support: {
       title: "Support and tutorials",
-      subtitle: "The original DDR tutorials are mapped to the working React screens.",
-      setup: "How to set up DDR2",
+      subtitle: "Tutorial shortcuts are mapped to the working WeSERVE screens.",
+      setup: "How to set up WeSERVE",
       account: "Add an account",
       donor: "Add a donor",
       donation: "Add a gift",
       report: "Produce reports",
       receipt: "Produce receipts",
-      helpText: "Need a hand? Use these shortcuts or contact CQOC for account support.",
+      helpText: "Need a hand? Use these shortcuts or contact your account administrator for support.",
+      contact: "Contact your account administrator for WeSERVE support.",
     },
     alerts: {
       none: "No pending alerts. Receipt and donation data are current.",
-      forgot: "If this email is active, reset instructions will be sent by the DDR administrator.",
+      forgot: "If this email is active, reset instructions will be sent by the WeSERVE administrator.",
+      loggedIn: "Logged in.",
+      workspaceCreated: "Organization workspace created.",
     },
     footer: "Suite 106, 5425 Boulevard Laurier O, Saint-Hyacinthe, QC J2S 3V6",
   },
   fr: {
-    product: "DDR2",
-    organization: "Conseil Quebecois des Organismes Chretiens",
+    product: "WeSERVE",
+    organization: "WeSERVE",
     nav: {
       overview: "Accueil",
       donations: "Dons",
       donors: "Donateurs",
       accounts: "Comptes",
-      receipts: "Recus",
+      receipts: "Reçus",
       reports: "Rapports",
       subscription: "Abonnement",
     },
     overview: {
       eyebrow: "Tableau de bord",
-      title: "Dons, donateurs et recus dans un espace de travail securise.",
+      title: "Dons, donateurs et reçus dans un espace de travail sécurisé.",
       subtitle:
-        "Un espace DDR local avec SQLite pour garder des registres fiables, produire les recus et sortir les rapports rapidement.",
-      search: "Rechercher donateur, recu, compte ou don",
-      period: "Annee fiscale 2026",
+        "Un espace WeSERVE local avec SQLite pour tenir des registres fiables, produire les reçus et générer les rapports rapidement.",
+      search: "Rechercher un donateur, un reçu, un compte ou un don",
+      period: "Année fiscale 2026",
       quickActions: "Actions rapides",
-      recentDonations: "Dons recents",
+      recentDonations: "Dons récents",
       monthlyIncome: "Revenus mensuels",
-      receiptReadiness: "Preparation des recus",
-      loginTitle: "Acces securise",
+      receiptReadiness: "Préparation des reçus",
+      loginTitle: "Accès sécurisé",
       loginHelp: "Utilisez le courriel de votre organisme.",
-      forgot: "Mot de passe oublie",
+      forgot: "Mot de passe oublié",
+      loading: "Chargement des données WeSERVE...",
+      facts: ["WeSERVE SaaS", "Donateurs et dons", "Lots de reçus"],
+      readinessText: "Lignes de dons déjà émises ou exclues de l'émission de reçus",
+      receiptableAccounts: "comptes admissibles aux reçus",
+      donationsReady: "dons prêts pour les reçus",
+      receiptsStored: "reçus enregistrés",
     },
-    actions: ["Ajouter un don", "Ajouter un donateur", "Generer les recus", "Exporter un rapport"],
-    metrics: ["Dons annuels", "Recus", "Donateurs actifs", "Recus en attente"],
+    common: {
+      email: "Courriel",
+      password: "Mot de passe",
+      login: "Se connecter",
+      sendReset: "Envoyer la réinitialisation",
+      createWorkspace: "Créer un espace pour l'organisme",
+      startWorkspace: "Démarrer l'espace WeSERVE",
+      openMenu: "Ouvrir le menu",
+      closeMenu: "Fermer le menu",
+      notifications: "Notifications",
+      openSettings: "Ouvrir les paramètres de l'organisme",
+      support: "Support",
+      settings: "Paramètres",
+      logout: "Déconnexion",
+      admin: "Admin",
+      user: "Utilisateur",
+      active: "Actif",
+      yes: "Oui",
+      no: "Non",
+      member: "Membre",
+      nonMember: "Non-membre",
+      csv: "CSV",
+      noRecords: "Aucun dossier trouvé",
+      status: "Statut",
+      name: "Nom",
+      unspecified: "Non précisé",
+      delete: "Supprimer",
+      activate: "Activer",
+      deactivate: "Désactiver",
+      archive: "Archiver",
+      view: "Consulter",
+      edit: "Modifier",
+      save: "Enregistrer",
+      cancel: "Annuler",
+      confirm: "Confirmer",
+      generated: "Généré",
+      queued: "En file d'attente",
+      delivered: "Livré",
+      print: "Imprimer",
+      invalidEmail: "Courriel non valide",
+      to: "au",
+    },
+    actions: ["Ajouter un don", "Ajouter un donateur", "Générer les reçus", "Générer un rapport"],
+    metrics: ["Dons depuis le début de l'année", "Reçus", "Donateurs actifs", "Reçus en attente"],
     donorForm: {
       title: "Ajouter un donateur",
-      success: "Donateur enregistre.",
+      success: "Donateur enregistré.",
+      new: "Nouveau donateur",
+      subtitle: "Gardez les coordonnées, l'historique des dons et la segmentation des donateurs prêts pour les reçus.",
+      number: "Numéro",
+      autoNumber: "Automatique si vide",
+      firstName: "Prénom",
+      lastName: "Nom",
+      address: "Adresse",
+      city: "Ville",
+      postalCode: "Code postal",
+      province: "Province",
+      cell: "Cellulaire",
+      residence: "Téléphone résidentiel",
+      receiptsEnabled: "Reçus activés",
+      notes: "Notes",
+      totals: "Totaux des donateurs",
+      directory: "Répertoire",
+      filter: "Filtrer les donateurs",
+      lifetime: "Total à vie",
+      lastGift: "Dernier don",
+      reactivated: "Donateur réactivé.",
+      archived: "Donateur archivé.",
     },
     donationForm: {
       title: "Enregistrer un don",
+      subtitle: "Enregistrez les dons, attribuez les comptes et faites avancer le statut des reçus.",
       donor: "Donateur",
       account: "Compte",
       amount: "Montant",
       date: "Date",
-      method: "Methode",
+      method: "Méthode",
       description: "Description",
+      descriptionPlaceholder: "Offrande, campagne, note de lot",
       add: "Ajouter le don",
-      success: "Le don a ete ajoute au registre.",
+      success: "Le don a été ajouté au registre.",
+      accountMix: "Répartition par compte",
+      register: "Registre des dons",
+      deleted: "Don supprimé.",
+      confirmDelete: "Supprimer le don {id} de {name}?",
     },
     accounts: {
-      title: "Plan comptable",
-      subtitle: "Les comptes classent les dons et determinent s'ils sont admissibles aux recus.",
-      success: "Compte enregistre.",
+      title: "Liste des comptes",
+      subtitle: "Les comptes classent les dons et déterminent s'ils sont admissibles aux reçus.",
+      success: "Compte enregistré.",
+      add: "Ajouter un compte",
+      accountNumber: "Numéro de compte",
+      name: "Nom",
+      eligible: "Admissible aux reçus",
+      eligibility: "Admissibilité aux reçus",
+      eligibilityText: "Les comptes génèrent les montants des reçus officiels",
+      receiptable: "Admissible",
+      noReceipt: "Sans reçu",
+      deleted: "Compte supprimé.",
+      confirmDelete: "Supprimer le compte {number} - {name}?",
+      details: "Détail du compte",
+      donationsList: "Dons dans ce compte",
+      editTitle: "Modifier le compte",
+      emptyDonations: "Aucun don enregistré dans ce compte pour le moment.",
+      donationSingular: "don",
+      donationPlural: "dons",
+      duplicate: "Un compte avec ce numéro existe déjà.",
+      deleteTitle: "Supprimer ce compte?",
+      deleteBody: "Voulez-vous vraiment supprimer le compte {number} - {name}? Cette action ne peut pas être annulée.",
     },
-    donorDirectory: "Repertoire des donateurs",
+    donorDirectory: "Répertoire des donateurs",
     receipts: {
-      title: "Centre des recus",
+      title: "Centre des reçus",
       subtitle:
-        "Generez les lots de recus officiels a partir des donateurs et comptes admissibles pour une periode.",
+        "Générez les lots de reçus officiels à partir des donateurs et des comptes admissibles pour une période donnée.",
       batch: "Lot courant",
-      review: "Revision requise",
-      ready: "Pret a emettre",
+      review: "Révision requise",
+      ready: "Prêt à émettre",
       print: "Imprimer le lot",
       email: "Envoyer par courriel",
-      generated: "Lot de recus genere.",
+      generated: "Lot de reçus généré.",
+      action: "Générer",
+      annualBatch: "Lot annuel de reçus",
+      batchSummary: "{ready} lignes de dons sont prêtes et {review} sont exclues selon les paramètres de reçus du donateur ou du compte.",
+      startDate: "Date de début",
+      endDate: "Date de fin",
+      mode: "Mode",
+      stored: "Reçus enregistrés",
+      readyGifts: "Dons prêts",
+      eligibleRows: "Lignes admissibles",
+      batches: "Lots",
+      generatedLabel: "Générés",
+      notReceiptable: "Non admissibles",
+      markSent: "Marquer comme envoyé",
+      created: "Créé",
+      period: "Période",
+      count: "Nombre",
+      total: "Total",
+      noEligibleRows: "Aucune ligne admissible aux reçus pour cette période.",
+      statusUpdated: "Statut du reçu mis à jour.",
     },
     reports: {
       title: "Rapports",
-      subtitle: "Produisez les rapports de dons, donateurs, recus et comptes depuis SQLite.",
+      subtitle: "Produisez les rapports de dons, de donateurs, de reçus et de comptes à partir de SQLite.",
       run: "Lancer",
       export: "Exporter",
+      builder: "Générateur de rapports",
+      report: "Rapport",
+      groupBy: "Grouper par",
+      date: "Date",
+      account: "Compte",
+      donor: "Donateur",
+      method: "Méthode",
+      start: "Début",
+      end: "Fin",
+      donations: "Dons",
+      donors: "Donateurs",
+      accounts: "Comptes",
+      receipts: "Reçus",
+      summary: "Sommaire",
+      group: "Groupe",
+      rows: "Lignes",
+      refreshed: "Rapport actualisé.",
     },
     subscription: {
       title: "Demande d'abonnement",
       subtitle:
-        "Enregistrez une demande d'acces pour un organisme dans SQLite pour le suivi CQOC.",
+        "Enregistrez une demande d'accès pour un organisme dans SQLite pour le suivi.",
       pricing: "Forfaits annuels",
       submit: "Envoyer la demande",
-      success: "Demande d'abonnement enregistree.",
-      securityError: "La reponse de securite doit etre 70.",
+      success: "Demande d'abonnement enregistrée.",
+      securityError: "La réponse de sécurité doit être 70.",
+      charityName: "Nom de l'organisme",
+      registrationNumber: "Numéro d'enregistrement",
+      personInCharge: "Personne responsable",
+      address: "Adresse",
+      city: "Ville",
+      province: "Province",
+      phone: "Téléphone",
+      memberNumber: "Numéro de membre",
+      security: "Sécurité : 50 + 20",
+      annualRevenue: "Revenu annuel",
     },
     settings: {
-      title: "Parametres de l'organisme",
-      subtitle: "Mettez a jour les champs utilises pour les recus, les reponses et les depots.",
+      title: "Paramètres de l'organisme",
+      subtitle: "Mettez à jour les champs utilisés pour les reçus, les réponses et les dépôts.",
       profile: "Profil de l'organisme",
       users: "Utilisateurs",
-      save: "Mettre a jour le profil",
-      saved: "Profil de l'organisme mis a jour.",
+      save: "Mettre à jour le profil",
+      saved: "Profil de l'organisme mis à jour.",
+      organizationName: "Nom de l'organisme",
+      registrationNumber: "Numéro d'enregistrement",
+      contactName: "Nom du contact",
+      contactEmail: "Courriel du contact",
+      replyEmail: "Courriel de réponse",
+      phone: "Téléphone",
+      address: "Adresse",
+      city: "Ville",
+      postalCode: "Code postal",
+      province: "Province",
+      currency: "Devise",
+      transit: "Transit",
+      folio: "Folio",
+      organizationActive: "Organisme actif",
+      temporaryPassword: "Mot de passe temporaire",
+      adminAccess: "Accès administrateur",
+      addUser: "Ajouter un utilisateur",
+      language: "Langue",
+      role: "Rôle",
+      userAdded: "Utilisateur ajouté à cet espace.",
+      userUpdated: "Accès utilisateur mis à jour.",
     },
     support: {
       title: "Support et tutoriels",
-      subtitle: "Les tutoriels DDR originaux sont relies aux ecrans React fonctionnels.",
-      setup: "Configurer DDR2",
+      subtitle: "Les raccourcis de tutoriels sont reliés aux écrans WeSERVE fonctionnels.",
+      setup: "Configurer WeSERVE",
       account: "Ajouter un compte",
       donor: "Ajouter un donateur",
       donation: "Ajouter un don",
       report: "Produire des rapports",
-      receipt: "Produire des recus",
-      helpText: "Besoin d'aide? Utilisez ces raccourcis ou contactez le CQOC pour le soutien.",
+      receipt: "Produire des reçus",
+      helpText: "Besoin d'aide? Utilisez ces raccourcis ou contactez votre administrateur de compte pour le soutien.",
+      contact: "Contactez votre administrateur de compte pour obtenir du soutien WeSERVE.",
     },
     alerts: {
-      none: "Aucune alerte en attente. Les dons et recus sont a jour.",
-      forgot: "Si ce courriel est actif, les instructions seront envoyees par l'administrateur DDR.",
+      none: "Aucune alerte en attente. Les dons et les reçus sont à jour.",
+      forgot: "Si ce courriel est actif, les instructions seront envoyées par l'administrateur WeSERVE.",
+      loggedIn: "Connexion réussie.",
+      workspaceCreated: "Espace de l'organisme créé.",
     },
     footer: "Suite 106, 5425 Boulevard Laurier O, Saint-Hyacinthe, QC J2S 3V6",
   },
@@ -302,6 +630,7 @@ function App() {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const [authToken, setAuthToken] = useState(() => localStorage.getItem("ddr-token") || "");
   const [currentUser, setCurrentUser] = useState(() => {
     if (!localStorage.getItem("ddr-token")) {
@@ -393,7 +722,7 @@ function App() {
       setLanguage(result.user.langue || "en");
       localStorage.setItem("ddr-user", JSON.stringify(result.user));
       localStorage.setItem("ddr-token", result.token);
-      showNotice("Logged in.");
+      showNotice(t.alerts.loggedIn);
     } catch (loginError) {
       showError(loginError.message);
     }
@@ -412,7 +741,7 @@ function App() {
       setLanguage(result.user.langue || "en");
       localStorage.setItem("ddr-user", JSON.stringify(result.user));
       localStorage.setItem("ddr-token", result.token);
-      showNotice("Organization workspace created.");
+      showNotice(t.alerts.workspaceCreated);
     } catch (registerError) {
       showError(registerError.message);
     }
@@ -465,7 +794,7 @@ function App() {
         method: "PATCH",
         body: JSON.stringify({ actif }),
       });
-      await refresh(actif ? "Donor reactivated." : "Donor archived.");
+      await refresh(actif ? t.donorForm.reactivated : t.donorForm.archived);
     } catch (saveError) {
       showError(saveError.message);
     }
@@ -473,13 +802,39 @@ function App() {
 
   async function handleAddAccount(event) {
     event.preventDefault();
+    const form = event.currentTarget;
     try {
-      const data = formObject(event.currentTarget);
-      await api("/api/accounts", {
+      const data = formObject(form);
+      if (accounts.some((account) => account.noCompte === Number(data.noCompte))) {
+        showError(t.accounts.duplicate);
+        return;
+      }
+
+      const createdAccount = await api("/api/accounts", {
         method: "POST",
         body: JSON.stringify({ ...data, recu: data.recu === "on" }),
       });
-      event.currentTarget.reset();
+      form.reset();
+      setAccounts((currentAccounts) => [...currentAccounts.filter((account) => account.compteID !== createdAccount.compteID), createdAccount].sort((left, right) => left.noCompte - right.noCompte));
+      showNotice(t.accounts.success);
+      return createdAccount;
+    } catch (saveError) {
+      showError(saveError.message);
+      return null;
+    }
+  }
+
+  async function handleUpdateAccount(account, data) {
+    try {
+      await api(`/api/accounts/${account.compteID}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          ...account,
+          ...data,
+          noCompte: Number(data.noCompte),
+          recu: data.recu === "on" || data.recu === true,
+        }),
+      });
       await refresh(t.accounts.success);
     } catch (saveError) {
       showError(saveError.message);
@@ -499,13 +854,9 @@ function App() {
   }
 
   async function deleteAccount(account) {
-    if (!window.confirm(`Delete account ${account.noCompte} - ${account.nom}?`)) {
-      return;
-    }
-
     try {
       await api(`/api/accounts/${account.compteID}`, { method: "DELETE" });
-      await refresh("Account deleted.");
+      await refresh(t.accounts.deleted);
     } catch (saveError) {
       showError(saveError.message);
     }
@@ -527,13 +878,13 @@ function App() {
   }
 
   async function deleteDonation(donation) {
-    if (!window.confirm(`Delete donation ${donation.donID} from ${donation.donorName}?`)) {
+    if (!window.confirm(t.donationForm.confirmDelete.replace("{id}", donation.donID).replace("{name}", donation.donorName))) {
       return;
     }
 
     try {
       await api(`/api/donations/${donation.donID}`, { method: "DELETE" });
-      await refresh("Donation deleted.");
+      await refresh(t.donationForm.deleted);
     } catch (saveError) {
       showError(saveError.message);
     }
@@ -548,8 +899,8 @@ function App() {
         body: JSON.stringify(data),
       });
       const message = result.count
-        ? `${t.receipts.generated} ${result.count} created.`
-        : "No eligible receipt rows found for this period.";
+        ? `${t.receipts.generated} ${result.count}`
+        : t.receipts.noEligibleRows;
       await refresh(message);
     } catch (saveError) {
       showError(saveError.message);
@@ -562,7 +913,7 @@ function App() {
         method: "PATCH",
         body: JSON.stringify({ statut }),
       });
-      await refresh("Receipt status updated.");
+      await refresh(t.receipts.statusUpdated);
     } catch (saveError) {
       showError(saveError.message);
     }
@@ -575,7 +926,7 @@ function App() {
       const params = new URLSearchParams(data);
       const result = await api(`/api/reports?${params.toString()}`);
       setReportResult({ type: data.type, ...result });
-      showNotice("Report refreshed.");
+      showNotice(t.reports.refreshed);
     } catch (saveError) {
       showError(saveError.message);
     }
@@ -640,7 +991,7 @@ function App() {
         }),
       });
       event.currentTarget.reset();
-      await refresh("User added to this workspace.");
+      await refresh(t.settings.userAdded);
     } catch (saveError) {
       showError(saveError.message);
     }
@@ -655,7 +1006,7 @@ function App() {
           admin: userAccount.admin,
         }),
       });
-      await refresh("User access updated.");
+      await refresh(t.settings.userUpdated);
     } catch (saveError) {
       showError(saveError.message);
     }
@@ -687,6 +1038,7 @@ function App() {
   function openView(view) {
     setActiveView(view);
     setMobileOpen(false);
+    setQuickActionsOpen(false);
   }
 
   const activeOrg = bootstrap?.organisme;
@@ -710,8 +1062,8 @@ function App() {
     <div className="app-shell">
       <aside className={`sidebar ${mobileOpen ? "is-open" : ""}`}>
         <div className="brand">
-          <img src={brandLogo} alt="DDR2" />
-          <button className="icon-button mobile-close" type="button" onClick={() => setMobileOpen(false)} aria-label="Close menu">
+          <span className="brand-wordmark">{t.product}</span>
+          <button className="icon-button mobile-close" type="button" onClick={() => setMobileOpen(false)} aria-label={t.common.closeMenu}>
             <X size={18} />
           </button>
         </div>
@@ -719,7 +1071,7 @@ function App() {
         <div className="tenant-card">
           <Building2 size={18} />
           <div>
-            <span>{activeOrg?.organisme || displayUser?.organisme || "DDR"}</span>
+            <span>{activeOrg?.organisme || displayUser?.organisme || t.product}</span>
             <small>{t.overview.period}</small>
           </div>
         </div>
@@ -744,15 +1096,15 @@ function App() {
         <div className="sidebar-footer">
           <button className={activeView === "support" ? "ghost-button active" : "ghost-button"} type="button" onClick={() => openView("support")}>
             <HelpCircle size={16} />
-            <span>Support</span>
+            <span>{t.common.support}</span>
           </button>
           <button className={activeView === "settings" ? "ghost-button active" : "ghost-button"} type="button" onClick={() => openView("settings")}>
             <Settings size={16} />
-            <span>Settings</span>
+            <span>{t.common.settings}</span>
           </button>
           <button className="ghost-button" type="button" onClick={logout}>
             <LockKeyhole size={16} />
-            <span>Logout</span>
+            <span>{t.common.logout}</span>
           </button>
         </div>
       </aside>
@@ -784,7 +1136,7 @@ function App() {
           </div>
         )}
 
-        {loading && <div className="loading-state">Loading DDR data...</div>}
+        {loading && <div className="loading-state">{t.overview.loading}</div>}
 
         {!loading && activeView === "overview" && (
           <Overview
@@ -821,10 +1173,12 @@ function App() {
         {!loading && activeView === "accounts" && (
           <Accounts
             accounts={accounts}
+            donations={donations}
             t={t}
             onDelete={deleteAccount}
             onSubmit={handleAddAccount}
             onToggle={toggleAccount}
+            onUpdate={handleUpdateAccount}
           />
         )}
         {!loading && activeView === "receipts" && (
@@ -872,6 +1226,15 @@ function App() {
           />
         )}
       </main>
+
+      {!loading && (
+        <QuickActionLauncher
+          isOpen={quickActionsOpen}
+          onToggle={() => setQuickActionsOpen((open) => !open)}
+          onViewChange={openView}
+          t={t}
+        />
+      )}
     </div>
   );
 }
@@ -900,14 +1263,14 @@ function LoginScreen({ error, language, onForgotPassword, onLanguageChange, onLo
           <h1>{t.overview.title}</h1>
           <p>{t.overview.subtitle}</p>
           <div className="login-facts">
-            <span><Check size={16} /> Multi-tenant SaaS</span>
-            <span><Check size={16} /> Donors and gifts</span>
-            <span><Check size={16} /> Receipt batches</span>
+            {t.overview.facts.map((fact) => (
+              <span key={fact}><Check size={16} /> {fact}</span>
+            ))}
           </div>
         </div>
 
         <div className="login-panel">
-          <img src={whiteLogo} alt="DDR2" />
+          <span className="login-wordmark">{t.product}</span>
           <div className="login-panel-title">
             <h2>{t.overview.loginTitle}</h2>
             <button className="language-toggle dark" type="button" onClick={() => onLanguageChange(language === "en" ? "fr" : "en")}>
@@ -918,16 +1281,16 @@ function LoginScreen({ error, language, onForgotPassword, onLanguageChange, onLo
           {error && <div className="inline-error">{error}</div>}
           <form className="login-form" onSubmit={onLogin}>
             <label>
-              Email
+              {t.common.email}
               <input name="email" type="email" defaultValue="admin@ddr.local" required />
             </label>
             <label>
-              Password
+              {t.common.password}
               <input name="password" type="password" defaultValue="password" required />
             </label>
             <button className="light-button" type="submit">
               <LockKeyhole size={16} />
-              <span>Log in</span>
+              <span>{t.common.login}</span>
             </button>
           </form>
           <button className="link-button light-link" type="button" onClick={() => setForgotOpen((open) => !open)}>
@@ -936,56 +1299,56 @@ function LoginScreen({ error, language, onForgotPassword, onLanguageChange, onLo
           {forgotOpen && (
             <div className="forgot-form">
               <label>
-                Email
+                {t.common.email}
                 <input name="forgotEmail" type="email" value={forgotEmail} onChange={(event) => setForgotEmail(event.target.value)} required />
               </label>
               <button className="light-button" type="button" onClick={submitForgotPassword}>
                 <Mail size={16} />
-                <span>Send reset</span>
+                <span>{t.common.sendReset}</span>
               </button>
               {forgotStatus && <div className="inline-hint">{forgotStatus}</div>}
             </div>
           )}
           <button className="link-button light-link" type="button" onClick={() => setSignupOpen((open) => !open)}>
-            Create organization workspace
+            {t.common.createWorkspace}
           </button>
           {signupOpen && (
             <form className="forgot-form signup-form" onSubmit={onRegister}>
               <label>
-                Charity name
+                {t.subscription.charityName}
                 <input name="organisme" required maxLength="150" placeholder="Grace Community Church" />
               </label>
               <label>
-                Registration number
+                {t.subscription.registrationNumber}
                 <input name="enregistrement" required maxLength="30" placeholder="123456789RR0001" />
               </label>
               <label>
-                First name
+                {t.donorForm.firstName}
                 <input name="prenom" required maxLength="50" />
               </label>
               <label>
-                Last name
+                {t.donorForm.lastName}
                 <input name="nom" required maxLength="50" />
               </label>
               <label>
-                Admin email
+                {t.common.admin} {t.common.email.toLowerCase()}
                 <input name="email" required type="email" />
               </label>
               <label>
-                Password
+                {t.common.password}
                 <input name="password" required minLength="8" type="password" />
               </label>
               <label>
-                City
+                {t.subscription.city}
                 <input name="ville" maxLength="50" />
               </label>
               <label>
-                Phone
+                {t.subscription.phone}
                 <input name="telephone" maxLength="30" />
               </label>
               <button className="light-button" type="submit">
                 <Building2 size={16} />
-                <span>Start SaaS workspace</span>
+                <span>{t.common.startWorkspace}</span>
               </button>
             </form>
           )}
@@ -998,7 +1361,7 @@ function LoginScreen({ error, language, onForgotPassword, onLanguageChange, onLo
 function Topbar({ language, onLanguageChange, onMenuClick, onNotifications, onProfileClick, onSearch, query, t, user }) {
   return (
     <header className="topbar">
-      <button className="icon-button menu-button" type="button" onClick={onMenuClick} aria-label="Open menu">
+      <button className="icon-button menu-button" type="button" onClick={onMenuClick} aria-label={t.common.openMenu}>
         <Menu size={20} />
       </button>
 
@@ -1011,14 +1374,14 @@ function Topbar({ language, onLanguageChange, onMenuClick, onNotifications, onPr
         <button className="language-toggle" type="button" onClick={() => onLanguageChange(language === "en" ? "fr" : "en")}>
           {language === "en" ? "FR" : "EN"}
         </button>
-        <button className="icon-button" type="button" aria-label="Notifications" onClick={onNotifications}>
+        <button className="icon-button" type="button" aria-label={t.common.notifications} onClick={onNotifications}>
           <Bell size={18} />
         </button>
-        <button className="profile-chip" type="button" onClick={onProfileClick} aria-label="Open organization settings">
+        <button className="profile-chip" type="button" onClick={onProfileClick} aria-label={t.common.openSettings}>
           <span>{initials(user)}</span>
           <div>
             <strong>{user?.prenom || "Admin"}</strong>
-            <small>{user?.admin ? "Admin" : "User"}</small>
+            <small>{user?.admin ? t.common.admin : t.common.user}</small>
           </div>
           <ChevronDown size={16} />
         </button>
@@ -1032,8 +1395,8 @@ function Overview({ accounts, dashboard, donations, t, onViewChange }) {
   const metrics = [
     { label: t.metrics[0], value: currency(totals.ytdDonations || 0), trend: "SQLite", tone: "green" },
     { label: t.metrics[1], value: String(totals.receiptCount || 0), trend: currency(totals.receiptableTotal || 0), tone: "blue" },
-    { label: t.metrics[2], value: String(totals.activeDonors || 0), trend: "Active", tone: "amber" },
-    { label: t.metrics[3], value: String(totals.pendingReceipts || 0), trend: "Ready", tone: "red" },
+    { label: t.metrics[2], value: String(totals.activeDonors || 0), trend: t.common.active, tone: "amber" },
+    { label: t.metrics[3], value: String(totals.pendingReceipts || 0), trend: t.receipts.ready, tone: "red" },
   ];
   const monthly = dashboard?.monthly || [];
   const maxMonth = Math.max(...monthly.map((item) => item.amount), 1);
@@ -1072,13 +1435,14 @@ function Overview({ accounts, dashboard, donations, t, onViewChange }) {
       <div className="two-column">
         <Panel title={t.overview.recentDonations} icon={CircleDollarSign}>
           <DataTable
-            columns={["ID", "Donor", "Account", "Amount", "Status"]}
+            t={t}
+            columns={["ID", t.donationForm.donor, t.donationForm.account, t.donationForm.amount, "Status"]}
             rows={donations.slice(0, 6).map((donation) => [
               donation.donID,
               donation.donorName,
               `${donation.noCompte} - ${donation.libelleCompte}`,
               currency(donation.montant),
-              <StatusPill key={donation.donID} value={donation.receiptStatus} />,
+              <StatusPill key={donation.donID} t={t} value={donation.receiptStatus} />,
             ])}
           />
         </Panel>
@@ -1097,39 +1461,58 @@ function Overview({ accounts, dashboard, donations, t, onViewChange }) {
         </Panel>
       </div>
 
-      <div className="two-column secondary">
+      <div className="overview-secondary">
         <Panel title={t.overview.receiptReadiness} icon={FileCheck2}>
           <div className="readiness">
             <div>
               <strong>{readyPercent}%</strong>
-              <span>Donation rows already issued or excluded from receipting</span>
+              <span>{t.overview.readinessText}</span>
             </div>
             <div className="progress"><span style={{ width: `${readyPercent}%` }} /></div>
             <ul>
-              <li><Check size={15} /> {accounts.filter((account) => account.recu).length} receiptable accounts</li>
-              <li><ClipboardList size={15} /> {totals.pendingReceipts || 0} donations ready for receipts</li>
-              <li><BookOpenCheck size={15} /> {totals.receiptCount || 0} receipts stored</li>
+              <li><Check size={15} /> {accounts.filter((account) => account.recu).length} {t.overview.receiptableAccounts}</li>
+              <li><ClipboardList size={15} /> {totals.pendingReceipts || 0} {t.overview.donationsReady}</li>
+              <li><BookOpenCheck size={15} /> {totals.receiptCount || 0} {t.overview.receiptsStored}</li>
             </ul>
-          </div>
-        </Panel>
-
-        <Panel title={t.overview.quickActions} icon={BookOpenCheck}>
-          <div className="action-grid">
-            {[
-              [Plus, t.actions[0], "donations"],
-              [Users, t.actions[1], "donors"],
-              [ReceiptText, t.actions[2], "receipts"],
-              [Download, t.actions[3], "reports"],
-            ].map(([Icon, label, view]) => (
-              <button className="quick-action" type="button" key={label} onClick={() => onViewChange(view)}>
-                <Icon size={19} />
-                <span>{label}</span>
-              </button>
-            ))}
           </div>
         </Panel>
       </div>
     </section>
+  );
+}
+
+function QuickActionLauncher({ isOpen, onToggle, onViewChange, t }) {
+  const quickActions = [
+    [Plus, t.actions[0], "donations"],
+    [Users, t.actions[1], "donors"],
+    [ReceiptText, t.actions[2], "receipts"],
+    [BarChart3, t.actions[3], "reports"],
+  ];
+
+  return (
+    <div className={`quick-launcher ${isOpen ? "is-open" : ""}`}>
+      {isOpen && (
+        <div className="quick-launcher-menu">
+          <span className="quick-launcher-title">{t.overview.quickActions}</span>
+          {quickActions.map(([Icon, label, view]) => (
+            <button className="quick-launcher-action" type="button" key={label} onClick={() => onViewChange(view)}>
+              <Icon size={17} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <button
+        className="quick-launcher-toggle"
+        type="button"
+        aria-expanded={isOpen}
+        aria-label={t.overview.quickActions}
+        onClick={onToggle}
+      >
+        {isOpen ? <X size={22} /> : <Plus size={24} />}
+      </button>
+    </div>
   );
 }
 
@@ -1138,7 +1521,7 @@ function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubm
     <section className="view-stack">
       <ViewHeader
         title={t.nav.donations}
-        subtitle="Register gifts, assign accounts, and move receipt status forward."
+        subtitle={t.donationForm.subtitle}
         action={t.donationForm.add}
         actionTargetId="donation-form"
         icon={CircleDollarSign}
@@ -1187,7 +1570,7 @@ function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubm
             </label>
             <label>
               {t.donationForm.description}
-              <input name="description" placeholder="Offering, campaign, batch note" />
+              <input name="description" placeholder={t.donationForm.descriptionPlaceholder} />
             </label>
             <button className="primary-button form-submit" type="submit">
               <Plus size={17} />
@@ -1196,7 +1579,7 @@ function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubm
           </form>
         </Panel>
 
-        <Panel title="Account mix" icon={BarChart3}>
+        <Panel title={t.donationForm.accountMix} icon={BarChart3}>
           <div className="account-list">
             {accounts.map((account) => (
               <div className="account-row" key={account.compteID}>
@@ -1209,18 +1592,19 @@ function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubm
         </Panel>
       </div>
 
-      <Panel title="Donation register" icon={FileText}>
+      <Panel title={t.donationForm.register} icon={FileText}>
         <DataTable
-          columns={["ID", "Donor", "Date", "Account", "Method", "Amount", "Status", ""]}
+          t={t}
+          columns={["ID", t.donationForm.donor, t.donationForm.date, t.donationForm.account, t.donationForm.method, t.donationForm.amount, t.common.status, ""]}
           rows={donations.map((donation) => [
             donation.donID,
             donation.donorName,
             donation.dateDon,
             `${donation.noCompte} - ${donation.libelleCompte}`,
-            donation.methode_en || "Unspecified",
+            donation.methode_en || t.common.unspecified,
             currency(donation.montant),
-            <StatusPill key={`status-${donation.donID}`} value={donation.receiptStatus} />,
-            <button className="icon-button table-icon" type="button" onClick={() => onDelete(donation)} aria-label="Delete donation" key={`delete-${donation.donID}`}>
+            <StatusPill key={`status-${donation.donID}`} t={t} value={donation.receiptStatus} />,
+            <button className="icon-button table-icon" type="button" onClick={() => onDelete(donation)} aria-label={t.common.delete} key={`delete-${donation.donID}`}>
               <Trash2 size={15} />
             </button>,
           ])}
@@ -1235,8 +1619,8 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
     <section className="view-stack">
       <ViewHeader
         title={t.donorDirectory}
-        subtitle="Keep donor contact, giving history, and segmentation ready for receipting."
-        action="New donor"
+        subtitle={t.donorForm.subtitle}
+        action={t.donorForm.new}
         actionTargetId="donor-form"
         icon={Users}
       />
@@ -1245,15 +1629,15 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
         <Panel id="donor-form" title={t.donorForm.title} icon={UserPlus}>
           <form className="form-grid" onSubmit={onSubmit}>
             <label>
-              Number
-              <input name="numero" placeholder="Auto if blank" />
+              {t.donorForm.number}
+              <input name="numero" placeholder={t.donorForm.autoNumber} />
             </label>
             <label>
-              First name
+              {t.donorForm.firstName}
               <input name="prenom" required />
             </label>
             <label>
-              Last name
+              {t.donorForm.lastName}
               <input name="nom" required />
             </label>
             <label>
@@ -1261,19 +1645,19 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
               <input name="courriel" type="email" />
             </label>
             <label>
-              Address
+              {t.donorForm.address}
               <input name="adresse" />
             </label>
             <label>
-              City
+              {t.donorForm.city}
               <input name="ville" />
             </label>
             <label>
-              Postal code
+              {t.donorForm.postalCode}
               <input name="code_postal" />
             </label>
             <label>
-              Province
+              {t.donorForm.province}
               <select name="provinceID" defaultValue="1">
                 {bootstrap?.provinces?.map((province) => (
                   <option value={province.provinceID} key={province.provinceID}>
@@ -1283,23 +1667,23 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
               </select>
             </label>
             <label>
-              Cell
+              {t.donorForm.cell}
               <input name="tel_cellulaire" />
             </label>
             <label>
-              Residence
+              {t.donorForm.residence}
               <input name="tel_residence" />
             </label>
             <label className="checkbox-label">
               <input name="membre" type="checkbox" />
-              <span>Member</span>
+              <span>{t.common.member}</span>
             </label>
             <label className="checkbox-label">
               <input name="recu" type="checkbox" defaultChecked />
-              <span>Receipts enabled</span>
+              <span>{t.donorForm.receiptsEnabled}</span>
             </label>
             <label className="full-field">
-              Notes
+              {t.donorForm.notes}
               <textarea name="notes" rows="3" />
             </label>
             <button className="primary-button form-submit" type="submit">
@@ -1309,7 +1693,7 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
           </form>
         </Panel>
 
-        <Panel title="Donor totals" icon={BarChart3}>
+        <Panel title={t.donorForm.totals} icon={BarChart3}>
           <div className="account-list">
             {donors.slice(0, 6).map((donor) => (
               <div className="account-row" key={donor.donateurID}>
@@ -1322,19 +1706,20 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
         </Panel>
       </div>
 
-      <Panel title="Directory" icon={Search}>
+      <Panel title={t.donorForm.directory} icon={Search}>
         <div className="table-toolbar">
           <div className="search-box inline">
             <Search size={17} />
-            <input value={query} onChange={(event) => { setQuery(event.target.value); onSearch(event); }} placeholder="Filter donors" />
+            <input value={query} onChange={(event) => { setQuery(event.target.value); onSearch(event); }} placeholder={t.donorForm.filter} />
           </div>
           <button className="secondary-button" type="button" onClick={() => downloadCSV("donors.csv", donors)}>
             <Download size={16} />
-            <span>CSV</span>
+            <span>{t.common.csv}</span>
           </button>
         </div>
         <DataTable
-          columns={["No.", "Donor", "Email", "City", "Lifetime", "Last gift", "Receipts", ""]}
+          t={t}
+          columns={["No.", t.donationForm.donor, t.common.email, t.donorForm.city, t.donorForm.lifetime, t.donorForm.lastGift, t.nav.receipts, ""]}
           rows={donors.map((donor) => [
             donor.numero,
             donor.fullName,
@@ -1342,9 +1727,9 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
             donor.ville || "-",
             currency(donor.totalDonations || 0),
             donor.lastGift || "-",
-            donor.recu ? "Yes" : "No",
+            donor.recu ? t.common.yes : t.common.no,
             <button className="secondary-button compact" type="button" onClick={() => onArchive(donor, !donor.actif)} key={`archive-${donor.donateurID}`}>
-              {donor.actif ? "Archive" : "Activate"}
+              {donor.actif ? t.common.archive : t.common.activate}
             </button>,
           ])}
         />
@@ -1353,44 +1738,184 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
   );
 }
 
-function Accounts({ accounts, t, onDelete, onSubmit, onToggle }) {
+function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpdate }) {
+  const [selectedAccountId, setSelectedAccountId] = useState(null);
+  const [editingAccountId, setEditingAccountId] = useState(null);
+  const [expandedAccountId, setExpandedAccountId] = useState(null);
+  const [accountPendingDelete, setAccountPendingDelete] = useState(null);
+  const selectedAccount = accounts.find((account) => account.compteID === selectedAccountId);
+  const expandedAccount = accounts.find((account) => account.compteID === expandedAccountId);
+
+  useEffect(() => {
+    if (!accounts.length) {
+      setSelectedAccountId(null);
+      setEditingAccountId(null);
+      setExpandedAccountId(null);
+      setAccountPendingDelete(null);
+      return;
+    }
+
+    if (selectedAccountId && !accounts.some((account) => account.compteID === selectedAccountId)) {
+      setSelectedAccountId(null);
+      setEditingAccountId(null);
+    }
+
+    if (expandedAccountId && !accounts.some((account) => account.compteID === expandedAccountId)) {
+      setExpandedAccountId(null);
+    }
+
+    if (accountPendingDelete && !accounts.some((account) => account.compteID === accountPendingDelete.compteID)) {
+      setAccountPendingDelete(null);
+    }
+  }, [accounts, selectedAccountId]);
+
+  function submitAccountEdit(event, account) {
+    event.preventDefault();
+    const data = formObject(event.currentTarget);
+    onUpdate(account, {
+      ...data,
+      recu: data.recu === "on",
+    });
+    setEditingAccountId(null);
+  }
+
+  function accountDonations(account) {
+    return donations.filter((donation) => donation.compteID === account.compteID);
+  }
+
+  async function submitNewAccount(event) {
+    const createdAccount = await onSubmit(event);
+    if (createdAccount?.compteID) {
+      setSelectedAccountId(createdAccount.compteID);
+      setEditingAccountId(null);
+      setExpandedAccountId(null);
+    }
+  }
+
+  async function confirmDeleteAccount() {
+    if (!accountPendingDelete) {
+      return;
+    }
+
+    await onDelete(accountPendingDelete);
+    setAccountPendingDelete(null);
+  }
+
   return (
     <section className="view-stack">
       <ViewHeader
         title={t.accounts.title}
         subtitle={t.accounts.subtitle}
-        action="Add account"
+        action={t.accounts.add}
         actionTargetId="account-form"
         icon={ClipboardList}
       />
 
+      {expandedAccount ? (
+        <Panel title={`${expandedAccount.noCompte} - ${expandedAccount.nom}`} icon={Maximize2}>
+          <div className="expanded-account-toolbar">
+            <button className="icon-button" type="button" onClick={() => setExpandedAccountId(null)} aria-label={t.common.cancel}>
+              <Minimize2 size={18} />
+            </button>
+          </div>
+
+          <AccountDetail
+            account={expandedAccount}
+            donations={accountDonations(expandedAccount)}
+            isEditing={editingAccountId === expandedAccount.compteID}
+            isExpanded
+            onCancelEdit={() => setEditingAccountId(null)}
+            onEdit={() => setEditingAccountId(expandedAccount.compteID)}
+            onSubmitEdit={(event) => submitAccountEdit(event, expandedAccount)}
+            t={t}
+          />
+        </Panel>
+      ) : (
+        <Panel title={t.nav.accounts} icon={ClipboardList}>
+          <div className="account-accordion">
+            {accounts.map((account) => {
+              const isOpen = selectedAccount?.compteID === account.compteID;
+              const isEditing = editingAccountId === account.compteID;
+
+              return (
+                <article className={`account-accordion-item ${isOpen ? "is-open" : ""}`} key={account.compteID}>
+                  <button
+                    className="account-accordion-summary"
+                    type="button"
+                    onClick={() => {
+                      setSelectedAccountId(isOpen ? null : account.compteID);
+                      setEditingAccountId(null);
+                    }}
+                    aria-expanded={isOpen}
+                  >
+                    <span className="account-summary-number">{account.noCompte}</span>
+                    <span className="account-summary-name">{account.nom}</span>
+                    <span className={`status-pill receipt-eligibility ${account.recu ? "is-receiptable" : "is-not-receiptable"}`}>
+                      {account.recu ? t.accounts.receiptable : t.accounts.noReceipt}
+                    </span>
+                    <span>{account.donationCount} {account.donationCount === 1 ? t.accounts.donationSingular : t.accounts.donationPlural}</span>
+                    <strong>{currency(account.total || 0)}</strong>
+                  </button>
+
+                  {isOpen && (
+                    <div className="account-accordion-body">
+                      <div className="account-actions">
+                        <button className="icon-button table-icon" type="button" onClick={() => setEditingAccountId(account.compteID)} aria-label={t.common.edit}>
+                          <Pencil size={15} />
+                        </button>
+                        <button className="icon-button table-icon" type="button" onClick={() => setExpandedAccountId(account.compteID)} aria-label={t.common.view}>
+                          <Maximize2 size={15} />
+                        </button>
+                        <button className="icon-button table-icon danger" type="button" onClick={() => setAccountPendingDelete(account)} aria-label={t.common.delete}>
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+
+                      <AccountDetail
+                        account={account}
+                        donations={accountDonations(account)}
+                        isEditing={isEditing}
+                        onCancelEdit={() => setEditingAccountId(null)}
+                        onEdit={() => setEditingAccountId(account.compteID)}
+                        onSubmitEdit={(event) => submitAccountEdit(event, account)}
+                        t={t}
+                      />
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </Panel>
+      )}
+
       <div className="two-column form-layout">
-        <Panel id="account-form" title="Add account" icon={Plus}>
-          <form className="form-grid" onSubmit={onSubmit}>
+        <Panel id="account-form" title={t.accounts.add} icon={Plus}>
+          <form className="form-grid" onSubmit={submitNewAccount}>
             <label>
-              Account number
+              {t.accounts.accountNumber}
               <input name="noCompte" required type="number" />
             </label>
             <label>
-              Name
+              {t.accounts.name}
               <input name="nom" required />
             </label>
             <label className="checkbox-label">
               <input name="recu" type="checkbox" defaultChecked />
-              <span>Eligible for receipts</span>
+              <span>{t.accounts.eligible}</span>
             </label>
             <button className="primary-button form-submit" type="submit">
               <Plus size={17} />
-              <span>Add account</span>
+              <span>{t.accounts.add}</span>
             </button>
           </form>
         </Panel>
 
-        <Panel title="Receipt eligibility" icon={ReceiptText}>
+        <Panel title={t.accounts.eligibility} icon={ReceiptText}>
           <div className="readiness">
             <div>
               <strong>{accounts.filter((account) => account.recu).length}</strong>
-              <span>Accounts generate official receipt amounts</span>
+              <span>{t.accounts.eligibilityText}</span>
             </div>
             <div className="progress">
               <span style={{ width: `${accounts.length ? (accounts.filter((account) => account.recu).length / accounts.length) * 100 : 0}%` }} />
@@ -1399,24 +1924,125 @@ function Accounts({ accounts, t, onDelete, onSubmit, onToggle }) {
         </Panel>
       </div>
 
-      <Panel title="Accounts" icon={ClipboardList}>
-        <DataTable
-          columns={["No.", "Name", "Receipts", "Donations", "Total", ""]}
-          rows={accounts.map((account) => [
-            account.noCompte,
-            account.nom,
-            <button className="status-pill button-pill" type="button" onClick={() => onToggle(account)} key={`toggle-${account.compteID}`}>
-              {account.recu ? "Receiptable" : "No receipt"}
-            </button>,
-            account.donationCount,
-            currency(account.total || 0),
-            <button className="icon-button table-icon" type="button" onClick={() => onDelete(account)} aria-label="Delete account" key={`delete-${account.compteID}`}>
-              <Trash2 size={15} />
-            </button>,
-          ])}
+      {accountPendingDelete && (
+        <ConfirmDialog
+          body={t.accounts.deleteBody.replace("{number}", accountPendingDelete.noCompte).replace("{name}", accountPendingDelete.nom)}
+          confirmLabel={t.common.delete}
+          isDanger
+          onCancel={() => setAccountPendingDelete(null)}
+          onConfirm={confirmDeleteAccount}
+          t={t}
+          title={t.accounts.deleteTitle}
         />
-      </Panel>
+      )}
+
     </section>
+  );
+}
+
+function ConfirmDialog({ body, confirmLabel, isDanger = false, onCancel, onConfirm, t, title }) {
+  return (
+    <div className="modal-backdrop" role="presentation" onClick={onCancel}>
+      <section className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" onClick={(event) => event.stopPropagation()}>
+        <div className="confirm-dialog-icon">
+          <Trash2 size={20} />
+        </div>
+        <div>
+          <h2 id="confirm-dialog-title">{title}</h2>
+          <p>{body}</p>
+        </div>
+        <div className="confirm-dialog-actions">
+          <button className="secondary-button" type="button" onClick={onCancel}>
+            <X size={16} />
+            <span>{t.common.cancel}</span>
+          </button>
+          <button className={isDanger ? "primary-button danger-button" : "primary-button"} type="button" onClick={onConfirm}>
+            <Check size={16} />
+            <span>{confirmLabel || t.common.confirm}</span>
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AccountDetail({ account, donations, isEditing, isExpanded = false, onCancelEdit, onEdit, onSubmitEdit, t }) {
+  if (isEditing) {
+    return (
+      <form className="form-grid compact-account-form" onSubmit={onSubmitEdit}>
+        <label>
+          {t.accounts.accountNumber}
+          <input name="noCompte" required type="number" defaultValue={account.noCompte} />
+        </label>
+        <label>
+          {t.accounts.name}
+          <input name="nom" required defaultValue={account.nom} />
+        </label>
+        <label className="checkbox-label">
+          <input name="recu" type="checkbox" defaultChecked={Boolean(account.recu)} />
+          <span>{t.accounts.eligible}</span>
+        </label>
+        <div className="account-edit-actions">
+          <button className="secondary-button" type="button" onClick={onCancelEdit}>
+            <X size={16} />
+            <span>{t.common.cancel}</span>
+          </button>
+          <button className="primary-button" type="submit">
+            <Check size={16} />
+            <span>{t.common.save}</span>
+          </button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <>
+      <div className={`account-detail-grid ${isExpanded ? "is-expanded" : ""}`}>
+        <div>
+          <span>{t.accounts.accountNumber}</span>
+          <strong>{account.noCompte}</strong>
+        </div>
+        <div>
+          <span>{t.accounts.name}</span>
+          <strong>{account.nom}</strong>
+        </div>
+        <div>
+          <span>{t.nav.receipts}</span>
+          <strong className={`receipt-eligibility-text ${account.recu ? "is-receiptable" : "is-not-receiptable"}`}>
+            {account.recu ? t.accounts.receiptable : t.accounts.noReceipt}
+          </strong>
+        </div>
+        <div>
+          <span>{t.nav.donations}</span>
+          <strong>{account.donationCount}</strong>
+        </div>
+        <div>
+          <span>{t.receipts.total}</span>
+          <strong>{currency(account.total || 0)}</strong>
+        </div>
+      </div>
+
+      <div className="panel-subheader">
+        <h3>{t.accounts.donationsList}</h3>
+        <button className="icon-button table-icon" type="button" onClick={onEdit} aria-label={t.common.edit}>
+          <Pencil size={15} />
+        </button>
+      </div>
+
+      <DataTable
+        t={t}
+        columns={[t.donationForm.date, t.donationForm.donor, t.donationForm.description, t.donationForm.amount, t.common.status]}
+        rows={donations.map((donation) => [
+          donation.dateDon,
+          donation.donorName,
+          donation.description || "-",
+          currency(donation.montant),
+          <StatusPill key={`account-donation-${donation.donID}`} t={t} value={donation.receiptStatus} />,
+        ])}
+        emptyMessage={t.accounts.emptyDonations}
+      />
+    </>
   );
 }
 
@@ -1429,7 +2055,7 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
       <ViewHeader
         title={t.receipts.title}
         subtitle={t.receipts.subtitle}
-        action="Generate"
+        action={t.receipts.action}
         actionTargetId="receipt-generator"
         icon={ReceiptText}
         onAction={() => submitTarget("receipt-generator")}
@@ -1440,72 +2066,74 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
           <img src={receiptImage} alt="" />
           <div>
             <span className="eyebrow">{t.receipts.batch}</span>
-            <h2>Annual receipt batch</h2>
-            <p>{readyRows.length} donation rows are ready and {reviewRows.length} are excluded by donor/account receipt settings.</p>
+            <h2>{t.receipts.annualBatch}</h2>
+            <p>{t.receipts.batchSummary.replace("{ready}", readyRows.length).replace("{review}", reviewRows.length)}</p>
           </div>
         </div>
         <form id="receipt-generator" className="receipt-actions compact-form" onSubmit={onGenerate}>
-          <input name="dateDebut" type="date" defaultValue={defaultReceiptPeriod.dateDebut} aria-label="Start date" />
-          <input name="dateFin" type="date" defaultValue={defaultReceiptPeriod.dateFin} aria-label="End date" />
-          <select name="mode" defaultValue="email" aria-label="Mode">
+          <input name="dateDebut" type="date" defaultValue={defaultReceiptPeriod.dateDebut} aria-label={t.receipts.startDate} />
+          <input name="dateFin" type="date" defaultValue={defaultReceiptPeriod.dateFin} aria-label={t.receipts.endDate} />
+          <select name="mode" defaultValue="email" aria-label={t.receipts.mode}>
             <option value="email">Email</option>
-            <option value="print">Print</option>
+            <option value="print">{t.common.print}</option>
           </select>
           <button className="primary-button" type="submit">
             <FileCheck2 size={17} />
-            <span>Generate</span>
+            <span>{t.receipts.action}</span>
           </button>
         </form>
       </div>
 
       <div className="metric-grid">
         <article className="metric-card tone-blue">
-          <span>Stored receipts</span>
+          <span>{t.receipts.stored}</span>
           <strong>{receipts.length}</strong>
           <small>{currency(receipts.reduce((sum, receipt) => sum + receipt.montant, 0))}</small>
         </article>
         <article className="metric-card tone-green">
-          <span>Ready gifts</span>
+          <span>{t.receipts.readyGifts}</span>
           <strong>{dashboard?.totals?.pendingReceipts || 0}</strong>
-          <small>Eligible rows</small>
+          <small>{t.receipts.eligibleRows}</small>
         </article>
         <article className="metric-card tone-amber">
-          <span>Batches</span>
+          <span>{t.receipts.batches}</span>
           <strong>{batches.length}</strong>
-          <small>Generated</small>
+          <small>{t.receipts.generatedLabel}</small>
         </article>
         <article className="metric-card tone-red">
-          <span>Review</span>
+          <span>{t.receipts.review}</span>
           <strong>{reviewRows.length}</strong>
-          <small>Not receiptable</small>
+          <small>{t.receipts.notReceiptable}</small>
         </article>
       </div>
 
       <div className="two-column">
-        <Panel title="Receipts" icon={Check}>
+        <Panel title={t.nav.receipts} icon={Check}>
           <DataTable
-            columns={["No.", "Donor", "Period", "Amount", "Status", ""]}
+            t={t}
+            columns={["No.", t.donationForm.donor, t.receipts.period, t.donationForm.amount, t.common.status, ""]}
             rows={receipts.map((receipt) => [
               receipt.noRecu || receipt.recuID,
               `${receipt.prenom} ${receipt.nom}`,
-              `${receipt.dateDebut} to ${receipt.dateFin}`,
+              `${receipt.dateDebut} ${t.common.to} ${receipt.dateFin}`,
               currency(receipt.montant),
-              <StatusPill key={`status-${receipt.recuID}`} value={humanStatus(receipt.statut)} />,
+              <StatusPill key={`status-${receipt.recuID}`} t={t} value={humanStatus(receipt.statut, t)} />,
               receipt.envoiID ? (
                 <button className="secondary-button compact" type="button" onClick={() => onMark(receipt.envoiID, "2-livre")} key={`mark-${receipt.recuID}`}>
-                  Mark sent
+                  {t.receipts.markSent}
                 </button>
               ) : "-",
             ])}
           />
         </Panel>
 
-        <Panel title="Batches" icon={Printer}>
+        <Panel title={t.receipts.batches} icon={Printer}>
           <DataTable
-            columns={["Created", "Period", "Count", "Total"]}
+            t={t}
+            columns={[t.receipts.created, t.receipts.period, t.receipts.count, t.receipts.total]}
             rows={batches.map((batch) => [
               new Date(batch.dateCreation).toLocaleString(),
-              `${batch.dateDebut} to ${batch.dateFin}`,
+              `${batch.dateDebut} ${t.common.to} ${batch.dateFin}`,
               batch.recusCount,
               currency(batch.total),
             ])}
@@ -1608,10 +2236,6 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
             <PricingCard revenue="0 - $50,000" member="$60/year" nonMember="$70/year" />
             <PricingCard revenue="$50,001 +" member="$70/year" nonMember="$85/year" />
           </div>
-          <div className="brochure-strip">
-            <img src={brochureImage} alt="" />
-            <p>For detailed service information, contact CQOC or review the DDR2 service flyer.</p>
-          </div>
         </Panel>
 
         <Panel id="subscription-form" title={t.subscription.title} icon={ClipboardList}>
@@ -1650,7 +2274,7 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
             </label>
             <label className="checkbox-label">
               <input checked={member} onChange={(event) => setMember(event.target.checked)} type="checkbox" />
-              <span>CQOC member</span>
+              <span>Member</span>
             </label>
             {member && (
               <label>
@@ -1755,7 +2379,7 @@ function SettingsView({ bootstrap, t, user, onCreateUser, onSubmit, onUserStatus
             </label>
             <label className="checkbox-label">
               <input name="membre" type="checkbox" defaultChecked={Boolean(organization.membre)} />
-              <span>CQOC member</span>
+              <span>Member</span>
             </label>
             <label className="checkbox-label">
               <input name="actif" type="checkbox" defaultChecked={organization.actif !== false} />
@@ -1846,13 +2470,9 @@ function SupportView({ t, onViewChange }) {
         </div>
       </Panel>
 
-      <Panel title="CQOC" icon={Mail}>
+      <Panel title="Support" icon={Mail}>
         <div className="support-contact">
-          <p>{copy.en.footer}</p>
-          <a className="secondary-button" href="mailto:info@cqoc.org">
-            <Mail size={16} />
-            <span>info@cqoc.org</span>
-          </a>
+          <p>Contact your account administrator for WeSERVE support.</p>
         </div>
       </Panel>
     </section>
@@ -1865,7 +2485,7 @@ function ViewHeader({ title, subtitle, action, actionTargetId, icon: Icon, onAct
   return (
     <div className="view-header">
       <div>
-        <span className="eyebrow"><Icon size={15} /> DDR2 SaaS</span>
+        <span className="eyebrow"><Icon size={15} /> WeSERVE SaaS</span>
         <h1>{title}</h1>
         <p>{subtitle}</p>
       </div>
@@ -1893,7 +2513,7 @@ function Panel({ id, title, icon: Icon, children }) {
   );
 }
 
-function DataTable({ columns, rows }) {
+function DataTable({ columns, rows, t, emptyMessage }) {
   return (
     <div className="table-wrap">
       <table>
@@ -1905,7 +2525,7 @@ function DataTable({ columns, rows }) {
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={columns.length}>No records found</td>
+              <td colSpan={columns.length}>{emptyMessage || t?.common?.noRecords || "No records found"}</td>
             </tr>
           ) : (
             rows.map((row, rowIndex) => (
@@ -1920,9 +2540,9 @@ function DataTable({ columns, rows }) {
   );
 }
 
-function StatusPill({ value }) {
+function StatusPill({ value, t }) {
   const className = String(value || "").toLowerCase().replace(/\s+/g, "-");
-  return <span className={`status-pill ${className}`}>{value}</span>;
+  return <span className={`status-pill ${className}`}>{translateStatus(value, t)}</span>;
 }
 
 function PricingCard({ revenue, member, nonMember }) {
@@ -1932,7 +2552,7 @@ function PricingCard({ revenue, member, nonMember }) {
       <strong>{revenue}</strong>
       <dl>
         <div>
-          <dt>CQOC member</dt>
+          <dt>Member</dt>
           <dd>{member}</dd>
         </div>
         <div>
@@ -1958,22 +2578,35 @@ function initials(user) {
   return `${first}${last}`.toUpperCase();
 }
 
-function humanStatus(status) {
+function translateStatus(status, t) {
+  if (status === "Ready") {
+    return t?.receipts?.ready || status;
+  }
+  if (status === "No receipt") {
+    return t?.accounts?.noReceipt || status;
+  }
+  if (status === "Pending") {
+    return t?.receipts?.review || status;
+  }
+  return status;
+}
+
+function humanStatus(status, t) {
   if (!status) {
-    return "Generated";
+    return t.common.generated;
   }
 
   if (status === "1-en-cours") {
-    return "Queued";
+    return t.common.queued;
   }
   if (status === "2-livre") {
-    return "Delivered";
+    return t.common.delivered;
   }
   if (status === "2-a-imprimer") {
-    return "Print";
+    return t.common.print;
   }
   if (status === "0-courriel-non-valide") {
-    return "Invalid email";
+    return t.common.invalidEmail;
   }
 
   return status;

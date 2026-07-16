@@ -460,7 +460,7 @@ function requestPasswordReset(courriel) {
 
   return {
     ok: true,
-    message: "If this email is active, reset instructions will be sent by the DDR administrator.",
+    message: "If this email is active, reset instructions will be sent by the WeSERVE administrator.",
   };
 }
 
@@ -913,17 +913,53 @@ function listAccounts(context = {}) {
 
 function createAccount(data, context = {}) {
   const orgID = organizationID(context);
+  const noCompte = Number(data.noCompte);
+  const nom = String(data.nom || "").trim();
+
+  if (!Number.isFinite(noCompte) || !nom) {
+    const error = new Error("Account number and name are required");
+    error.status = 400;
+    throw error;
+  }
+
+  const duplicate = get("SELECT compteID FROM comptes WHERE organismeID = ? AND noCompte = ?", [orgID, noCompte]);
+  if (duplicate) {
+    const error = new Error("An account with this number already exists");
+    error.status = 409;
+    throw error;
+  }
+
   const result = run(
     "INSERT INTO comptes (organismeID, noCompte, nom, recu) VALUES (?, ?, ?, ?)",
-    [orgID, Number(data.noCompte), String(data.nom || "").trim(), data.recu === false ? 0 : 1],
+    [orgID, noCompte, nom, data.recu === false ? 0 : 1],
   );
   return listAccounts(context).find((account) => account.compteID === result.lastInsertRowid);
 }
 
 function updateAccount(id, data, context = {}) {
+  const orgID = organizationID(context);
+  const noCompte = Number(data.noCompte);
+  const nom = String(data.nom || "").trim();
+
+  if (!Number.isFinite(noCompte) || !nom) {
+    const error = new Error("Account number and name are required");
+    error.status = 400;
+    throw error;
+  }
+
+  const duplicate = get(
+    "SELECT compteID FROM comptes WHERE organismeID = ? AND noCompte = ? AND compteID != ?",
+    [orgID, noCompte, Number(id)],
+  );
+  if (duplicate) {
+    const error = new Error("An account with this number already exists");
+    error.status = 409;
+    throw error;
+  }
+
   run(
     "UPDATE comptes SET noCompte = ?, nom = ?, recu = ? WHERE compteID = ? AND organismeID = ?",
-    [Number(data.noCompte), String(data.nom || "").trim(), data.recu === false ? 0 : 1, Number(id), organizationID(context)],
+    [noCompte, nom, data.recu === false ? 0 : 1, Number(id), orgID],
   );
   return listAccounts(context).find((account) => account.compteID === Number(id));
 }
