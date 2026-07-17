@@ -2129,19 +2129,8 @@ function BankingConnection({ icon: Icon, label, meta, t }) {
   );
 }
 
-function BankingView({ accounts, t }) {
-  const bankingProviders = [
-    { value: "Banque Nationale", label: "Banque Nationale", type: "bank" },
-    { value: "Desjardins", label: "Desjardins", type: "bank" },
-    { value: "RBC", label: "RBC", type: "bank" },
-    { value: "TD Bank", label: "TD Bank", type: "bank" },
-    { value: "BMO", label: "BMO", type: "bank" },
-    { value: "CIBC", label: "CIBC", type: "bank" },
-    { value: "Scotiabank", label: "Scotiabank", type: "bank" },
-    { value: "PayPal", label: "PayPal", type: "paypal" },
-    { value: "Stripe", label: "Stripe", type: "card" },
-  ];
-  const defaultLinkedAccounts = [
+function defaultBankingConnections(accounts = []) {
+  return [
     {
       id: "national-bank",
       institution: "Banque Nationale",
@@ -2161,10 +2150,37 @@ function BankingView({ accounts, t }) {
       accountIds: accounts.slice(0, 2).map((account) => account.compteID),
     },
   ];
-  const [linkedAccounts, setLinkedAccounts] = useState(defaultLinkedAccounts);
+}
+
+function savedBankingConnections(accounts) {
+  try {
+    const savedConnections = JSON.parse(localStorage.getItem("weserve-banking-connections") || "null");
+    return Array.isArray(savedConnections) && savedConnections.length ? savedConnections : defaultBankingConnections(accounts);
+  } catch {
+    return defaultBankingConnections(accounts);
+  }
+}
+
+function BankingView({ accounts, t }) {
+  const bankingProviders = [
+    { value: "Banque Nationale", label: "Banque Nationale", type: "bank" },
+    { value: "Desjardins", label: "Desjardins", type: "bank" },
+    { value: "RBC", label: "RBC", type: "bank" },
+    { value: "TD Bank", label: "TD Bank", type: "bank" },
+    { value: "BMO", label: "BMO", type: "bank" },
+    { value: "CIBC", label: "CIBC", type: "bank" },
+    { value: "Scotiabank", label: "Scotiabank", type: "bank" },
+    { value: "PayPal", label: "PayPal", type: "paypal" },
+    { value: "Stripe", label: "Stripe", type: "card" },
+  ];
+  const [linkedAccounts, setLinkedAccounts] = useState(() => savedBankingConnections(accounts));
   const [addBankOpen, setAddBankOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(bankingProviders[0]);
   const [scopeMode, setScopeMode] = useState("all");
+
+  useEffect(() => {
+    localStorage.setItem("weserve-banking-connections", JSON.stringify(linkedAccounts));
+  }, [linkedAccounts]);
 
   function accountNames(bankAccount) {
     if (bankAccount.scope === "all") {
