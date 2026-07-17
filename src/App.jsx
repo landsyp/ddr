@@ -2930,6 +2930,7 @@ function PaymentMethodCard({ brand, details, expiry, isDefault = false, t }) {
 function CustomizationView({ onSavePalette, palette, savedPalettes, setPalette, t }) {
   const [customName, setCustomName] = useState(t.customization.custom);
   const [customColors, setCustomColors] = useState(["#1d6f5f", "#2f6fbb", "#b7791f"]);
+  const [customPaletteOpen, setCustomPaletteOpen] = useState(false);
   const palettes = [
     { name: "Default", colors: ["#1d6f5f", "#2f6fbb", "#b7791f"] },
     { name: "Evergreen", colors: ["#1d6f5f", "#2f6fbb", "#b7791f"] },
@@ -2946,6 +2947,7 @@ function CustomizationView({ onSavePalette, palette, savedPalettes, setPalette, 
       colorIndex === index ? color : currentColor
     )));
     setPalette("Custom");
+    setCustomPaletteOpen(true);
   }
 
   function saveCustomPalette(event) {
@@ -2986,10 +2988,15 @@ function CustomizationView({ onSavePalette, palette, savedPalettes, setPalette, 
             <button
               className={palette === "Custom" ? "palette-option is-selected" : "palette-option"}
               type="button"
-              onClick={() => setPalette("Custom")}
+              aria-expanded={customPaletteOpen}
+              onClick={() => {
+                setPalette("Custom");
+                setCustomPaletteOpen((open) => !open);
+              }}
             >
-              <span className="palette-swatches">
-                {customColors.map((color) => <i key={color} style={{ background: color }} />)}
+              <span className="custom-palette-icon" aria-hidden="true">
+                <i />
+                <Plus size={16} />
               </span>
               <strong>{t.customization.custom}</strong>
               <small>{t.customization.customDescription}</small>
@@ -3018,38 +3025,40 @@ function CustomizationView({ onSavePalette, palette, savedPalettes, setPalette, 
             </div>
           )}
 
-          <form className="custom-palette-builder" onSubmit={saveCustomPalette}>
-            <label className="custom-palette-name">
-              <span>{t.customization.customName}</span>
-              <input
-                type="text"
-                value={customName}
-                onChange={(event) => {
-                  setCustomName(event.target.value);
-                  setPalette("Custom");
-                }}
-              />
-            </label>
-            {[
-              t.customization.brandColor,
-              t.customization.accentColor,
-              t.customization.highlightColor,
-            ].map((label, index) => (
-              <label key={label}>
-                <span>{label}</span>
+          {customPaletteOpen && (
+            <form className="custom-palette-builder" onSubmit={saveCustomPalette}>
+              <label className="custom-palette-name">
+                <span>{t.customization.customName}</span>
                 <input
-                  type="color"
-                  value={customColors[index]}
-                  onChange={(event) => updateCustomColor(index, event.target.value)}
+                  type="text"
+                  value={customName}
+                  onChange={(event) => {
+                    setCustomName(event.target.value);
+                    setPalette("Custom");
+                  }}
                 />
-                <strong>{customColors[index].toUpperCase()}</strong>
               </label>
-            ))}
-            <button className="secondary-button" type="submit">
-              <Check size={16} />
-              <span>{t.customization.saveCustom}</span>
-            </button>
-          </form>
+              {[
+                t.customization.brandColor,
+                t.customization.accentColor,
+                t.customization.highlightColor,
+              ].map((label, index) => (
+                <label key={label}>
+                  <span>{label}</span>
+                  <input
+                    type="color"
+                    value={customColors[index]}
+                    onChange={(event) => updateCustomColor(index, event.target.value)}
+                  />
+                  <strong>{customColors[index].toUpperCase()}</strong>
+                </label>
+              ))}
+              <button className="secondary-button" type="submit">
+                <Check size={16} />
+                <span>{t.customization.saveCustom}</span>
+              </button>
+            </form>
+          )}
         </Panel>
 
         <Panel title={t.customization.preview} icon={Sparkles}>
