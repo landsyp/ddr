@@ -364,6 +364,7 @@ const copy = {
       cardholder: "Cardholder",
       cardNumber: "Card number",
       expiryDate: "Expiry date",
+      cvc: "CVC",
       customizationShortcut: "Customize interface",
     },
     banking: {
@@ -740,6 +741,7 @@ const copy = {
       cardholder: "Titulaire",
       cardNumber: "Numéro de carte",
       expiryDate: "Date d'expiration",
+      cvc: "CVC",
       customizationShortcut: "Personnaliser l'interface",
     },
     banking: {
@@ -3533,15 +3535,19 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
             <form className="form-grid payment-link-form">
               <label>
                 {t.settings.cardholder}
-                <input name="cardholder" placeholder="Grace Community Church" />
+                <input name="cardholder" autoComplete="cc-name" placeholder="Grace Community Church" />
               </label>
               <label>
                 {t.settings.cardNumber}
-                <input name="cardNumber" placeholder="•••• •••• •••• 4242" />
+                <input name="cardNumber" autoComplete="cc-number" inputMode="numeric" placeholder="•••• •••• •••• 4242" />
               </label>
               <label>
                 {t.settings.expiryDate}
-                <input name="expiryDate" placeholder="04/29" />
+                <input name="expiryDate" autoComplete="cc-exp" inputMode="numeric" placeholder="04/29" />
+              </label>
+              <label>
+                {t.settings.cvc}
+                <input name="cvc" autoComplete="cc-csc" inputMode="numeric" maxLength="4" placeholder="123" />
               </label>
               <button className="primary-button form-submit" type="button" onClick={() => setAddPaymentOpen(false)}>
                 <CreditCard size={17} />
