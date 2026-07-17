@@ -963,6 +963,11 @@ td {
   box-shadow: none;
 }
 
+.view-header.is-stacked {
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
 .view-header .primary-button {
   border-color: rgba(255, 255, 255, 0.4);
   background: #ffffff;
@@ -1008,6 +1013,32 @@ td {
   margin-bottom: 14px;
 }
 
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.boolean-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+}
+
+.boolean-icon.is-true {
+  background: var(--green-soft);
+  color: var(--brand);
+}
+
+.boolean-icon.is-false {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
 .table-icon {
   width: 34px;
   height: 34px;
@@ -1026,6 +1057,88 @@ td {
 
 .account-actions {
   justify-content: flex-end;
+}
+
+.donor-page {
+  position: relative;
+}
+
+.donor-edge-drawers {
+  position: fixed;
+  top: 190px;
+  right: 0;
+  z-index: 35;
+  display: grid;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.donor-edge-tab,
+.donor-edge-panel {
+  pointer-events: auto;
+}
+
+.donor-edge-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 52px;
+  padding: 10px 8px;
+  border: 1px solid var(--line);
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
+  background: #ffffff;
+  color: var(--brand-dark);
+  box-shadow: var(--shadow-tile);
+}
+
+.donor-edge-tab.active,
+.donor-edge-tab:hover {
+  border-color: rgba(29, 111, 95, 0.28);
+  background: var(--green-soft);
+  color: var(--brand);
+}
+
+.donor-edge-panel {
+  position: absolute;
+  top: 0;
+  right: 54px;
+  width: min(520px, calc(100vw - 76px));
+  max-height: min(720px, calc(100vh - 220px));
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+  overflow: auto;
+}
+
+.donor-edge-panel .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.donor-total-summary {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.donor-total-summary span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.donor-total-summary strong {
+  color: var(--brand-dark);
+  font-size: 2.4rem;
+  line-height: 1;
 }
 
 .account-accordion {
@@ -2511,6 +2624,7 @@ td {
   .banking-connection,
   .banking-section-toggle,
   .banking-connection-main,
+  .donor-edge-panel .form-grid,
   .incoming-donation,
   .incoming-donation-summary,
   .theme-preview,
@@ -2546,6 +2660,16 @@ td {
     width: 100%;
   }
 
+  .donor-edge-drawers {
+    top: 156px;
+  }
+
+  .donor-edge-panel {
+    right: 52px;
+    width: calc(100vw - 68px);
+    max-height: calc(100vh - 176px);
+  }
+
   .account-accordion-summary {
     grid-template-columns: 1fr;
     gap: 8px;
@@ -2577,6 +2701,10 @@ td {
   .receipt-copy {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .export-actions {
+    justify-content: flex-start;
   }
 
   .receipt-copy img {

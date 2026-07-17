@@ -12,6 +12,7 @@ import {
   CreditCard,
   Download,
   FileCheck2,
+  FileSpreadsheet,
   FileText,
   Maximize2,
   HelpCircle,
@@ -2390,96 +2391,26 @@ function BankingView({ accounts, t }) {
 }
 
 function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, onSubmit }) {
+  const [activeDrawer, setActiveDrawer] = useState(null);
+  const donorExportRows = donors.map((donor) => ({
+    Number: donor.numero,
+    Donor: donor.fullName,
+    Email: donor.courriel || "",
+    City: donor.ville || "",
+    Member: donor.membre ? t.common.yes : t.common.no,
+    Receipts: donor.recu ? t.common.yes : t.common.no,
+    Lifetime: donor.totalDonations || 0,
+    LastGift: donor.lastGift || "",
+  }));
+
   return (
-    <section className="view-stack">
+    <section className="view-stack donor-page">
       <ViewHeader
         title={t.donorDirectory}
         subtitle={t.donorForm.subtitle}
-        action={t.donorForm.new}
-        actionTargetId="donor-form"
         icon={Users}
+        stacked
       />
-
-      <div className="two-column form-layout">
-        <Panel id="donor-form" title={t.donorForm.title} icon={UserPlus}>
-          <form className="form-grid" onSubmit={onSubmit}>
-            <label>
-              {t.donorForm.number}
-              <input name="numero" placeholder={t.donorForm.autoNumber} />
-            </label>
-            <label>
-              {t.donorForm.firstName}
-              <input name="prenom" required />
-            </label>
-            <label>
-              {t.donorForm.lastName}
-              <input name="nom" required />
-            </label>
-            <label>
-              Email
-              <input name="courriel" type="email" />
-            </label>
-            <label>
-              {t.donorForm.address}
-              <input name="adresse" />
-            </label>
-            <label>
-              {t.donorForm.city}
-              <input name="ville" />
-            </label>
-            <label>
-              {t.donorForm.postalCode}
-              <input name="code_postal" />
-            </label>
-            <label>
-              {t.donorForm.province}
-              <select name="provinceID" defaultValue="1">
-                {bootstrap?.provinces?.map((province) => (
-                  <option value={province.provinceID} key={province.provinceID}>
-                    {province.abreviation} - {province.provinceEtat_en}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              {t.donorForm.cell}
-              <input name="tel_cellulaire" />
-            </label>
-            <label>
-              {t.donorForm.residence}
-              <input name="tel_residence" />
-            </label>
-            <label className="checkbox-label">
-              <input name="membre" type="checkbox" />
-              <span>{t.common.member}</span>
-            </label>
-            <label className="checkbox-label">
-              <input name="recu" type="checkbox" defaultChecked />
-              <span>{t.donorForm.receiptsEnabled}</span>
-            </label>
-            <label className="full-field">
-              {t.donorForm.notes}
-              <textarea name="notes" rows="3" />
-            </label>
-            <button className="primary-button form-submit" type="submit">
-              <UserPlus size={17} />
-              <span>{t.donorForm.title}</span>
-            </button>
-          </form>
-        </Panel>
-
-        <Panel title={t.donorForm.totals} icon={BarChart3}>
-          <div className="account-list">
-            {donors.slice(0, 6).map((donor) => (
-              <div className="account-row" key={donor.donateurID}>
-                <span>{donor.numero} - {donor.fullName}</span>
-                <strong>{currency(donor.totalDonations || 0)}</strong>
-                <div className="progress"><span style={{ width: `${Math.min(100, (donor.totalDonations || 0) / 20)}%` }} /></div>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </div>
 
       <Panel title={t.donorForm.directory} icon={Search}>
         <div className="table-toolbar">
@@ -2487,28 +2418,149 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
             <Search size={17} />
             <input value={query} onChange={(event) => { setQuery(event.target.value); onSearch(event); }} placeholder={t.donorForm.filter} />
           </div>
-          <button className="secondary-button" type="button" onClick={() => downloadCSV("donors.csv", donors)}>
-            <Download size={16} />
-            <span>{t.common.csv}</span>
-          </button>
+          <div className="export-actions">
+            <button className="secondary-button compact" type="button" onClick={() => downloadCSV("donors.csv", donorExportRows)}>
+              <FileText size={16} />
+              <span>{t.common.csv}</span>
+            </button>
+            <button className="secondary-button compact" type="button" onClick={() => downloadExcel("donors.xls", donorExportRows)}>
+              <FileSpreadsheet size={16} />
+              <span>Excel</span>
+            </button>
+          </div>
         </div>
         <DataTable
           t={t}
-          columns={["No.", t.donationForm.donor, t.common.email, t.donorForm.city, t.donorForm.lifetime, t.donorForm.lastGift, t.nav.receipts, ""]}
+          columns={["No.", t.donationForm.donor, t.common.email, t.donorForm.city, t.common.member, t.nav.receipts, t.donorForm.lifetime, t.donorForm.lastGift, ""]}
           rows={donors.map((donor) => [
             donor.numero,
             donor.fullName,
             donor.courriel || "-",
             donor.ville || "-",
+            <BooleanIcon key={`member-${donor.donateurID}`} value={donor.membre} trueLabel={t.common.yes} falseLabel={t.common.no} />,
+            <BooleanIcon key={`receipt-${donor.donateurID}`} value={donor.recu} trueLabel={t.common.yes} falseLabel={t.common.no} />,
             currency(donor.totalDonations || 0),
             donor.lastGift || "-",
-            donor.recu ? t.common.yes : t.common.no,
             <button className="secondary-button compact" type="button" onClick={() => onArchive(donor, !donor.actif)} key={`archive-${donor.donateurID}`}>
               {donor.actif ? t.common.archive : t.common.activate}
             </button>,
           ])}
         />
       </Panel>
+
+      <div className={`donor-edge-drawers ${activeDrawer ? "has-open-drawer" : ""}`}>
+        <button className={`donor-edge-tab ${activeDrawer === "add" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "add" ? null : "add")} aria-label={t.donorForm.new} title={t.donorForm.new} aria-expanded={activeDrawer === "add"} aria-controls="donor-add-drawer">
+          <UserPlus size={18} />
+        </button>
+        <button className={`donor-edge-tab ${activeDrawer === "stats" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "stats" ? null : "stats")} aria-label={t.donorForm.totals} title={t.donorForm.totals} aria-expanded={activeDrawer === "stats"} aria-controls="donor-stats-drawer">
+          <BarChart3 size={18} />
+        </button>
+
+        {activeDrawer === "add" && (
+          <aside className="donor-edge-panel" id="donor-add-drawer">
+            <div className="panel-header">
+              <div>
+                <UserPlus size={18} />
+                <h2>{t.donorForm.title}</h2>
+              </div>
+              <button className="icon-button" type="button" onClick={() => setActiveDrawer(null)} aria-label={t.common.close || t.common.cancel}>
+                <X size={16} />
+              </button>
+            </div>
+            <form className="form-grid" onSubmit={onSubmit}>
+              <label>
+                {t.donorForm.number}
+                <input name="numero" placeholder={t.donorForm.autoNumber} />
+              </label>
+              <label>
+                {t.donorForm.firstName}
+                <input name="prenom" required />
+              </label>
+              <label>
+                {t.donorForm.lastName}
+                <input name="nom" required />
+              </label>
+              <label>
+                Email
+                <input name="courriel" type="email" />
+              </label>
+              <label>
+                {t.donorForm.address}
+                <input name="adresse" />
+              </label>
+              <label>
+                {t.donorForm.city}
+                <input name="ville" />
+              </label>
+              <label>
+                {t.donorForm.postalCode}
+                <input name="code_postal" />
+              </label>
+              <label>
+                {t.donorForm.province}
+                <select name="provinceID" defaultValue="1">
+                  {bootstrap?.provinces?.map((province) => (
+                    <option value={province.provinceID} key={province.provinceID}>
+                      {province.abreviation} - {province.provinceEtat_en}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                {t.donorForm.cell}
+                <input name="tel_cellulaire" />
+              </label>
+              <label>
+                {t.donorForm.residence}
+                <input name="tel_residence" />
+              </label>
+              <label className="checkbox-label">
+                <input name="membre" type="checkbox" />
+                <span>{t.common.member}</span>
+              </label>
+              <label className="checkbox-label">
+                <input name="recu" type="checkbox" defaultChecked />
+                <span>{t.donorForm.receiptsEnabled}</span>
+              </label>
+              <label className="full-field">
+                {t.donorForm.notes}
+                <textarea name="notes" rows="3" />
+              </label>
+              <button className="primary-button form-submit" type="submit">
+                <UserPlus size={17} />
+                <span>{t.donorForm.title}</span>
+              </button>
+            </form>
+          </aside>
+        )}
+
+        {activeDrawer === "stats" && (
+          <aside className="donor-edge-panel" id="donor-stats-drawer">
+            <div className="panel-header">
+              <div>
+                <BarChart3 size={18} />
+                <h2>{t.donorForm.totals}</h2>
+              </div>
+              <button className="icon-button" type="button" onClick={() => setActiveDrawer(null)} aria-label={t.common.close || t.common.cancel}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className="donor-total-summary">
+              <span>{t.donorForm.totals}</span>
+              <strong>{donors.length}</strong>
+            </div>
+            <div className="account-list">
+              {donors.slice(0, 6).map((donor) => (
+                <div className="account-row" key={donor.donateurID}>
+                  <span>{donor.numero} - {donor.fullName}</span>
+                  <strong>{currency(donor.totalDonations || 0)}</strong>
+                  <div className="progress"><span style={{ width: `${Math.min(100, (donor.totalDonations || 0) / 20)}%` }} /></div>
+                </div>
+              ))}
+            </div>
+          </aside>
+        )}
+      </div>
     </section>
   );
 }
@@ -3530,11 +3582,11 @@ function SupportView({ t, onViewChange }) {
   );
 }
 
-function ViewHeader({ title, subtitle, action, actionTargetId, icon: Icon, onAction }) {
+function ViewHeader({ title, subtitle, action, actionTargetId, icon: Icon, onAction, stacked = false }) {
   const handleAction = onAction || (actionTargetId ? () => focusTarget(actionTargetId) : null);
 
   return (
-    <div className="view-header">
+    <div className={`view-header ${stacked ? "is-stacked" : ""}`}>
       <div>
         <span className="eyebrow"><Icon size={15} /> WeSERVE SaaS</span>
         <h1>{title}</h1>
@@ -3547,6 +3599,16 @@ function ViewHeader({ title, subtitle, action, actionTargetId, icon: Icon, onAct
         </button>
       )}
     </div>
+  );
+}
+
+function BooleanIcon({ value, trueLabel, falseLabel }) {
+  const isTrue = Boolean(value);
+
+  return (
+    <span className={`boolean-icon ${isTrue ? "is-true" : "is-false"}`} aria-label={isTrue ? trueLabel : falseLabel} title={isTrue ? trueLabel : falseLabel}>
+      {isTrue ? <Check size={16} /> : <X size={16} />}
+    </span>
   );
 }
 
@@ -3687,6 +3749,36 @@ function downloadCSV(filename, rows) {
     ...rows.map((row) => headers.map((header) => csvValue(row[header])).join(",")),
   ];
   const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadExcel(filename, rows) {
+  if (!rows?.length) {
+    return;
+  }
+
+  const headers = Object.keys(rows[0]);
+  const escapeHtml = (value) => formatCell(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+  const tableRows = [
+    `<tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr>`,
+    ...rows.map((row) => `<tr>${headers.map((header) => `<td>${escapeHtml(row[header])}</td>`).join("")}</tr>`),
+  ];
+  const worksheet = `
+    <html>
+      <head><meta charset="UTF-8" /></head>
+      <body><table>${tableRows.join("")}</table></body>
+    </html>
+  `;
+  const blob = new Blob([worksheet], { type: "application/vnd.ms-excel;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
