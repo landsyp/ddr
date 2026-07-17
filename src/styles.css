@@ -1711,11 +1711,11 @@ td {
 }
 
 .pending-donations-band .incoming-donation {
-  border-color: rgba(183, 121, 31, 0.18);
+  border-color: rgba(47, 111, 187, 0.18);
   background:
-    linear-gradient(135deg, rgba(255, 250, 239, 0.98), rgba(255, 247, 231, 0.92)),
-    #fffaf0;
-  box-shadow: 0 14px 34px rgba(82, 58, 27, 0.09);
+    linear-gradient(135deg, rgba(233, 241, 251, 0.96), rgba(255, 255, 255, 0.94)),
+    var(--blue-soft);
+  box-shadow: 0 14px 34px rgba(28, 72, 118, 0.08);
 }
 
 .incoming-donation-summary {
@@ -1753,8 +1753,8 @@ td {
   border-top: 1px solid var(--line);
   border-radius: 8px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 244, 221, 0.62)),
-    var(--amber-soft);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(233, 241, 251, 0.72)),
+    var(--blue-soft);
 }
 
 .categorize-donation-form label {
