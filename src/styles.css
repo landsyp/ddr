@@ -1180,13 +1180,19 @@ td {
 }
 
 .receipt-band {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 1fr;
+  align-items: start;
 }
 
 .receipt-copy {
   display: flex;
   gap: 18px;
   align-items: center;
+  min-width: 0;
+}
+
+.receipt-copy > div {
+  min-width: 0;
 }
 
 .receipt-copy img {
@@ -1201,15 +1207,19 @@ td {
 .receipt-copy h2 {
   margin: 0;
   font-size: clamp(1.4rem, 3vw, 2.4rem);
+  overflow-wrap: anywhere;
 }
 
 .compact-form {
   align-items: center;
+  width: 100%;
 }
 
 .compact-form input,
 .compact-form select {
-  width: 146px;
+  flex: 1 1 146px;
+  width: auto;
+  max-width: 190px;
   height: 42px;
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 8px;
