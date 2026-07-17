@@ -366,7 +366,11 @@ const copy = {
       addBank: "Link another bank account",
       addBankHelp: "Connect a new bank source for incoming donations.",
       institution: "Institution",
+      provider: "Provider",
+      connectionType: "Connection type",
       accountNumber: "Account number",
+      paypalEmail: "PayPal email",
+      stripeAccount: "Stripe account ID",
       transitNumber: "Transit",
       ibanNumber: "IBAN / routing",
       scopeAll: "Use all accounts",
@@ -726,7 +730,11 @@ const copy = {
       addBank: "Lier un autre compte bancaire",
       addBankHelp: "Connectez une nouvelle source bancaire pour les dons entrants.",
       institution: "Institution",
+      provider: "Fournisseur",
+      connectionType: "Type de connexion",
       accountNumber: "Numéro de compte",
+      paypalEmail: "Courriel PayPal",
+      stripeAccount: "ID de compte Stripe",
       transitNumber: "Transit",
       ibanNumber: "IBAN / routage",
       scopeAll: "Utiliser tous les comptes",
@@ -2071,6 +2079,10 @@ function bankBrand(institution = "") {
     return { type: "bank", color: "#d71920", soft: "#fdeaea" };
   }
 
+  if (name.includes("desjardins")) {
+    return { type: "bank", color: "#00874e", soft: "#e5f5ec" };
+  }
+
   if (name.includes("td")) {
     return { type: "bank", color: "#00843d", soft: "#e6f5ec" };
   }
@@ -2118,6 +2130,17 @@ function BankingConnection({ icon: Icon, label, meta, t }) {
 }
 
 function BankingView({ accounts, t }) {
+  const bankingProviders = [
+    { value: "Banque Nationale", label: "Banque Nationale", type: "bank" },
+    { value: "Desjardins", label: "Desjardins", type: "bank" },
+    { value: "RBC", label: "RBC", type: "bank" },
+    { value: "TD Bank", label: "TD Bank", type: "bank" },
+    { value: "BMO", label: "BMO", type: "bank" },
+    { value: "CIBC", label: "CIBC", type: "bank" },
+    { value: "Scotiabank", label: "Scotiabank", type: "bank" },
+    { value: "PayPal", label: "PayPal", type: "paypal" },
+    { value: "Stripe", label: "Stripe", type: "card" },
+  ];
   const defaultLinkedAccounts = [
     {
       id: "national-bank",
@@ -2140,6 +2163,7 @@ function BankingView({ accounts, t }) {
   ];
   const [linkedAccounts, setLinkedAccounts] = useState(defaultLinkedAccounts);
   const [addBankOpen, setAddBankOpen] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState(bankingProviders[0]);
   const [scopeMode, setScopeMode] = useState("all");
 
   function accountNames(bankAccount) {
@@ -2163,15 +2187,16 @@ function BankingView({ accounts, t }) {
       ...currentAccounts,
       {
         id: `bank-${Date.now()}`,
-        institution: data.institution,
-        accountNumber: data.accountNumber,
-        transit: data.transit,
-        iban: data.iban,
+        institution: data.provider,
+        accountNumber: data.accountNumber || data.paypalEmail || data.stripeAccount,
+        transit: selectedProvider.type === "bank" ? data.transit : selectedProvider.label,
+        iban: selectedProvider.type === "bank" ? data.iban : data.stripeAccount || data.paypalEmail,
         scope: data.scope,
         accountIds: data.scope === "all" ? [] : selectedAccountIds,
       },
     ]);
     event.currentTarget.reset();
+    setSelectedProvider(bankingProviders[0]);
     setScopeMode("all");
     setAddBankOpen(false);
   }
@@ -2230,21 +2255,45 @@ function BankingView({ accounts, t }) {
         <Panel title={t.banking.addBank} icon={Plus}>
           <form className="form-grid banking-link-form" onSubmit={addLinkedBankAccount}>
             <label>
-              {t.banking.institution}
-              <input name="institution" placeholder="Banque Nationale" required />
+              {t.banking.provider}
+              <select
+                name="provider"
+                value={selectedProvider.value}
+                onChange={(event) => setSelectedProvider(bankingProviders.find((provider) => provider.value === event.target.value) || bankingProviders[0])}
+              >
+                {bankingProviders.map((provider) => (
+                  <option value={provider.value} key={provider.value}>{provider.label}</option>
+                ))}
+              </select>
             </label>
-            <label>
-              {t.banking.accountNumber}
-              <input name="accountNumber" placeholder="**** 1842" required />
-            </label>
-            <label>
-              {t.banking.transitNumber}
-              <input name="transit" placeholder="006" required />
-            </label>
-            <label>
-              {t.banking.ibanNumber}
-              <input name="iban" placeholder="CA-006-1842" required />
-            </label>
+            {selectedProvider.type === "bank" && (
+              <>
+                <label>
+                  {t.banking.accountNumber}
+                  <input name="accountNumber" placeholder="**** 1842" required />
+                </label>
+                <label>
+                  {t.banking.transitNumber}
+                  <input name="transit" placeholder="006" required />
+                </label>
+                <label>
+                  {t.banking.ibanNumber}
+                  <input name="iban" placeholder="CA-006-1842" required />
+                </label>
+              </>
+            )}
+            {selectedProvider.type === "paypal" && (
+              <label>
+                {t.banking.paypalEmail}
+                <input name="paypalEmail" placeholder="finance@organization.org" required type="email" />
+              </label>
+            )}
+            {selectedProvider.type === "card" && (
+              <label>
+                {t.banking.stripeAccount}
+                <input name="stripeAccount" placeholder="acct_1234" required />
+              </label>
+            )}
             <label>
               {t.banking.accountScope}
               <select name="scope" value={scopeMode} onChange={(event) => setScopeMode(event.target.value)}>
