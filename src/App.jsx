@@ -801,6 +801,10 @@ const defaultReceiptPeriod = {
 const incomingDonationQueue = [
   { id: "bank-001", source: "Stripe payout", date: "2026-07-16", amount: 250, donorNumber: "1", methodID: 4, methodLabel: "Card", note: "Grace Family - online gift" },
   { id: "paypal-014", source: "PayPal", date: "2026-07-15", amount: 75, donorNumber: "2", methodID: 4, methodLabel: "Card", note: "Monthly support" },
+  { id: "desjardins-221", source: "Desjardins", date: "2026-07-14", amount: 420, donorNumber: "3", methodID: 2, methodLabel: "Bank transfer", note: "Summer campaign transfer" },
+  { id: "national-118", source: "Banque Nationale", date: "2026-07-13", amount: 95, donorNumber: "4", methodID: 2, methodLabel: "Bank transfer", note: "Youth fund deposit" },
+  { id: "paypal-029", source: "PayPal", date: "2026-07-12", amount: 180, donorNumber: "5", methodID: 4, methodLabel: "Card", note: "Community meal support" },
+  { id: "stripe-337", source: "Stripe payout", date: "2026-07-11", amount: 60, donorNumber: "1", methodID: 4, methodLabel: "Card", note: "Weekly recurring gift" },
 ];
 
 async function api(path, options = {}) {
