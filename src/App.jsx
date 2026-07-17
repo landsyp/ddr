@@ -1874,7 +1874,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
   const [showAllPending, setShowAllPending] = useState(false);
   const [donationSearch, setDonationSearch] = useState("");
   const linkedBankAccounts = savedBankingConnections(accounts);
-  const visiblePendingDonations = showAllPending ? pendingDonations : pendingDonations.slice(0, 3);
+  const visiblePendingDonations = showAllPending ? pendingDonations : pendingDonations.slice(0, 2);
   const hiddenPendingCount = Math.max(0, pendingDonations.length - visiblePendingDonations.length);
   const allDonationRows = [
     ...pendingDonations.map((donation) => ({
@@ -1933,7 +1933,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
             <article className={`incoming-donation ${isCategorizing ? "is-categorizing" : ""}`} key={donation.id}>
               <div className="incoming-donation-summary">
                 <div>
-                  <span className="status-pill donation-pending">{t.common.pending}</span>
+                  <span className="status-pill pending">{t.common.pending}</span>
                   <strong>{currency(donation.amount)}</strong>
                   <small>{donation.source} • {donation.date} • {donation.methodLabel}</small>
                   <p>{donation.note}</p>
@@ -1961,7 +1961,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
           }) : (
             <div className="incoming-empty-state">{t.donationForm.noPendingDonations}</div>
           )}
-          {pendingDonations.length > 3 && (
+          {pendingDonations.length > 2 && (
             <button className="secondary-button compact pending-toggle" type="button" onClick={() => setShowAllPending((isOpen) => !isOpen)}>
               <ChevronDown size={15} />
               <span>{showAllPending ? t.donationForm.collapsePending : `${t.donationForm.showAllPending} (${hiddenPendingCount})`}</span>
@@ -1989,7 +1989,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
             row.method,
             currency(row.amount),
             row.status === "pending"
-              ? <span className="status-pill donation-pending" key={`pending-${row.id}`}>{t.common.pending}</span>
+              ? <span className="status-pill pending donation-pending" key={`pending-${row.id}`}>{t.common.pending}</span>
               : <StatusPill key={`status-${row.id}`} t={t} value={row.status} />,
             row.status === "pending" ? (
               <button className="icon-button table-icon categorize-icon-button" type="button" key={`categorize-${row.id}`} aria-label={t.banking.categorize} title={t.banking.categorize} onClick={() => {
