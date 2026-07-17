@@ -1843,6 +1843,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
   const [manualFormOpen, setManualFormOpen] = useState(false);
   const [categorizingDonationId, setCategorizingDonationId] = useState(null);
   const linkedBankAccounts = savedBankingConnections(accounts);
+  const [expandedBankConnectionId, setExpandedBankConnectionId] = useState(linkedBankAccounts[0]?.id || null);
 
   return (
     <section className="view-stack">
@@ -1903,13 +1904,16 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
       <Panel title={t.banking.title} icon={Landmark}>
         <div className="banking-subtle-layout">
           <p className="panel-copy">{t.banking.subtitle}</p>
-          <div className="banking-card-list subtle">
+          <div className="banking-accordion-list">
             {linkedBankAccounts.map((bankAccount) => (
-              <BankingConnection
+              <BankingConnectionAccordion
+                bankAccount={bankAccount}
                 detail={bankingAccountNames(bankAccount, accounts, t)}
+                isExpanded={expandedBankConnectionId === bankAccount.id}
                 key={bankAccount.id}
-                label={bankAccount.institution}
-                meta={bankAccount.accountNumber}
+                onToggle={() => setExpandedBankConnectionId((currentId) => (
+                  currentId === bankAccount.id ? null : bankAccount.id
+                ))}
                 t={t}
               />
             ))}
@@ -2124,18 +2128,41 @@ function BankBrandIcon({ brand, size = 18 }) {
   return <Landmark size={size} />;
 }
 
-function BankingConnection({ detail, label, meta, t }) {
-  const brand = bankBrand(`${label} ${meta}`);
+function BankingConnectionAccordion({ bankAccount, detail, isExpanded, onToggle, t }) {
+  const brand = bankBrand(`${bankAccount.institution} ${bankAccount.accountNumber}`);
 
   return (
-    <article className="banking-connection" style={{ "--bank-color": brand.color, "--bank-soft": brand.soft }}>
-      <div className="bank-brand-mark">
-        <BankBrandIcon brand={brand} size={18} />
-      </div>
-      <span>{label}</span>
-      <small>{meta}</small>
-      {detail && <small>{detail}</small>}
-      <strong><CheckCircle2 size={15} /> {t.banking.linked}</strong>
+    <article className={`banking-accordion-item ${isExpanded ? "is-expanded" : ""}`} style={{ "--bank-color": brand.color, "--bank-soft": brand.soft }}>
+      <button className="banking-accordion-summary" type="button" onClick={onToggle} aria-expanded={isExpanded}>
+        <div className="bank-brand-mark">
+          <BankBrandIcon brand={brand} size={18} />
+        </div>
+        <div className="banking-accordion-title">
+          <span>{bankAccount.institution}</span>
+          <small>{bankAccount.accountNumber}</small>
+        </div>
+        <strong><CheckCircle2 size={15} /> {t.banking.linked}</strong>
+        <ChevronDown size={18} />
+      </button>
+
+      {isExpanded && (
+        <div className="banking-accordion-detail">
+          <dl className="banking-detail-list">
+            <div>
+              <dt>{t.banking.transitNumber}</dt>
+              <dd>{bankAccount.transit}</dd>
+            </div>
+            <div>
+              <dt>{t.banking.ibanNumber}</dt>
+              <dd>{bankAccount.iban}</dd>
+            </div>
+          </dl>
+          <div className="banking-scope-box">
+            <strong>{t.banking.accountScope}</strong>
+            <p>{detail}</p>
+          </div>
+        </div>
+      )}
     </article>
   );
 }
