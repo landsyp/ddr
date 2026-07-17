@@ -3002,8 +3002,16 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
                         <button className="icon-button table-icon" type="button" onClick={() => setEditingAccountId(account.compteID)} aria-label={t.common.edit}>
                           <Pencil size={15} />
                         </button>
-                        <button className="icon-button table-icon" type="button" onClick={() => setExpandedAccountId(account.compteID)} aria-label={t.common.view}>
-                          <Maximize2 size={15} />
+                        <button
+                          className="icon-button table-icon"
+                          type="button"
+                          onClick={() => {
+                            setSelectedAccountId(null);
+                            setEditingAccountId(null);
+                          }}
+                          aria-label={t.common.cancel}
+                        >
+                          <Minimize2 size={15} />
                         </button>
                         <button className="icon-button table-icon danger" type="button" onClick={() => setAccountPendingDelete(account)} aria-label={t.common.delete}>
                           <Trash2 size={15} />
@@ -3017,6 +3025,7 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
                         onCancelEdit={() => setEditingAccountId(null)}
                         onEdit={() => setEditingAccountId(account.compteID)}
                         onSubmitEdit={(event) => submitAccountEdit(event, account)}
+                        showInlineEdit={false}
                         t={t}
                       />
                     </div>
@@ -3134,7 +3143,7 @@ function ConfirmDialog({ body, confirmLabel, isDanger = false, onCancel, onConfi
   );
 }
 
-function AccountDetail({ account, donations, isEditing, isExpanded = false, onCancelEdit, onEdit, onSubmitEdit, t }) {
+function AccountDetail({ account, donations, isEditing, isExpanded = false, onCancelEdit, onEdit, onSubmitEdit, showInlineEdit = true, t }) {
   if (isEditing) {
     return (
       <form className="form-grid compact-account-form" onSubmit={onSubmitEdit}>
@@ -3193,9 +3202,11 @@ function AccountDetail({ account, donations, isEditing, isExpanded = false, onCa
 
       <div className="panel-subheader">
         <h3>{t.accounts.donationsList}</h3>
-        <button className="icon-button table-icon" type="button" onClick={onEdit} aria-label={t.common.edit}>
-          <Pencil size={15} />
-        </button>
+        {showInlineEdit && (
+          <button className="icon-button table-icon" type="button" onClick={onEdit} aria-label={t.common.edit}>
+            <Pencil size={15} />
+          </button>
+        )}
       </div>
 
       <DataTable
