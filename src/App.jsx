@@ -1976,7 +1976,6 @@ function CategorizeDonationForm({ accounts, detectedDonor, donation, donors, onS
     const data = formObject(event.currentTarget);
     onSubmit({
       ...data,
-      donateurID: detectedDonor?.donateurID || data.donateurID,
       numero: donation.donorNumber,
     });
   }
@@ -1985,17 +1984,14 @@ function CategorizeDonationForm({ accounts, detectedDonor, donation, donors, onS
     <form className="categorize-donation-form" onSubmit={submitCategorization}>
       <label>
         {t.donationForm.detectedDonor}
-        {detectedDonor ? (
-          <input value={`${detectedDonor.numero} - ${detectedDonor.fullName}`} readOnly />
-        ) : (
-          <select name="donateurID" required>
-            {donors.map((donor) => (
-              <option value={donor.donateurID} key={donor.donateurID}>
-                {donor.numero} - {donor.fullName}
-              </option>
-            ))}
-          </select>
-        )}
+        <select name="donateurID" required defaultValue={detectedDonor?.donateurID || ""}>
+          {!detectedDonor && <option value="">{t.donationForm.donor}</option>}
+          {donors.map((donor) => (
+            <option value={donor.donateurID} key={donor.donateurID}>
+              {donor.numero} - {donor.fullName}
+            </option>
+          ))}
+        </select>
       </label>
       <label>
         {t.donationForm.chooseAccount}

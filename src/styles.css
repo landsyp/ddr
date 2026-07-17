@@ -40,6 +40,19 @@ textarea {
   font: inherit;
 }
 
+select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 20px) 50%,
+    calc(100% - 14px) 50%;
+  background-repeat: no-repeat;
+  background-size: 6px 6px, 6px 6px;
+  padding-right: 42px;
+}
+
 button {
   cursor: pointer;
 }
@@ -603,10 +616,15 @@ button {
   min-height: 42px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #ffffff;
+  background-color: #ffffff;
   color: var(--ink);
   padding: 0 12px;
   outline: 0;
+}
+
+.form-grid select,
+.report-controls select {
+  padding-right: 42px;
 }
 
 .form-grid textarea {
@@ -1147,9 +1165,13 @@ td {
   height: 42px;
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.96);
+  background-color: rgba(255, 255, 255, 0.96);
   color: var(--ink);
   padding: 0 10px;
+}
+
+.compact-form select {
+  padding-right: 42px;
 }
 
 .report-form {
@@ -1454,9 +1476,13 @@ td {
   min-height: 42px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #ffffff;
+  background-color: #ffffff;
   color: var(--ink);
   padding: 0 12px;
+}
+
+.categorize-donation-form select {
+  padding-right: 42px;
 }
 
 .categorize-donation-form input[readonly] {
