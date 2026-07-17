@@ -667,6 +667,8 @@ button {
 .palette-option,
 .account-accordion-item,
 .notification-item {
+  min-width: 0;
+  overflow-wrap: anywhere;
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
@@ -1467,7 +1469,7 @@ td {
 }
 
 .payment-tile-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: 16px;
   margin-bottom: 16px;
 }
@@ -1496,6 +1498,10 @@ td {
   color: var(--ink);
   text-align: left;
   box-shadow: var(--shadow-tile);
+}
+
+.payment-method-tile .banking-detail-list {
+  grid-template-columns: 1fr;
 }
 
 .payment-method-tile h2 {
@@ -2264,11 +2270,28 @@ td {
   .receipt-actions {
     margin-top: 0;
   }
+
+  .account-accordion-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .account-accordion-summary .account-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 640px) {
   .workspace {
     padding: 14px 12px 110px;
+  }
+
+  .notification-dropdown {
+    position: fixed;
+    top: 92px;
+    right: 12px;
+    left: 12px;
+    width: auto;
   }
 
   .topbar {
