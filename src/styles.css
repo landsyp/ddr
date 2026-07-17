@@ -379,7 +379,8 @@ button {
   box-shadow: 0 8px 22px rgba(25, 46, 49, 0.055);
 }
 
-.profile-chip > span {
+.profile-chip > span,
+.profile-chip > img {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -390,6 +391,7 @@ button {
   color: #ffffff;
   font-size: 0.78rem;
   font-weight: 800;
+  object-fit: cover;
 }
 
 .profile-dropdown {
@@ -440,6 +442,7 @@ button {
   background: var(--brand);
   color: #ffffff;
   font-weight: 900;
+  object-fit: cover;
 }
 
 .profile-dropdown button {
@@ -1978,7 +1981,8 @@ tr.donation-register-pending-row:hover td {
 .subscription-plan-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 18px;
+  align-items: center;
 }
 
 .subscription-plan {
@@ -1986,17 +1990,54 @@ tr.donation-register-pending-row:hover td {
   display: grid;
   gap: 12px;
   min-height: 360px;
-  padding: 18px;
+  padding: 20px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface-strong);
   box-shadow: var(--shadow-tile);
+  overflow: hidden;
+}
+
+.subscription-plan::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 6px;
+  background: var(--plan-accent, var(--brand));
+  content: "";
 }
 
 .subscription-plan.is-featured {
-  border-color: rgba(29, 111, 95, 0.35);
+  min-height: 400px;
+  padding: 24px;
+  border-color: rgba(205, 151, 48, 0.42);
   background: #ffffff;
   box-shadow: var(--shadow-lift);
+  transform: translateY(-8px);
+}
+
+.subscription-plan.plan-basic {
+  --plan-accent: #607083;
+  background:
+    linear-gradient(135deg, rgba(96, 112, 131, 0.08), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+}
+
+.subscription-plan.plan-gold {
+  --plan-accent: #c99730;
+  background:
+    linear-gradient(135deg, rgba(255, 246, 225, 0.94), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+}
+
+.subscription-plan.plan-premium {
+  --plan-accent: #4f6fb8;
+  background:
+    linear-gradient(135deg, rgba(79, 111, 184, 0.1), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+}
+
+.subscription-plan.is-current {
+  border-color: rgba(205, 151, 48, 0.54);
 }
 
 .subscription-plan > span:not(.plan-badge) {
@@ -2008,6 +2049,7 @@ tr.donation-register-pending-row:hover td {
 
 .subscription-plan strong {
   font-size: 2rem;
+  color: var(--ink);
 }
 
 .subscription-plan p {
@@ -2028,9 +2070,12 @@ tr.donation-register-pending-row:hover td {
   display: flex;
   gap: 9px;
   align-items: center;
+  color: var(--ink);
+  font-weight: 750;
 }
 
 .subscription-plan button {
+  margin-top: auto;
   align-self: end;
 }
 
@@ -2041,8 +2086,8 @@ tr.donation-register-pending-row:hover td {
   min-height: 26px;
   padding: 4px 9px;
   border-radius: 999px;
-  background: var(--green-soft);
-  color: var(--brand);
+  background: rgba(205, 151, 48, 0.16);
+  color: #8a641b;
   font-size: 0.72rem;
   font-weight: 900;
 }
@@ -2425,26 +2470,26 @@ tr.donation-register-pending-row:hover td {
   margin: 0;
 }
 
-.payment-scope-box {
-  position: relative;
-  display: grid;
-  gap: 14px;
-}
-
-.payment-actions {
+.payment-card-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
+  margin-top: auto;
 }
 
-.payment-actions .secondary-button {
-  min-height: 38px;
+.payment-action-pill {
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--brand);
+  box-shadow: 0 10px 20px rgba(27, 31, 42, 0.08);
 }
 
-.secondary-button.danger {
+.payment-action-pill.danger {
   color: var(--red);
 }
 
+.payment-action-pill:disabled,
 .secondary-button:disabled {
   cursor: not-allowed;
   opacity: 0.58;
@@ -3247,6 +3292,11 @@ tr.donation-register-pending-row:hover td {
   .payment-tile-grid,
   .banking-tile-grid {
     grid-template-columns: 1fr;
+  }
+
+  .subscription-plan.is-featured {
+    min-height: 360px;
+    transform: none;
   }
 
   .login-panel {

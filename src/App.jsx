@@ -30,7 +30,6 @@ import {
   ReceiptText,
   Search,
   Settings,
-  ShieldCheck,
   Sparkles,
   Trash2,
   UserPlus,
@@ -289,11 +288,14 @@ const copy = {
       refreshed: "Report refreshed.",
     },
     subscription: {
-      title: "Subscription request",
+      title: "Subscription information",
       subtitle:
-        "Request access for a charity and store the request in SQLite for follow-up.",
+        "Review your current plan, compare options, and submit changes for follow-up.",
       pricing: "Annual plans",
+      submissionRequest: "Submission request",
       submit: "Submit request",
+      currentPlan: "This is your plan",
+      upgradePlan: "Upgrade plan",
       success: "Subscription request saved.",
       securityError: "The security answer must be 70.",
       charityName: "Charity name",
@@ -682,11 +684,14 @@ const copy = {
       refreshed: "Rapport actualisé.",
     },
     subscription: {
-      title: "Demande d'abonnement",
+      title: "Informations d'abonnement",
       subtitle:
-        "Enregistrez une demande d'accès pour un organisme dans SQLite pour le suivi.",
+        "Consultez votre plan actuel, comparez les options et envoyez les changements pour le suivi.",
       pricing: "Forfaits annuels",
+      submissionRequest: "Demande de soumission",
       submit: "Envoyer la demande",
+      currentPlan: "C'est votre plan",
+      upgradePlan: "Améliorer le plan",
       success: "Demande d'abonnement enregistrée.",
       securityError: "La réponse de sécurité doit être 70.",
       charityName: "Nom de l'organisme",
@@ -846,6 +851,9 @@ const userSeatPlans = {
   Gold: { seats: 1, next: "Premium" },
   Premium: { seats: 8, next: null },
 };
+
+const demoUserAvatar =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='14' y1='10' x2='86' y2='90' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%231d6f5f'/%3E%3Cstop offset='1' stop-color='%2386b9a5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='96' height='96' rx='24' fill='url(%23g)'/%3E%3Ccircle cx='48' cy='36' r='16' fill='%23fff' fill-opacity='.95'/%3E%3Cpath d='M22 82c4-18 16-28 26-28s22 10 26 28' fill='%23fff' fill-opacity='.95'/%3E%3C/svg%3E";
 
 const defaultReceiptPeriod = {
   dateDebut: "2026-01-01",
@@ -1804,7 +1812,7 @@ function Topbar({ language, notifications = [], onLanguageChange, onLogout, onMe
             aria-expanded={profileOpen}
             aria-label={t.common.accountSettings}
           >
-            <span>{initials(user)}</span>
+            <img src={demoUserAvatar} alt="" />
             <div>
               <strong>{user?.prenom || "Admin"}</strong>
               <small>{user?.admin ? t.common.admin : t.common.user}</small>
@@ -1814,7 +1822,7 @@ function Topbar({ language, notifications = [], onLanguageChange, onLogout, onMe
           {profileOpen && (
             <div className="profile-dropdown">
               <div className="profile-dropdown-header">
-                <span className="profile-dropdown-avatar">{initials(user)}</span>
+                <img className="profile-dropdown-avatar" src={demoUserAvatar} alt="" />
                 <div>
                   <strong>{`${user?.prenom || ""} ${user?.nom || ""}`.trim() || "Admin"}</strong>
                   <small>{user?.courriel || user?.email || "-"}</small>
@@ -3341,6 +3349,8 @@ function Reports({ reportResult, t, onRunReport }) {
 }
 
 function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAnswer, t, onSubmit }) {
+  const currentPlanName = "Gold";
+
   return (
     <section className="view-stack">
       <ViewHeader
@@ -3349,13 +3359,14 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
         action={t.subscription.submit}
         actionTargetId="subscription-form"
         icon={Building2}
+        stacked
       />
 
       <Panel title={t.subscription.plans} icon={Sparkles}>
         <div className="subscription-plan-grid">
           {t.subscription.plansList.map((plan, index) => (
-            <article className={`subscription-plan ${index === 1 ? "is-featured" : ""}`} key={plan.name}>
-              {index === 1 && <span className="plan-badge">{t.common.recommended}</span>}
+            <article className={`subscription-plan plan-${plan.name.toLowerCase()} ${plan.name === currentPlanName ? "is-current" : ""} ${index === 1 ? "is-featured" : ""}`} key={plan.name}>
+              {plan.name === currentPlanName && <span className="plan-badge">{t.subscription.currentPlan}</span>}
               <span>{plan.name}</span>
               <strong>{plan.price}</strong>
               <p>{plan.description}</p>
@@ -3364,16 +3375,15 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
                   <li key={feature}><CheckCircle2 size={16} /> {feature}</li>
                 ))}
               </ul>
-              <button className={index === 1 ? "primary-button" : "secondary-button"} type="button">
-                <span>{t.subscription.choose}</span>
+              <button className={plan.name === currentPlanName ? "secondary-button" : "primary-button"} type="button" disabled={plan.name === currentPlanName}>
+                <span>{plan.name === currentPlanName ? t.subscription.currentPlan : t.subscription.upgradePlan}</span>
               </button>
             </article>
           ))}
         </div>
       </Panel>
 
-      <div className="two-column form-layout">
-        <Panel id="subscription-form" title={t.subscription.title} icon={ClipboardList}>
+        <Panel id="subscription-form" title={t.subscription.submissionRequest} icon={ClipboardList}>
           <form className="form-grid subscription-form" onSubmit={onSubmit}>
             <label>
               {t.subscription.charityName}
@@ -3432,18 +3442,6 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
             </button>
           </form>
         </Panel>
-
-        <Panel title={t.subscription.pricing} icon={ShieldCheck}>
-          <div className="plan-note-list">
-            {t.subscription.plansList.map((plan) => (
-              <div className="plan-note" key={`note-${plan.name}`}>
-                <span>{plan.name}</span>
-                <strong>{plan.price}</strong>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </div>
     </section>
   );
 }
@@ -3494,7 +3492,7 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
         >
           {!isAdmin && (
             <div className="account-settings-card">
-              <span className="account-avatar">{initials(user)}</span>
+              <img className="account-avatar" src={demoUserAvatar} alt="" />
               <div>
                 <strong>{`${user?.prenom || ""} ${user?.nom || ""}`.trim() || t.common.user}</strong>
                 <small>{user?.courriel || user?.email || "-"}</small>
@@ -3856,27 +3854,19 @@ function PaymentMethodCard({ brand, details, expiry, isDefault = false, t }) {
           <dd>{isDefault ? t.settings.defaultMethod : t.common.active}</dd>
         </div>
       </dl>
-      <div className="banking-scope-box payment-scope-box">
-        <div>
-          <strong>{t.common.manage}</strong>
-          <p>{brand} {details}</p>
-        </div>
-        <div className="payment-actions">
-          <button className="secondary-button compact" type="button" aria-label={t.settings.updatePayment}>
-            <Pencil size={15} />
-            <span>{t.common.update}</span>
-          </button>
-          <button
-            className="secondary-button compact danger"
-            type="button"
-            disabled={isDefault}
-            title={isDefault ? t.settings.defaultPaymentLocked : t.settings.deletePayment}
-            aria-label={isDefault ? t.settings.defaultPaymentLocked : t.settings.deletePayment}
-          >
-            <Trash2 size={15} />
-            <span>{isDefault ? t.common.locked : t.common.delete}</span>
-          </button>
-        </div>
+      <div className="payment-card-actions">
+        <button className="icon-button table-icon payment-action-pill" type="button" aria-label={t.settings.updatePayment} title={t.settings.updatePayment}>
+          <Pencil size={15} />
+        </button>
+        <button
+          className="icon-button table-icon payment-action-pill danger"
+          type="button"
+          disabled={isDefault}
+          title={isDefault ? t.settings.defaultPaymentLocked : t.settings.deletePayment}
+          aria-label={isDefault ? t.settings.defaultPaymentLocked : t.settings.deletePayment}
+        >
+          <Trash2 size={15} />
+        </button>
       </div>
     </article>
   );
