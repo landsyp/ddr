@@ -170,6 +170,8 @@ const copy = {
       deleted: "Donor deleted.",
       deleteTitle: "Delete this donor?",
       deleteBody: "Are you sure you want to delete {name}? Donors with existing donations should be set inactive instead.",
+      deactivateTitle: "Make this donor inactive?",
+      deactivateBody: "Are you sure you want to make {name} inactive? They will remain in the directory with an inactive status.",
     },
     donationForm: {
       title: "Record a donation",
@@ -580,6 +582,8 @@ const copy = {
       deleted: "Donateur supprimé.",
       deleteTitle: "Supprimer ce donateur?",
       deleteBody: "Voulez-vous vraiment supprimer {name}? Les donateurs avec des dons existants devraient plutôt être désactivés.",
+      deactivateTitle: "Rendre ce donateur inactif?",
+      deactivateBody: "Voulez-vous vraiment rendre {name} inactif? Il restera dans le répertoire avec le statut inactif.",
     },
     donationForm: {
       title: "Enregistrer un don",
@@ -2847,6 +2851,7 @@ function BankingView({ accounts, t }) {
 function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, onSearch, onSubmit, onUpdate }) {
   const [activeDrawer, setActiveDrawer] = useState(null);
   const [editingDonor, setEditingDonor] = useState(null);
+  const [donorPendingDeactivate, setDonorPendingDeactivate] = useState(null);
   const [donorPendingDelete, setDonorPendingDelete] = useState(null);
   const donorExportRows = donors.map((donor) => ({
     Number: donor.numero,
@@ -2921,7 +2926,14 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, on
               <button
                 className={`icon-button table-icon ${donor.actif ? "" : "success"}`}
                 type="button"
-                onClick={() => onArchive(donor, !donor.actif)}
+                onClick={() => {
+                  if (donor.actif) {
+                    setDonorPendingDeactivate(donor);
+                    return;
+                  }
+
+                  onArchive(donor, true);
+                }}
                 aria-label={`${donor.actif ? t.common.deactivate : t.common.activate} ${donor.fullName}`}
                 title={donor.actif ? t.common.deactivate : t.common.activate}
               >
@@ -3009,6 +3021,20 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, on
           </aside>
         )}
       </div>
+
+      {donorPendingDeactivate && (
+        <ConfirmDialog
+          body={t.donorForm.deactivateBody.replace("{name}", donorPendingDeactivate.fullName)}
+          confirmLabel={t.common.deactivate}
+          onCancel={() => setDonorPendingDeactivate(null)}
+          onConfirm={async () => {
+            await onArchive(donorPendingDeactivate, false);
+            setDonorPendingDeactivate(null);
+          }}
+          t={t}
+          title={t.donorForm.deactivateTitle}
+        />
+      )}
 
       {donorPendingDelete && (
         <ConfirmDialog
