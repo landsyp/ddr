@@ -1411,6 +1411,10 @@ td {
   box-shadow: 0 14px 34px rgba(82, 58, 27, 0.09);
 }
 
+.incoming-donation.is-categorizing {
+  grid-template-columns: 1fr;
+}
+
 .incoming-donation strong,
 .incoming-donation small {
   display: block;
@@ -1420,6 +1424,52 @@ td {
 .incoming-donation p {
   margin: 8px 0 0;
   color: var(--muted);
+}
+
+.incoming-donation .detected-donor {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.categorize-donation-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(220px, 1fr) minmax(180px, 0.8fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.categorize-donation-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.categorize-donation-form input,
+.categorize-donation-form select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  padding: 0 12px;
+}
+
+.categorize-donation-form input[readonly] {
+  background: var(--surface-strong);
+}
+
+.incoming-empty-state {
+  padding: 18px;
+  border: 1px dashed rgba(183, 121, 31, 0.35);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--muted);
+  text-align: center;
 }
 
 .manual-donation-toggle {
@@ -1507,7 +1557,7 @@ td {
 }
 
 .custom-palette-builder .custom-palette-name {
-  grid-template-columns: minmax(0, 1fr) minmax(170px, 1.2fr);
+  grid-template-columns: minmax(0, 0.55fr) minmax(260px, 1.45fr);
 }
 
 .custom-palette-name input {
@@ -1914,7 +1964,8 @@ td {
   .view-header,
   .receipt-band,
   .pending-donations-band,
-  .banking-subtle-layout {
+  .banking-subtle-layout,
+  .categorize-donation-form {
     grid-template-columns: 1fr;
   }
 

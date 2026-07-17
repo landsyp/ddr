@@ -166,6 +166,11 @@ const copy = {
       register: "Donation register",
       deleted: "Donation deleted.",
       confirmDelete: "Delete donation {id} from {name}?",
+      detectedDonor: "Detected donor",
+      donorNumber: "Donor number",
+      chooseAccount: "Choose account",
+      categorizeSuccess: "Pending donation categorized.",
+      noPendingDonations: "No pending donations to categorize.",
     },
     accounts: {
       title: "Account list",
@@ -208,6 +213,7 @@ const copy = {
       accentColor: "Accent",
       highlightColor: "Highlight",
       options: [
+        ["Default", "The original WeSERVE interface palette"],
         ["Evergreen", "Calm green for finance and operations"],
         ["Harbor", "Blue accent with a crisp SaaS feel"],
         ["Plum", "Warmer accent for a more branded workspace"],
@@ -503,6 +509,11 @@ const copy = {
       register: "Registre des dons",
       deleted: "Don supprimé.",
       confirmDelete: "Supprimer le don {id} de {name}?",
+      detectedDonor: "Donateur détecté",
+      donorNumber: "Numéro de donateur",
+      chooseAccount: "Choisir le compte",
+      categorizeSuccess: "Don en attente catégorisé.",
+      noPendingDonations: "Aucun don en attente à catégoriser.",
     },
     accounts: {
       title: "Liste des comptes",
@@ -545,6 +556,7 @@ const copy = {
       accentColor: "Accent",
       highlightColor: "Mise en valeur",
       options: [
+        ["Default", "La palette originale de l'interface WeSERVE"],
         ["Evergreen", "Vert calme pour la finance et les opérations"],
         ["Harbor", "Accent bleu avec une allure SaaS nette"],
         ["Plum", "Accent plus chaleureux pour une image personnalisée"],
@@ -733,8 +745,8 @@ const defaultReceiptPeriod = {
 };
 
 const incomingDonationQueue = [
-  { id: "bank-001", source: "Stripe payout", date: "2026-07-16", amount: 250, note: "Grace Family - online gift" },
-  { id: "paypal-014", source: "PayPal", date: "2026-07-15", amount: 75, note: "Monthly support" },
+  { id: "bank-001", source: "Stripe payout", date: "2026-07-16", amount: 250, donorNumber: "1", note: "Grace Family - online gift" },
+  { id: "paypal-014", source: "PayPal", date: "2026-07-15", amount: 75, donorNumber: "2", note: "Monthly support" },
 ];
 
 async function api(path, options = {}) {
@@ -808,10 +820,11 @@ function App() {
   const [query, setQuery] = useState("");
   const [member, setMember] = useState(false);
   const [subscriptionAnswer, setSubscriptionAnswer] = useState("");
-  const [palette, setPalette] = useState("Evergreen");
+  const [palette, setPalette] = useState("Default");
   const [savedPalettes, setSavedPalettes] = useState([]);
+  const [pendingDonations, setPendingDonations] = useState(incomingDonationQueue);
   const t = copy[language];
-  const notifications = incomingDonationQueue.map((donation) => ({
+  const notifications = pendingDonations.map((donation) => ({
     id: donation.id,
     title: currency(donation.amount),
     meta: `${donation.source} - ${donation.date}`,
@@ -1039,6 +1052,28 @@ function App() {
       });
       event.currentTarget.reset();
       await refresh(t.donationForm.success);
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
+  async function handleCategorizePendingDonation(pendingDonation, data) {
+    try {
+      await api("/api/donations", {
+        method: "POST",
+        body: JSON.stringify({
+          donateurID: data.donateurID,
+          numero: data.numero,
+          compteID: data.compteID,
+          montant: pendingDonation.amount,
+          dateDon: pendingDonation.date,
+          methodeDonID: data.methodeDonID,
+          description: pendingDonation.note,
+        }),
+      });
+      setPendingDonations((currentDonations) => currentDonations.filter((donation) => donation.id !== pendingDonation.id));
+      await loadWorkspace(query);
+      showNotice(t.donationForm.categorizeSuccess);
     } catch (saveError) {
       showError(saveError.message);
     }
@@ -1301,7 +1336,7 @@ function App() {
           notifications={notifications}
           onNotificationSelect={handleNotificationSelect}
           onProfileClick={() => openView("settings")}
-          pendingDonationCount={incomingDonationQueue.length}
+          pendingDonationCount={pendingDonations.length}
           onSearch={handleSearch}
           query={query}
           t={t}
@@ -1339,7 +1374,9 @@ function App() {
             bootstrap={bootstrap}
             donations={donations}
             donors={donors}
+            pendingDonations={pendingDonations}
             t={t}
+            onCategorizePending={handleCategorizePendingDonation}
             onDelete={deleteDonation}
             onSubmit={handleAddDonation}
           />
@@ -1753,8 +1790,9 @@ function QuickActionLauncher({ isOpen, onToggle, onViewChange, t }) {
   );
 }
 
-function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubmit }) {
+function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t, onCategorizePending, onDelete, onSubmit }) {
   const [manualFormOpen, setManualFormOpen] = useState(false);
+  const [categorizingDonationId, setCategorizingDonationId] = useState(null);
 
   return (
     <section className="view-stack">
@@ -1773,20 +1811,41 @@ function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubm
           <p className="panel-copy">{t.banking.newDonationHelp}</p>
         </div>
         <div className="incoming-donation-list">
-          {incomingDonationQueue.map((donation) => (
-            <article className="incoming-donation" key={donation.id}>
+          {pendingDonations.length ? pendingDonations.map((donation) => {
+            const detectedDonor = donors.find((donor) => donor.numero === donation.donorNumber);
+            const isCategorizing = categorizingDonationId === donation.id;
+
+            return (
+            <article className={`incoming-donation ${isCategorizing ? "is-categorizing" : ""}`} key={donation.id}>
               <div>
                 <span className="status-pill pending">{t.common.pending}</span>
                 <strong>{currency(donation.amount)}</strong>
                 <small>{donation.source} • {donation.date}</small>
                 <p>{donation.note}</p>
+                <p className="detected-donor">
+                  {t.donationForm.detectedDonor}: {detectedDonor?.fullName || donation.donorNumber}
+                </p>
               </div>
-              <button className="secondary-button compact" type="button">
+              <button className="secondary-button compact" type="button" onClick={() => setCategorizingDonationId(isCategorizing ? null : donation.id)}>
                 <Link2 size={15} />
                 <span>{t.banking.categorize}</span>
               </button>
+              {isCategorizing && (
+                <CategorizeDonationForm
+                  accounts={accounts}
+                  bootstrap={bootstrap}
+                  detectedDonor={detectedDonor}
+                  donation={donation}
+                  donors={donors}
+                  onSubmit={(data) => onCategorizePending(donation, data)}
+                  t={t}
+                />
+              )}
             </article>
-          ))}
+            );
+          }) : (
+            <div className="incoming-empty-state">{t.donationForm.noPendingDonations}</div>
+          )}
         </div>
       </section>
 
@@ -1879,9 +1938,9 @@ function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubm
             t={t}
             columns={["ID", t.donationForm.donor, t.donationForm.date, t.donationForm.account, t.donationForm.method, t.donationForm.amount, t.common.status, ""]}
             rows={[
-              ...incomingDonationQueue.map((donation) => [
+              ...pendingDonations.map((donation) => [
                 donation.id,
-                "-",
+                donors.find((donor) => donor.numero === donation.donorNumber)?.fullName || donation.donorNumber,
                 donation.date,
                 "-",
                 t.banking.imported,
@@ -1909,6 +1968,61 @@ function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubm
         </Panel>
       </div>
     </section>
+  );
+}
+
+function CategorizeDonationForm({ accounts, bootstrap, detectedDonor, donation, donors, onSubmit, t }) {
+  function submitCategorization(event) {
+    event.preventDefault();
+    const data = formObject(event.currentTarget);
+    onSubmit({
+      ...data,
+      donateurID: detectedDonor?.donateurID || data.donateurID,
+      numero: donation.donorNumber,
+    });
+  }
+
+  return (
+    <form className="categorize-donation-form" onSubmit={submitCategorization}>
+      <label>
+        {t.donationForm.detectedDonor}
+        {detectedDonor ? (
+          <input value={`${detectedDonor.numero} - ${detectedDonor.fullName}`} readOnly />
+        ) : (
+          <select name="donateurID" required>
+            {donors.map((donor) => (
+              <option value={donor.donateurID} key={donor.donateurID}>
+                {donor.numero} - {donor.fullName}
+              </option>
+            ))}
+          </select>
+        )}
+      </label>
+      <label>
+        {t.donationForm.chooseAccount}
+        <select name="compteID" required>
+          {accounts.map((account) => (
+            <option value={account.compteID} key={account.compteID}>
+              {account.noCompte} - {account.nom}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        {t.donationForm.method}
+        <select name="methodeDonID" defaultValue={bootstrap?.methods?.[0]?.methodeDonID || ""}>
+          {bootstrap?.methods?.map((method) => (
+            <option value={method.methodeDonID} key={method.methodeDonID}>
+              {method.methode_en}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button className="primary-button compact" type="submit">
+        <Link2 size={15} />
+        <span>{t.banking.categorize}</span>
+      </button>
+    </form>
   );
 }
 
@@ -2832,6 +2946,7 @@ function CustomizationView({ onSavePalette, palette, savedPalettes, setPalette, 
   const [customName, setCustomName] = useState(t.customization.custom);
   const [customColors, setCustomColors] = useState(["#1d6f5f", "#2f6fbb", "#b7791f"]);
   const palettes = [
+    { name: "Default", colors: ["#1d6f5f", "#2f6fbb", "#b7791f"] },
     { name: "Evergreen", colors: ["#1d6f5f", "#2f6fbb", "#b7791f"] },
     { name: "Harbor", colors: ["#2563eb", "#0f766e", "#64748b"] },
     { name: "Plum", colors: ["#7c3aed", "#db2777", "#334155"] },
