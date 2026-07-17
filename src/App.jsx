@@ -156,10 +156,10 @@ const copy = {
       tourTitle: "Donor page tour",
       tourSubtitle: "A quick walkthrough of the donor workspace.",
       tourSteps: [
-        { title: "Search and export", body: "Filter the donor directory, then export the visible list as CSV or Excel." },
-        { title: "Add donor tab", body: "The user-plus side tab opens the form to add a new donor without leaving the directory." },
-        { title: "Stats tab", body: "The chart side tab opens donor totals and a quick summary of recent donor activity." },
-        { title: "Edit donors", body: "Use the pencil in each row to update a donor profile from the side panel." },
+        { visual: "search", title: "Search and export", body: "Filter the donor directory, then export the visible list as CSV or Excel." },
+        { visual: "add", title: "Add donor tab", body: "This side tab opens the form to add a new donor without leaving the directory." },
+        { visual: "stats", title: "Stats tab", body: "This side tab opens donor totals and a quick summary of recent donor activity." },
+        { visual: "edit", title: "Edit donors", body: "Use the pencil in each row to update a donor profile from the side panel." },
       ],
       tourDone: "Got it",
       tourReplay: "Show tutorial",
@@ -562,10 +562,10 @@ const copy = {
       tourTitle: "Tutoriel de la page Donateurs",
       tourSubtitle: "Un aperçu rapide de l'espace de travail des donateurs.",
       tourSteps: [
-        { title: "Recherche et exports", body: "Filtrez le répertoire des donateurs, puis exportez la liste visible en CSV ou Excel." },
-        { title: "Onglet Ajouter", body: "L'onglet latéral avec l'icône utilisateur-plus ouvre le formulaire pour ajouter un donateur sans quitter le répertoire." },
-        { title: "Onglet statistiques", body: "L'onglet latéral avec le graphique ouvre les totaux et un résumé rapide de l'activité des donateurs." },
-        { title: "Modifier les donateurs", body: "Utilisez le crayon dans chaque ligne pour modifier un profil depuis le panneau latéral." },
+        { visual: "search", title: "Recherche et exports", body: "Filtrez le répertoire des donateurs, puis exportez la liste visible en CSV ou Excel." },
+        { visual: "add", title: "Onglet Ajouter", body: "Cet onglet latéral ouvre le formulaire pour ajouter un donateur sans quitter le répertoire." },
+        { visual: "stats", title: "Onglet statistiques", body: "Cet onglet latéral ouvre les totaux et un résumé rapide de l'activité des donateurs." },
+        { visual: "edit", title: "Modifier les donateurs", body: "Utilisez le crayon dans chaque ligne pour modifier un profil depuis le panneau latéral." },
       ],
       tourDone: "Compris",
       tourReplay: "Voir le tutoriel",
@@ -3219,23 +3219,12 @@ function ConfirmDialog({ body, confirmLabel, isDanger = false, onCancel, onConfi
 function PageTourOverlay({ doneLabel, onClose, steps, subtitle, title }) {
   return (
     <div className="page-tour-overlay" role="presentation" onClick={onClose}>
-      <section className="page-tour-card" role="dialog" aria-modal="true" aria-labelledby="page-tour-title" onClick={(event) => event.stopPropagation()}>
-        <div className="page-tour-header">
-          <span>
-            <HelpCircle size={20} />
-          </span>
-          <div>
-            <h2 id="page-tour-title">{title}</h2>
-            <p>{subtitle}</p>
-          </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label={doneLabel}>
-            <X size={16} />
-          </button>
-        </div>
+      <section className="page-tour-card" role="dialog" aria-modal="true" aria-label={title} onClick={(event) => event.stopPropagation()}>
+        <EdgePanelHeader icon={HelpCircle} title={title} subtitle={subtitle} onClose={onClose} t={{ common: { close: doneLabel, cancel: doneLabel } }} />
         <div className="page-tour-steps">
-          {steps.map((step, index) => (
+          {steps.map((step) => (
             <article className="page-tour-step" key={step.title}>
-              <span>{index + 1}</span>
+              <PageTourVisual visual={step.visual} />
               <div>
                 <h3>{step.title}</h3>
                 <p>{step.body}</p>
@@ -3249,6 +3238,29 @@ function PageTourOverlay({ doneLabel, onClose, steps, subtitle, title }) {
         </button>
       </section>
     </div>
+  );
+}
+
+function PageTourVisual({ visual }) {
+  if (visual === "search") {
+    return (
+      <span className="page-tour-search-visual" aria-hidden="true">
+        <Search size={15} />
+        <i />
+      </span>
+    );
+  }
+
+  const Icon = {
+    add: UserPlus,
+    stats: BarChart3,
+    edit: Pencil,
+  }[visual] || HelpCircle;
+
+  return (
+    <span className="page-tour-icon-visual" aria-hidden="true">
+      <Icon size={18} />
+    </span>
   );
 }
 

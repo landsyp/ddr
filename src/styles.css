@@ -3174,11 +3174,12 @@ tr.donation-register-pending-row:hover td {
   display: grid;
   gap: 16px;
   width: min(640px, 100%);
-  padding: 18px;
+  padding: 0 0 18px;
   border: 1px solid rgba(255, 255, 255, 0.42);
   border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 30px 90px rgba(13, 31, 34, 0.32);
+  overflow: hidden;
 }
 
 .page-tour-header {
@@ -3216,6 +3217,7 @@ tr.donation-register-pending-row:hover td {
 .page-tour-steps {
   display: grid;
   gap: 10px;
+  padding: 0 18px;
 }
 
 .page-tour-step {
@@ -3231,7 +3233,30 @@ tr.donation-register-pending-row:hover td {
 }
 
 .page-tour-done {
+  margin-right: 18px;
   justify-self: end;
+}
+
+.page-tour-icon-visual {
+  border-radius: 999px;
+}
+
+.page-tour-search-visual {
+  width: 118px;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.page-tour-search-visual i {
+  display: block;
+  width: 54px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--line);
 }
 
 .quick-launcher {
