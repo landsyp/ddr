@@ -195,6 +195,11 @@ const copy = {
       preview: "Interface preview",
       apply: "Apply palette",
       current: "Current palette",
+      custom: "Custom palette",
+      customDescription: "Create your own palette with brand, accent, and highlight colors.",
+      brandColor: "Brand",
+      accentColor: "Accent",
+      highlightColor: "Highlight",
       options: [
         ["Evergreen", "Calm green for finance and operations"],
         ["Harbor", "Blue accent with a crisp SaaS feel"],
@@ -517,6 +522,11 @@ const copy = {
       preview: "Aperçu de l'interface",
       apply: "Appliquer la palette",
       current: "Palette actuelle",
+      custom: "Palette personnalisée",
+      customDescription: "Créez votre propre palette avec une couleur de marque, d'accent et de mise en valeur.",
+      brandColor: "Marque",
+      accentColor: "Accent",
+      highlightColor: "Mise en valeur",
       options: [
         ["Evergreen", "Vert calme pour la finance et les opérations"],
         ["Harbor", "Accent bleu avec une allure SaaS nette"],
@@ -2698,12 +2708,22 @@ function PaymentMethodCard({ brand, details, expiry, isDefault = false, t }) {
 }
 
 function CustomizationView({ palette, setPalette, t }) {
+  const [customColors, setCustomColors] = useState(["#1d6f5f", "#2f6fbb", "#b7791f"]);
   const palettes = [
     { name: "Evergreen", colors: ["#1d6f5f", "#2f6fbb", "#b7791f"] },
     { name: "Harbor", colors: ["#2563eb", "#0f766e", "#64748b"] },
     { name: "Plum", colors: ["#7c3aed", "#db2777", "#334155"] },
   ];
-  const activePalette = palettes.find((item) => item.name === palette) || palettes[0];
+  const activePalette = palette === "Custom"
+    ? { name: t.customization.custom, colors: customColors }
+    : palettes.find((item) => item.name === palette) || palettes[0];
+
+  function updateCustomColor(index, color) {
+    setCustomColors((currentColors) => currentColors.map((currentColor, colorIndex) => (
+      colorIndex === index ? color : currentColor
+    )));
+    setPalette("Custom");
+  }
 
   return (
     <section className="view-stack">
@@ -2730,6 +2750,35 @@ function CustomizationView({ palette, setPalette, t }) {
                 <small>{t.customization.options[index][1]}</small>
               </button>
             ))}
+            <button
+              className={palette === "Custom" ? "palette-option is-selected" : "palette-option"}
+              type="button"
+              onClick={() => setPalette("Custom")}
+            >
+              <span className="palette-swatches">
+                {customColors.map((color) => <i key={color} style={{ background: color }} />)}
+              </span>
+              <strong>{t.customization.custom}</strong>
+              <small>{t.customization.customDescription}</small>
+            </button>
+          </div>
+
+          <div className="custom-palette-builder">
+            {[
+              t.customization.brandColor,
+              t.customization.accentColor,
+              t.customization.highlightColor,
+            ].map((label, index) => (
+              <label key={label}>
+                <span>{label}</span>
+                <input
+                  type="color"
+                  value={customColors[index]}
+                  onChange={(event) => updateCustomColor(index, event.target.value)}
+                />
+                <strong>{customColors[index].toUpperCase()}</strong>
+              </label>
+            ))}
           </div>
         </Panel>
 
@@ -2742,7 +2791,7 @@ function CustomizationView({ palette, setPalette, t }) {
               <i />
             </div>
             <div className="theme-preview-main">
-              <span>{t.customization.current}: {palette}</span>
+              <span>{t.customization.current}: {activePalette.name}</span>
               <strong>{t.overview.title}</strong>
               <div>
                 <button type="button">{t.actions[0]}</button>
