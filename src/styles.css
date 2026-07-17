@@ -2588,12 +2588,16 @@ tr.donation-register-pending-row:hover td {
 .add-bank-tile {
   place-items: center;
   align-content: center;
-  border-style: dashed;
+  border: 2px dashed rgba(29, 111, 95, 0.28);
   background:
     linear-gradient(135deg, rgba(232, 244, 239, 0.78), rgba(255, 255, 255, 0.96)),
     #ffffff;
   cursor: pointer;
   text-align: center;
+}
+
+.add-bank-tile::before {
+  display: none;
 }
 
 .add-bank-tile > span {
