@@ -1177,6 +1177,10 @@ tr.donation-register-pending-row:hover td {
   color: var(--red);
 }
 
+.table-icon.success {
+  color: var(--brand);
+}
+
 .account-actions,
 .account-edit-actions {
   display: flex;

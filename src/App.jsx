@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import {
+  Archive,
   BarChart3,
   Bell,
   BookOpenCheck,
@@ -2895,8 +2896,14 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
               >
                 <Pencil size={16} />
               </button>
-              <button className="secondary-button compact" type="button" onClick={() => onArchive(donor, !donor.actif)}>
-                {donor.actif ? t.common.archive : t.common.activate}
+              <button
+                className={`icon-button table-icon ${donor.actif ? "" : "success"}`}
+                type="button"
+                onClick={() => onArchive(donor, !donor.actif)}
+                aria-label={`${donor.actif ? t.common.archive : t.common.activate} ${donor.fullName}`}
+                title={donor.actif ? t.common.archive : t.common.activate}
+              >
+                {donor.actif ? <Archive size={16} /> : <CheckCircle2 size={16} />}
               </button>
             </div>,
           ])}
