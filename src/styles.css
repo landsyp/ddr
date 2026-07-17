@@ -245,6 +245,30 @@ button {
   font-weight: 800;
 }
 
+.notification-button {
+  position: relative;
+}
+
+.notification-button span {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border: 2px solid var(--surface);
+  border-radius: 999px;
+  background: var(--amber);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 8px 18px rgba(183, 121, 31, 0.24);
+}
+
 .profile-chip {
   display: flex;
   align-items: center;
@@ -1263,12 +1287,59 @@ td {
   font-size: 0.82rem;
 }
 
+.pending-donations-band {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 18px;
+  align-items: center;
+  padding: 20px;
+  border: 1px solid rgba(183, 121, 31, 0.28);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 244, 221, 0.96), rgba(255, 255, 255, 0.98)),
+    var(--amber-soft);
+  box-shadow: 0 20px 56px rgba(82, 58, 27, 0.12);
+}
+
+.pending-donations-band .eyebrow {
+  color: var(--amber);
+}
+
+.pending-donations-band h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.5rem, 2.4vw, 2.2rem);
+  line-height: 1.05;
+}
+
+.pending-donations-band .panel-copy {
+  margin-top: 12px;
+}
+
+.banking-subtle-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
+  gap: 18px;
+  align-items: center;
+}
+
+.banking-card-list.subtle .banking-connection {
+  background: #ffffff;
+  box-shadow: none;
+}
+
 .incoming-donation {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 14px;
+}
+
+.pending-donations-band .incoming-donation {
+  border-color: rgba(183, 121, 31, 0.22);
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(82, 58, 27, 0.09);
 }
 
 .incoming-donation strong,
@@ -1280,6 +1351,45 @@ td {
 .incoming-donation p {
   margin: 8px 0 0;
   color: var(--muted);
+}
+
+.manual-donation-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  min-height: 68px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+  color: var(--ink);
+  text-align: left;
+}
+
+.manual-donation-toggle div {
+  display: grid;
+  gap: 4px;
+}
+
+.manual-donation-toggle span {
+  color: var(--muted);
+}
+
+.manual-donation-toggle svg {
+  flex: 0 0 auto;
+  transition: transform 160ms ease;
+}
+
+.manual-donation-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.donation-manual-form {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
 }
 
 .palette-option {
@@ -1701,7 +1811,9 @@ td {
 
   .intro-band,
   .view-header,
-  .receipt-band {
+  .receipt-band,
+  .pending-donations-band,
+  .banking-subtle-layout {
     grid-template-columns: 1fr;
   }
 

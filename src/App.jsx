@@ -343,9 +343,12 @@ const copy = {
       paypal: "PayPal account",
       linked: "Linked",
       newDonations: "New donations",
+      pendingNotification: "{count} pending new donations",
       newDonationHelp: "Incoming transactions are tagged as pending until you assign a donor and account.",
       categorize: "Categorize",
       imported: "Imported",
+      recordManual: "Record a manual donation",
+      manualHelp: "Open this form when you need to enter a donation manually.",
     },
     support: {
       title: "Support and tutorials",
@@ -670,9 +673,12 @@ const copy = {
       paypal: "Compte PayPal",
       linked: "Connecté",
       newDonations: "Nouveaux dons",
+      pendingNotification: "{count} nouveaux dons en attente",
       newDonationHelp: "Les transactions entrantes restent en attente jusqu'à l'attribution d'un donateur et d'un compte.",
       categorize: "Catégoriser",
       imported: "Importé",
+      recordManual: "Enregistrer un don manuel",
+      manualHelp: "Ouvrez ce formulaire lorsque vous devez saisir un don manuellement.",
     },
     support: {
       title: "Support et tutoriels",
@@ -711,6 +717,11 @@ const defaultReceiptPeriod = {
   dateDebut: "2026-01-01",
   dateFin: "2026-12-31",
 };
+
+const incomingDonationQueue = [
+  { id: "bank-001", source: "Stripe payout", date: "2026-07-16", amount: 250, note: "Grace Family - online gift" },
+  { id: "paypal-014", source: "PayPal", date: "2026-07-15", amount: 75, note: "Monthly support" },
+];
 
 async function api(path, options = {}) {
   const token = localStorage.getItem("ddr-token");
@@ -1248,8 +1259,9 @@ function App() {
           language={language}
           onLanguageChange={setLanguage}
           onMenuClick={() => setMobileOpen(true)}
-          onNotifications={() => showNotice(t.alerts.none)}
+          onNotifications={() => showNotice(t.banking.pendingNotification.replace("{count}", incomingDonationQueue.length))}
           onProfileClick={() => openView("settings")}
+          pendingDonationCount={incomingDonationQueue.length}
           onSearch={handleSearch}
           query={query}
           t={t}
@@ -1500,7 +1512,7 @@ function LoginScreen({ error, language, onForgotPassword, onLanguageChange, onLo
   );
 }
 
-function Topbar({ language, onLanguageChange, onMenuClick, onNotifications, onProfileClick, onSearch, query, t, user }) {
+function Topbar({ language, onLanguageChange, onMenuClick, onNotifications, onProfileClick, onSearch, pendingDonationCount = 0, query, t, user }) {
   return (
     <header className="topbar">
       <button className="icon-button menu-button" type="button" onClick={onMenuClick} aria-label={t.common.openMenu}>
@@ -1516,8 +1528,9 @@ function Topbar({ language, onLanguageChange, onMenuClick, onNotifications, onPr
         <button className="language-toggle" type="button" onClick={() => onLanguageChange(language === "en" ? "fr" : "en")}>
           {language === "en" ? "FR" : "EN"}
         </button>
-        <button className="icon-button" type="button" aria-label={t.common.notifications} onClick={onNotifications}>
+        <button className="icon-button notification-button" type="button" aria-label={t.banking.pendingNotification.replace("{count}", pendingDonationCount)} onClick={onNotifications}>
           <Bell size={18} />
+          {pendingDonationCount > 0 && <span>{pendingDonationCount}</span>}
         </button>
         <button className="profile-chip" type="button" onClick={onProfileClick} aria-label={t.common.openSettings}>
           <span>{initials(user)}</span>
@@ -1659,10 +1672,7 @@ function QuickActionLauncher({ isOpen, onToggle, onViewChange, t }) {
 }
 
 function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubmit }) {
-  const incomingDonations = [
-    { id: "bank-001", source: "Stripe payout", date: "2026-07-16", amount: 250, note: "Grace Family - online gift" },
-    { id: "paypal-014", source: "PayPal", date: "2026-07-15", amount: 75, note: "Monthly support" },
-  ];
+  const [manualFormOpen, setManualFormOpen] = useState(false);
 
   return (
     <section className="view-stack">
@@ -1674,39 +1684,51 @@ function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubm
         icon={CircleDollarSign}
       />
 
-      <div className="two-column form-layout">
-        <Panel title={t.banking.title} icon={Landmark}>
+      <section className="pending-donations-band">
+        <div>
+          <span className="eyebrow"><Bell size={15} /> {t.common.pending}</span>
+          <h2>{t.banking.newDonations}</h2>
+          <p className="panel-copy">{t.banking.newDonationHelp}</p>
+        </div>
+        <div className="incoming-donation-list">
+          {incomingDonationQueue.map((donation) => (
+            <article className="incoming-donation" key={donation.id}>
+              <div>
+                <span className="status-pill pending">{t.common.pending}</span>
+                <strong>{currency(donation.amount)}</strong>
+                <small>{donation.source} • {donation.date}</small>
+                <p>{donation.note}</p>
+              </div>
+              <button className="secondary-button compact" type="button">
+                <Link2 size={15} />
+                <span>{t.banking.categorize}</span>
+              </button>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <Panel title={t.banking.title} icon={Landmark}>
+        <div className="banking-subtle-layout">
           <p className="panel-copy">{t.banking.subtitle}</p>
-          <div className="banking-card-list">
+          <div className="banking-card-list subtle">
             <BankingConnection icon={Landmark} label={t.banking.bankAccount} meta="RBC •••• 0921" t={t} />
             <BankingConnection icon={Wallet} label={t.banking.paypal} meta="finance@grace.local" t={t} />
           </div>
-        </Panel>
+        </div>
+      </Panel>
 
-        <Panel title={t.banking.newDonations} icon={Bell}>
-          <p className="panel-copy">{t.banking.newDonationHelp}</p>
-          <div className="incoming-donation-list">
-            {incomingDonations.map((donation) => (
-              <article className="incoming-donation" key={donation.id}>
-                <div>
-                  <span className="status-pill pending">{t.common.pending}</span>
-                  <strong>{currency(donation.amount)}</strong>
-                  <small>{donation.source} • {donation.date}</small>
-                  <p>{donation.note}</p>
-                </div>
-                <button className="secondary-button compact" type="button">
-                  <Link2 size={15} />
-                  <span>{t.banking.categorize}</span>
-                </button>
-              </article>
-            ))}
+      <Panel id="donation-form" title={t.banking.recordManual} icon={Plus}>
+        <button className="manual-donation-toggle" type="button" onClick={() => setManualFormOpen((open) => !open)} aria-expanded={manualFormOpen}>
+          <div>
+            <strong>{t.donationForm.title}</strong>
+            <span>{t.banking.manualHelp}</span>
           </div>
-        </Panel>
-      </div>
+          <ChevronDown size={18} />
+        </button>
 
-      <div className="two-column form-layout">
-        <Panel id="donation-form" title={t.donationForm.title} icon={Plus}>
-          <form className="form-grid" onSubmit={onSubmit}>
+        {manualFormOpen && (
+          <form className="form-grid donation-manual-form" onSubmit={onSubmit}>
             <label>
               {t.donationForm.donor}
               <select name="donateurID" required>
@@ -1754,8 +1776,10 @@ function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubm
               <span>{t.donationForm.add}</span>
             </button>
           </form>
-        </Panel>
+        )}
+      </Panel>
 
+      <div className="two-column form-layout">
         <Panel title={t.donationForm.accountMix} icon={BarChart3}>
           <div className="account-list">
             {accounts.map((account) => (
@@ -1767,26 +1791,41 @@ function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubm
             ))}
           </div>
         </Panel>
-      </div>
 
-      <Panel title={t.donationForm.register} icon={FileText}>
-        <DataTable
-          t={t}
-          columns={["ID", t.donationForm.donor, t.donationForm.date, t.donationForm.account, t.donationForm.method, t.donationForm.amount, t.common.status, ""]}
-          rows={donations.map((donation) => [
-            donation.donID,
-            donation.donorName,
-            donation.dateDon,
-            `${donation.noCompte} - ${donation.libelleCompte}`,
-            donation.methode_en || t.common.unspecified,
-            currency(donation.montant),
-            <StatusPill key={`status-${donation.donID}`} t={t} value={donation.receiptStatus} />,
-            <button className="icon-button table-icon" type="button" onClick={() => onDelete(donation)} aria-label={t.common.delete} key={`delete-${donation.donID}`}>
-              <Trash2 size={15} />
-            </button>,
-          ])}
-        />
-      </Panel>
+        <Panel title={t.donationForm.register} icon={FileText}>
+          <DataTable
+            t={t}
+            columns={["ID", t.donationForm.donor, t.donationForm.date, t.donationForm.account, t.donationForm.method, t.donationForm.amount, t.common.status, ""]}
+            rows={[
+              ...incomingDonationQueue.map((donation) => [
+                donation.id,
+                "-",
+                donation.date,
+                "-",
+                t.banking.imported,
+                currency(donation.amount),
+                <span className="status-pill pending" key={`pending-${donation.id}`}>{t.common.pending}</span>,
+                <button className="secondary-button compact" type="button" key={`categorize-${donation.id}`}>
+                  <Link2 size={15} />
+                  <span>{t.banking.categorize}</span>
+                </button>,
+              ]),
+              ...donations.map((donation) => [
+                donation.donID,
+                donation.donorName,
+                donation.dateDon,
+                `${donation.noCompte} - ${donation.libelleCompte}`,
+                donation.methode_en || t.common.unspecified,
+                currency(donation.montant),
+                <StatusPill key={`status-${donation.donID}`} t={t} value={donation.receiptStatus} />,
+                <button className="icon-button table-icon" type="button" onClick={() => onDelete(donation)} aria-label={t.common.delete} key={`delete-${donation.donID}`}>
+                  <Trash2 size={15} />
+                </button>,
+              ]),
+            ]}
+          />
+        </Panel>
+      </div>
     </section>
   );
 }
