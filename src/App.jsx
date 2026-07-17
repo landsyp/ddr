@@ -933,6 +933,103 @@ function submitTarget(id) {
   }
 }
 
+function getPageTour(t, view) {
+  const fr = t.common.yes === "Oui";
+  const tours = {
+    overview: {
+      title: fr ? "Tutoriel de l'accueil" : "Overview tour",
+      subtitle: fr ? "Les repères principaux du tableau de bord." : "The main signals in the dashboard.",
+      steps: [
+        { visual: "search", title: fr ? "Recherche globale" : "Global search", body: fr ? "Recherchez rapidement un donateur, un reçu, un compte ou un don." : "Search quickly for a donor, receipt, account, or gift." },
+        { visual: "stats", title: fr ? "Indicateurs" : "Metrics", body: fr ? "Les cartes résument les dons, les reçus et les éléments à traiter." : "The cards summarize donations, receipts, and items needing attention." },
+        { visual: "receipt", title: fr ? "Préparation des reçus" : "Receipt readiness", body: fr ? "Suivez le pourcentage des dons prêts pour les reçus officiels." : "Track the percentage of donations ready for official receipts." },
+      ],
+    },
+    donations: {
+      title: fr ? "Tutoriel des dons" : "Donations tour",
+      subtitle: fr ? "Catégorisez les nouveaux dons et gérez le registre." : "Categorize new gifts and manage the register.",
+      steps: [
+        { visual: "pending", title: fr ? "Dons en attente" : "Pending donations", body: fr ? "Les transactions bancaires ou PayPal arrivent ici avant d'être catégorisées." : "Bank or PayPal transactions land here before categorization." },
+        { visual: "add", title: fr ? "Ajouter un don" : "Add donation", body: fr ? "L'onglet latéral ajoute un don manuel sans quitter la page." : "The side tab records a manual donation without leaving the page." },
+        { visual: "banking", title: fr ? "Connexions bancaires" : "Banking connections", body: fr ? "L'onglet bancaire affiche les comptes connectés qui alimentent les nouveaux dons." : "The banking tab shows connected accounts feeding new donations." },
+      ],
+    },
+    donors: {
+      title: t.donorForm.tourTitle,
+      subtitle: t.donorForm.tourSubtitle,
+      steps: t.donorForm.tourSteps,
+    },
+    accounts: {
+      title: fr ? "Tutoriel des comptes" : "Accounts tour",
+      subtitle: fr ? "Gérez les comptes et leur admissibilité aux reçus." : "Manage accounts and receipt eligibility.",
+      steps: [
+        { visual: "add", title: t.accounts.add, body: fr ? "L'onglet plus ouvre le formulaire pour ajouter un compte." : "The plus side tab opens the form to add an account." },
+        { visual: "receipt", title: t.accounts.eligibility, body: fr ? "L'onglet reçu résume les comptes admissibles et sans reçu." : "The receipt tab summarizes receiptable and no-receipt accounts." },
+        { visual: "edit", title: fr ? "Actions du compte" : "Account actions", body: fr ? "Ouvrez un compte pour modifier, réduire ou supprimer depuis la rangée." : "Open an account to edit, collapse, or delete from the row." },
+      ],
+    },
+    receipts: {
+      title: fr ? "Tutoriel des reçus" : "Receipts tour",
+      subtitle: fr ? "Générez et suivez les lots de reçus." : "Generate and track receipt batches.",
+      steps: [
+        { visual: "receipt", title: fr ? "Générateur" : "Generator", body: fr ? "Choisissez la période puis générez les reçus prêts." : "Choose the period and generate ready receipts." },
+        { visual: "print", title: fr ? "Lots" : "Batches", body: fr ? "Suivez les lots, les statuts et les actions d'impression." : "Track batches, statuses, and print actions." },
+      ],
+    },
+    reports: {
+      title: fr ? "Tutoriel des rapports" : "Reports tour",
+      subtitle: fr ? "Construisez et exportez les rapports." : "Build and export reports.",
+      steps: [
+        { visual: "stats", title: fr ? "Type de rapport" : "Report type", body: fr ? "Choisissez le type, le groupement et la période." : "Choose the type, grouping, and period." },
+        { visual: "download", title: fr ? "Export" : "Export", body: fr ? "Exportez les résultats en CSV une fois le rapport généré." : "Export results as CSV once the report is generated." },
+      ],
+    },
+    banking: {
+      title: fr ? "Tutoriel bancaire" : "Banking tour",
+      subtitle: fr ? "Connectez les sources de dons automatiques." : "Connect automatic donation sources.",
+      steps: [
+        { visual: "banking", title: fr ? "Comptes connectés" : "Linked accounts", body: fr ? "Chaque tile représente une banque, PayPal ou Stripe connecté." : "Each tile represents a connected bank, PayPal, or Stripe source." },
+        { visual: "add", title: fr ? "Ajouter une connexion" : "Add connection", body: fr ? "Le tile pointillé sert à connecter une nouvelle source." : "The dashed tile connects a new source." },
+      ],
+    },
+    subscription: {
+      title: fr ? "Tutoriel abonnement" : "Subscription tour",
+      subtitle: fr ? "Comparez les plans et envoyez une demande." : "Compare plans and submit a request.",
+      steps: [
+        { visual: "plan", title: fr ? "Plan actuel" : "Current plan", body: fr ? "Le plan Gold est marqué comme plan actuel de l'organisation." : "The Gold plan is marked as the organization's current plan." },
+        { visual: "edit", title: fr ? "Demande" : "Submission", body: fr ? "Le formulaire permet d'envoyer une demande de changement." : "The form submits a change request." },
+      ],
+    },
+    customization: {
+      title: fr ? "Tutoriel personnalisation" : "Customization tour",
+      subtitle: fr ? "Ajustez l'apparence de l'interface." : "Tune the look of the interface.",
+      steps: [
+        { visual: "palette", title: fr ? "Palettes" : "Palettes", body: fr ? "Choisissez une palette existante ou créez la vôtre." : "Choose an existing palette or create your own." },
+        { visual: "preview", title: fr ? "Aperçu" : "Preview", body: fr ? "L'aperçu montre l'effet des couleurs avant application." : "The preview shows the color effect before applying." },
+      ],
+    },
+    settings: {
+      title: fr ? "Tutoriel paramètres" : "Settings tour",
+      subtitle: fr ? "Gérez l'organisation, les utilisateurs et les paiements." : "Manage organization, users, and payments.",
+      steps: [
+        { visual: "edit", title: fr ? "Accordéons" : "Accordions", body: fr ? "Ouvrez chaque section pour modifier seulement ce dont vous avez besoin." : "Open each section to edit only what you need." },
+        { visual: "users", title: fr ? "Accès utilisateurs" : "User seats", body: fr ? "Les limites d'accès dépendent du plan actif." : "User seat limits depend on the active plan." },
+        { visual: "card", title: fr ? "Méthodes de paiement" : "Payment methods", body: fr ? "Modifiez ou supprimez les cartes, sauf la carte par défaut." : "Update or delete cards, except the default card." },
+      ],
+    },
+    support: {
+      title: fr ? "Tutoriel support" : "Support tour",
+      subtitle: fr ? "Retrouvez les raccourcis d'aide." : "Find help shortcuts.",
+      steps: [
+        { visual: "help", title: fr ? "Guides" : "Guides", body: fr ? "Les raccourcis ouvrent les sections clés de WeSERVE." : "Shortcuts open key WeSERVE sections." },
+        { visual: "mail", title: fr ? "Contact" : "Contact", body: fr ? "Utilisez le contact si vous avez besoin d'aide administrative." : "Use the contact area when you need administrative help." },
+      ],
+    },
+  };
+
+  return tours[view] || null;
+}
+
 function App() {
   const [language, setLanguage] = useState("en");
   const [activeView, setActiveView] = useState("overview");
@@ -941,7 +1038,7 @@ function App() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
-  const [tourRequest, setTourRequest] = useState(0);
+  const [activeTour, setActiveTour] = useState(null);
   const [authToken, setAuthToken] = useState(() => localStorage.getItem("ddr-token") || "");
   const [currentUser, setCurrentUser] = useState(() => {
     if (!localStorage.getItem("ddr-token")) {
@@ -972,6 +1069,19 @@ function App() {
     body: donation.note,
     target: "donations",
   }));
+  const pageTour = getPageTour(t, activeView);
+
+  useEffect(() => {
+    if (!currentUser || loading || !pageTour) {
+      return;
+    }
+
+    const tourKey = `weserve-tour-${activeView}`;
+    if (!localStorage.getItem(tourKey)) {
+      setActiveTour(pageTour);
+      localStorage.setItem(tourKey, "seen");
+    }
+  }, [activeView, currentUser, loading, pageTour]);
 
   async function loadWorkspace(search = query) {
     setLoading(true);
@@ -1407,7 +1517,10 @@ function App() {
 
   function launchPageTour() {
     setQuickActionsOpen(false);
-    setTourRequest((request) => request + 1);
+    if (pageTour) {
+      setActiveTour(pageTour);
+      localStorage.setItem(`weserve-tour-${activeView}`, "seen");
+    }
   }
 
   function handleSavePalette(customPalette) {
@@ -1552,7 +1665,6 @@ function App() {
             onSearch={handleSearch}
             onSubmit={handleAddDonor}
             onUpdate={updateDonor}
-            tourRequest={tourRequest}
           />
         )}
         {!loading && activeView === "accounts" && (
@@ -1630,12 +1742,21 @@ function App() {
 
       {!loading && (
         <QuickActionLauncher
-          activeView={activeView}
+          hasPageTour={Boolean(pageTour)}
           isOpen={quickActionsOpen}
           onHelp={launchPageTour}
           onToggle={() => setQuickActionsOpen((open) => !open)}
           onViewChange={openView}
           t={t}
+        />
+      )}
+      {activeTour && (
+        <PageTourOverlay
+          steps={activeTour.steps}
+          subtitle={activeTour.subtitle}
+          title={activeTour.title}
+          doneLabel={t.donorForm.tourDone}
+          onClose={() => setActiveTour(null)}
         />
       )}
     </div>
@@ -1964,14 +2085,13 @@ function Overview({ accounts, dashboard, donations, t, onViewChange }) {
   );
 }
 
-function QuickActionLauncher({ activeView, isOpen, onHelp, onToggle, onViewChange, t }) {
+function QuickActionLauncher({ hasPageTour, isOpen, onHelp, onToggle, onViewChange, t }) {
   const quickActions = [
     [Plus, t.actions[0], "donations"],
     [Users, t.actions[1], "donors"],
     [ReceiptText, t.actions[2], "receipts"],
     [BarChart3, t.actions[3], "reports"],
   ];
-  const hasPageTour = activeView === "donors";
 
   return (
     <div className={`quick-launcher ${isOpen ? "is-open" : ""}`}>
@@ -2691,10 +2811,9 @@ function BankingView({ accounts, t }) {
   );
 }
 
-function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, onSubmit, onUpdate, tourRequest }) {
+function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, onSubmit, onUpdate }) {
   const [activeDrawer, setActiveDrawer] = useState(null);
   const [editingDonor, setEditingDonor] = useState(null);
-  const [showTour, setShowTour] = useState(false);
   const donorExportRows = donors.map((donor) => ({
     Number: donor.numero,
     Donor: donor.fullName,
@@ -2705,25 +2824,6 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
     Lifetime: donor.totalDonations || 0,
     LastGift: donor.lastGift || "",
   }));
-
-  useEffect(() => {
-    const tourKey = "weserve-tour-donors";
-    if (!localStorage.getItem(tourKey)) {
-      setShowTour(true);
-      localStorage.setItem(tourKey, "seen");
-    }
-  }, []);
-
-  useEffect(() => {
-    if (tourRequest > 0) {
-      setShowTour(true);
-    }
-  }, [tourRequest]);
-
-  function closeTour() {
-    localStorage.setItem("weserve-tour-donors", "seen");
-    setShowTour(false);
-  }
 
   return (
     <section className="view-stack donor-page">
@@ -2858,15 +2958,6 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
         )}
       </div>
 
-      {showTour && (
-        <PageTourOverlay
-          steps={t.donorForm.tourSteps}
-          subtitle={t.donorForm.tourSubtitle}
-          title={t.donorForm.tourTitle}
-          doneLabel={t.donorForm.tourDone}
-          onClose={closeTour}
-        />
-      )}
     </section>
   );
 }
@@ -3253,8 +3344,20 @@ function PageTourVisual({ visual }) {
 
   const Icon = {
     add: UserPlus,
+    banking: Landmark,
+    card: CreditCard,
+    download: Download,
     stats: BarChart3,
     edit: Pencil,
+    help: HelpCircle,
+    mail: Mail,
+    palette: Palette,
+    pending: Bell,
+    plan: Sparkles,
+    preview: LayoutDashboard,
+    print: Printer,
+    receipt: ReceiptText,
+    users: Users,
   }[visual] || HelpCircle;
 
   return (
