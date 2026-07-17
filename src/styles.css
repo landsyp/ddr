@@ -1403,7 +1403,6 @@ td {
 }
 
 .bank-brand-mark {
-  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1415,19 +1414,9 @@ td {
   overflow: hidden;
 }
 
-.bank-brand-mark span {
-  font-size: 0.66rem;
-  font-weight: 950;
-  letter-spacing: 0;
-}
-
 .bank-brand-mark svg {
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 13px;
-  height: 13px;
-  opacity: 0.42;
+  width: 19px;
+  height: 19px;
 }
 
 .bank-brand-mark.large {
@@ -1436,15 +1425,9 @@ td {
   border-radius: 12px;
 }
 
-.bank-brand-mark.large span {
-  font-size: 0.84rem;
-}
-
 .bank-brand-mark.large svg {
-  right: 7px;
-  bottom: 7px;
-  width: 16px;
-  height: 16px;
+  width: 25px;
+  height: 25px;
 }
 
 .payment-method-card strong,

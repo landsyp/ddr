@@ -2056,38 +2056,50 @@ function bankBrand(institution = "") {
   const name = institution.toLowerCase();
 
   if (name.includes("paypal")) {
-    return { code: "PP", color: "#0070ba", soft: "#e6f4ff" };
+    return { type: "paypal", color: "#0070ba", soft: "#e6f4ff" };
   }
 
   if (name.includes("stripe")) {
-    return { code: "STR", color: "#635bff", soft: "#eeecff" };
+    return { type: "card", color: "#635bff", soft: "#eeecff" };
   }
 
   if (name.includes("rbc") || name.includes("royal bank")) {
-    return { code: "RBC", color: "#0051a5", soft: "#e7f0fb" };
+    return { type: "bank", color: "#0051a5", soft: "#e7f0fb" };
   }
 
   if (name.includes("nationale") || name.includes("national")) {
-    return { code: "NBC", color: "#d71920", soft: "#fdeaea" };
+    return { type: "bank", color: "#d71920", soft: "#fdeaea" };
   }
 
   if (name.includes("td")) {
-    return { code: "TD", color: "#00843d", soft: "#e6f5ec" };
+    return { type: "bank", color: "#00843d", soft: "#e6f5ec" };
   }
 
   if (name.includes("bmo")) {
-    return { code: "BMO", color: "#0079c1", soft: "#e6f3fb" };
+    return { type: "bank", color: "#0079c1", soft: "#e6f3fb" };
   }
 
   if (name.includes("cibc")) {
-    return { code: "CIBC", color: "#8a1538", soft: "#fae8ef" };
+    return { type: "bank", color: "#8a1538", soft: "#fae8ef" };
   }
 
   if (name.includes("scotia")) {
-    return { code: "SB", color: "#ed1b2f", soft: "#fde8eb" };
+    return { type: "bank", color: "#ed1b2f", soft: "#fde8eb" };
   }
 
-  return { code: "BANK", color: "#1d6f5f", soft: "#e8f4ef" };
+  return { type: "bank", color: "#1d6f5f", soft: "#e8f4ef" };
+}
+
+function BankBrandIcon({ brand, size = 18 }) {
+  if (brand.type === "paypal") {
+    return <Wallet size={size} />;
+  }
+
+  if (brand.type === "card") {
+    return <CreditCard size={size} />;
+  }
+
+  return <Landmark size={size} />;
 }
 
 function BankingConnection({ icon: Icon, label, meta, t }) {
@@ -2096,8 +2108,7 @@ function BankingConnection({ icon: Icon, label, meta, t }) {
   return (
     <article className="banking-connection" style={{ "--bank-color": brand.color, "--bank-soft": brand.soft }}>
       <div className="bank-brand-mark">
-        <span>{brand.code}</span>
-        <Icon size={18} />
+        <BankBrandIcon brand={brand} size={18} />
       </div>
       <span>{label}</span>
       <small>{meta}</small>
@@ -2181,8 +2192,7 @@ function BankingView({ accounts, t }) {
           <article className="linked-bank-tile" key={bankAccount.id} style={{ "--bank-color": brand.color, "--bank-soft": brand.soft }}>
             <div className="linked-bank-topline">
               <div className="bank-brand-mark large">
-                <span>{brand.code}</span>
-                <Landmark size={20} />
+                <BankBrandIcon brand={brand} size={24} />
               </div>
               <span className="status-pill issued"><CheckCircle2 size={14} /> {t.banking.linked}</span>
             </div>
