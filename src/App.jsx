@@ -1842,6 +1842,7 @@ function QuickActionLauncher({ isOpen, onToggle, onViewChange, t }) {
 function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t, onCategorizePending, onDelete, onSubmit }) {
   const [manualFormOpen, setManualFormOpen] = useState(false);
   const [categorizingDonationId, setCategorizingDonationId] = useState(null);
+  const linkedBankAccounts = savedBankingConnections(accounts);
 
   return (
     <section className="view-stack">
@@ -1903,8 +1904,15 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
         <div className="banking-subtle-layout">
           <p className="panel-copy">{t.banking.subtitle}</p>
           <div className="banking-card-list subtle">
-            <BankingConnection icon={Landmark} label={t.banking.bankAccount} meta="RBC •••• 0921" t={t} />
-            <BankingConnection icon={Wallet} label={t.banking.paypal} meta="finance@grace.local" t={t} />
+            {linkedBankAccounts.map((bankAccount) => (
+              <BankingConnection
+                detail={bankingAccountNames(bankAccount, accounts, t)}
+                key={bankAccount.id}
+                label={bankAccount.institution}
+                meta={bankAccount.accountNumber}
+                t={t}
+              />
+            ))}
           </div>
         </div>
       </Panel>
@@ -2116,7 +2124,7 @@ function BankBrandIcon({ brand, size = 18 }) {
   return <Landmark size={size} />;
 }
 
-function BankingConnection({ icon: Icon, label, meta, t }) {
+function BankingConnection({ detail, label, meta, t }) {
   const brand = bankBrand(`${label} ${meta}`);
 
   return (
@@ -2126,9 +2134,22 @@ function BankingConnection({ icon: Icon, label, meta, t }) {
       </div>
       <span>{label}</span>
       <small>{meta}</small>
+      {detail && <small>{detail}</small>}
       <strong><CheckCircle2 size={15} /> {t.banking.linked}</strong>
     </article>
   );
+}
+
+function bankingAccountNames(bankAccount, accounts, t) {
+  if (bankAccount.scope === "all") {
+    return t.banking.allAccounts;
+  }
+
+  const selectedAccountIds = Array.isArray(bankAccount.accountIds) ? bankAccount.accountIds : [];
+  const selectedAccounts = accounts.filter((account) => selectedAccountIds.includes(account.compteID));
+  return selectedAccounts.length
+    ? selectedAccounts.map((account) => `${account.noCompte} - ${account.nom}`).join(", ")
+    : t.common.unspecified;
 }
 
 function defaultBankingConnections(accounts = []) {
@@ -2199,17 +2220,6 @@ function BankingView({ accounts, t }) {
     localStorage.setItem("weserve-banking-connections", JSON.stringify(linkedAccounts));
   }, [linkedAccounts]);
 
-  function accountNames(bankAccount) {
-    if (bankAccount.scope === "all") {
-      return t.banking.allAccounts;
-    }
-
-    const selectedAccounts = accounts.filter((account) => bankAccount.accountIds.includes(account.compteID));
-    return selectedAccounts.length
-      ? selectedAccounts.map((account) => `${account.noCompte} - ${account.nom}`).join(", ")
-      : t.common.unspecified;
-  }
-
   function addLinkedBankAccount(event) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -2275,7 +2285,7 @@ function BankingView({ accounts, t }) {
             </dl>
             <div className="banking-scope-box">
               <strong>{t.banking.accountScope}</strong>
-              <p>{accountNames(bankAccount)}</p>
+              <p>{bankingAccountNames(bankAccount, accounts, t)}</p>
             </div>
           </article>
           );
