@@ -90,6 +90,8 @@ const copy = {
       noNotifications: "No notifications right now",
       openNotification: "Open notification",
       openSettings: "Open organization settings",
+      accountSettings: "Account settings",
+      myAccount: "My account",
       support: "Support",
       settings: "Settings",
       logout: "Log out",
@@ -116,6 +118,8 @@ const copy = {
       confirm: "Confirm",
       connect: "Connect",
       manage: "Manage",
+      update: "Update",
+      locked: "Locked",
       recommended: "Recommended",
       pending: "Pending",
       generated: "Generated",
@@ -359,6 +363,9 @@ const copy = {
       paymentMethods: "Payment methods",
       paymentSubtitle: "Manage the cards and billing methods used for your WeSERVE subscription.",
       defaultMethod: "Default",
+      updatePayment: "Update payment method",
+      deletePayment: "Delete payment method",
+      defaultPaymentLocked: "Default payment method cannot be deleted",
       expires: "Expires",
       addPayment: "Add payment method",
       cardholder: "Cardholder",
@@ -467,6 +474,8 @@ const copy = {
       noNotifications: "Aucune notification pour le moment",
       openNotification: "Ouvrir la notification",
       openSettings: "Ouvrir les paramètres de l'organisme",
+      accountSettings: "Paramètres du compte",
+      myAccount: "Mon compte",
       support: "Support",
       settings: "Paramètres",
       logout: "Déconnexion",
@@ -493,6 +502,8 @@ const copy = {
       confirm: "Confirmer",
       connect: "Connecter",
       manage: "Gérer",
+      update: "Modifier",
+      locked: "Verrouillé",
       recommended: "Recommandé",
       pending: "En attente",
       generated: "Généré",
@@ -736,6 +747,9 @@ const copy = {
       paymentMethods: "Méthodes de paiement",
       paymentSubtitle: "Gérez les cartes et méthodes de facturation utilisées pour votre abonnement WeSERVE.",
       defaultMethod: "Par défaut",
+      updatePayment: "Modifier la méthode de paiement",
+      deletePayment: "Supprimer la méthode de paiement",
+      defaultPaymentLocked: "La méthode de paiement par défaut ne peut pas être supprimée",
       expires: "Expire",
       addPayment: "Ajouter une méthode de paiement",
       cardholder: "Titulaire",
@@ -1412,10 +1426,6 @@ function App() {
             <Settings size={16} />
             <span>{t.common.settings}</span>
           </button>
-          <button className="ghost-button" type="button" onClick={logout}>
-            <LockKeyhole size={16} />
-            <span>{t.common.logout}</span>
-          </button>
         </div>
       </aside>
 
@@ -1427,6 +1437,7 @@ function App() {
           notifications={notifications}
           onNotificationSelect={handleNotificationSelect}
           onProfileClick={() => openView("settings")}
+          onLogout={logout}
           pendingDonationCount={pendingDonations.length}
           onSearch={handleSearch}
           query={query}
@@ -1689,12 +1700,18 @@ function LoginScreen({ error, language, onForgotPassword, onLanguageChange, onLo
   );
 }
 
-function Topbar({ language, notifications = [], onLanguageChange, onMenuClick, onNotificationSelect, onProfileClick, onSearch, pendingDonationCount = 0, query, t, user }) {
+function Topbar({ language, notifications = [], onLanguageChange, onLogout, onMenuClick, onNotificationSelect, onProfileClick, onSearch, pendingDonationCount = 0, query, t, user }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   function selectNotification(notification) {
     onNotificationSelect(notification);
     setNotificationsOpen(false);
+  }
+
+  function openAccountSettings() {
+    onProfileClick();
+    setProfileOpen(false);
   }
 
   return (
@@ -1718,7 +1735,10 @@ function Topbar({ language, notifications = [], onLanguageChange, onMenuClick, o
             type="button"
             aria-expanded={notificationsOpen}
             aria-label={t.banking.pendingNotification.replace("{count}", pendingDonationCount)}
-            onClick={() => setNotificationsOpen((open) => !open)}
+            onClick={() => {
+              setNotificationsOpen((open) => !open);
+              setProfileOpen(false);
+            }}
           >
             <Bell size={18} />
             {pendingDonationCount > 0 && <span>{pendingDonationCount}</span>}
@@ -1749,14 +1769,44 @@ function Topbar({ language, notifications = [], onLanguageChange, onMenuClick, o
             </div>
           )}
         </div>
-        <button className="profile-chip" type="button" onClick={onProfileClick} aria-label={t.common.openSettings}>
-          <span>{initials(user)}</span>
-          <div>
-            <strong>{user?.prenom || "Admin"}</strong>
-            <small>{user?.admin ? t.common.admin : t.common.user}</small>
-          </div>
-          <ChevronDown size={16} />
-        </button>
+        <div className="profile-menu">
+          <button
+            className="profile-chip"
+            type="button"
+            onClick={() => {
+              setProfileOpen((open) => !open);
+              setNotificationsOpen(false);
+            }}
+            aria-expanded={profileOpen}
+            aria-label={t.common.accountSettings}
+          >
+            <span>{initials(user)}</span>
+            <div>
+              <strong>{user?.prenom || "Admin"}</strong>
+              <small>{user?.admin ? t.common.admin : t.common.user}</small>
+            </div>
+            <ChevronDown size={16} />
+          </button>
+          {profileOpen && (
+            <div className="profile-dropdown">
+              <div className="profile-dropdown-header">
+                <span className="profile-dropdown-avatar">{initials(user)}</span>
+                <div>
+                  <strong>{`${user?.prenom || ""} ${user?.nom || ""}`.trim() || "Admin"}</strong>
+                  <small>{user?.courriel || user?.email || "-"}</small>
+                </div>
+              </div>
+              <button type="button" onClick={openAccountSettings}>
+                <Settings size={16} />
+                <span>{t.common.accountSettings}</span>
+              </button>
+              <button type="button" onClick={onLogout}>
+                <LockKeyhole size={16} />
+                <span>{t.common.logout}</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
@@ -3377,6 +3427,7 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
 function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit, onUserStatus }) {
   const organization = bootstrap?.organisme || {};
   const users = bootstrap?.users?.length ? bootstrap.users : [user].filter(Boolean);
+  const isAdmin = Boolean(user?.admin);
   const [addPaymentOpen, setAddPaymentOpen] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState(null);
   const [openSettingsSections, setOpenSettingsSections] = useState({
@@ -3400,18 +3451,36 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
       <ViewHeader
         title={t.settings.title}
         subtitle={t.settings.subtitle}
-        action={t.settings.save}
+        action={isAdmin ? t.settings.save : t.common.accountSettings}
         onAction={openProfileSection}
         icon={Settings}
       />
 
         <SettingsAccordionSection
           id="organization-profile"
-          title={t.settings.profile}
-          icon={Building2}
+          title={isAdmin ? t.settings.profile : t.common.myAccount}
+          icon={isAdmin ? Building2 : UserPlus}
           isOpen={openSettingsSections.profile}
           onToggle={() => toggleSettingsSection("profile")}
         >
+          {!isAdmin && (
+            <div className="account-settings-card">
+              <span className="account-avatar">{initials(user)}</span>
+              <div>
+                <strong>{`${user?.prenom || ""} ${user?.nom || ""}`.trim() || t.common.user}</strong>
+                <small>{user?.courriel || user?.email || "-"}</small>
+              </div>
+            </div>
+          )}
+          {isAdmin ? (
+          <Fragment>
+          <div className="account-settings-card">
+            <span className="account-avatar">{(organization.organisme || t.product).slice(0, 2).toUpperCase()}</span>
+            <div>
+              <strong>{organization.organisme || t.product}</strong>
+              <small>{organization.responsable_courriel || user?.courriel || user?.email || "-"}</small>
+            </div>
+          </div>
           <form className="form-grid settings-profile-form" onSubmit={onSubmit} key={`${organization.organismeID}-${organization.organisme}-${organization.responsable_courriel}`}>
             <label>
               {t.settings.organizationName}
@@ -3484,8 +3553,26 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
               <span>{t.settings.save}</span>
             </button>
           </form>
+          </Fragment>
+          ) : (
+            <form className="form-grid settings-profile-form">
+              <label>
+                {t.settings.contactName}
+                <input readOnly value={`${user?.prenom || ""} ${user?.nom || ""}`.trim() || t.common.user} />
+              </label>
+              <label>
+                {t.common.email}
+                <input readOnly value={user?.courriel || user?.email || ""} />
+              </label>
+              <label>
+                {t.settings.role}
+                <input readOnly value={t.common.user} />
+              </label>
+            </form>
+          )}
         </SettingsAccordionSection>
 
+        {isAdmin && (
         <SettingsAccordionSection
           title={t.settings.users}
           icon={Users}
@@ -3534,7 +3621,9 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
             ])}
           />
         </SettingsAccordionSection>
+        )}
 
+        {isAdmin && (
         <SettingsAccordionSection
           title={t.settings.paymentMethods}
           icon={CreditCard}
@@ -3587,7 +3676,9 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
             </form>
           )}
         </SettingsAccordionSection>
+        )}
 
+      {isAdmin && (
       <div className={`donor-edge-drawers settings-edge-drawers ${activeDrawer ? "has-open-drawer" : ""}`}>
         <button className={`donor-edge-tab ${activeDrawer === "plan" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "plan" ? null : "plan")} aria-label={t.settings.currentPlan} title={t.settings.currentPlan} aria-expanded={activeDrawer === "plan"}>
           <Sparkles size={18} />
@@ -3628,6 +3719,7 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
           </aside>
         )}
       </div>
+      )}
     </section>
   );
 }
@@ -3699,11 +3791,26 @@ function PaymentMethodCard({ brand, details, expiry, isDefault = false, t }) {
         </div>
       </dl>
       <div className="banking-scope-box payment-scope-box">
-        <strong>{t.common.manage}</strong>
-        <p>{brand} {details}</p>
-        <button className="icon-button table-icon" type="button" aria-label={t.common.manage}>
-          <Pencil size={15} />
-        </button>
+        <div>
+          <strong>{t.common.manage}</strong>
+          <p>{brand} {details}</p>
+        </div>
+        <div className="payment-actions">
+          <button className="secondary-button compact" type="button" aria-label={t.settings.updatePayment}>
+            <Pencil size={15} />
+            <span>{t.common.update}</span>
+          </button>
+          <button
+            className="secondary-button compact danger"
+            type="button"
+            disabled={isDefault}
+            title={isDefault ? t.settings.defaultPaymentLocked : t.settings.deletePayment}
+            aria-label={isDefault ? t.settings.defaultPaymentLocked : t.settings.deletePayment}
+          >
+            <Trash2 size={15} />
+            <span>{isDefault ? t.common.locked : t.common.delete}</span>
+          </button>
+        </div>
       </div>
     </article>
   );

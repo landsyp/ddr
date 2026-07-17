@@ -272,6 +272,10 @@ button {
   position: relative;
 }
 
+.profile-menu {
+  position: relative;
+}
+
 .notification-button {
   position: relative;
 }
@@ -386,6 +390,76 @@ button {
   color: #ffffff;
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 40;
+  display: grid;
+  gap: 8px;
+  width: min(300px, calc(100vw - 28px));
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(25, 46, 49, 0.18);
+}
+
+.profile-dropdown-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 8px 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.profile-dropdown-header strong,
+.account-settings-card strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.profile-dropdown-header small,
+.account-settings-card small {
+  display: block;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.profile-dropdown-avatar,
+.account-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.profile-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 800;
+  text-align: left;
+}
+
+.profile-dropdown button:hover,
+.profile-dropdown button:focus-visible {
+  border-color: var(--line);
+  background: var(--surface-strong);
 }
 
 .view-stack {
@@ -1576,6 +1650,21 @@ tr.donation-register-pending-row:hover td {
   border-bottom: 1px solid var(--line);
 }
 
+.account-settings-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  margin: 18px 18px 0;
+  padding: 16px;
+  border: 1px solid rgba(217, 227, 225, 0.78);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(232, 244, 239, 0.86), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+  box-shadow: var(--shadow-tile);
+}
+
 .settings-page {
   position: relative;
 }
@@ -2267,13 +2356,27 @@ tr.donation-register-pending-row:hover td {
 
 .payment-scope-box {
   position: relative;
-  padding-right: 58px;
+  display: grid;
+  gap: 14px;
 }
 
-.payment-scope-box .icon-button {
-  position: absolute;
-  top: 12px;
-  right: 12px;
+.payment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.payment-actions .secondary-button {
+  min-height: 38px;
+}
+
+.secondary-button.danger {
+  color: var(--red);
+}
+
+.secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 .add-payment-tile {
