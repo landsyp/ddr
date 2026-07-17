@@ -2021,11 +2021,11 @@ tr.donation-register-pending-row:hover td {
 }
 
 .pending-donations-band .incoming-donation {
-  border-color: rgba(183, 121, 31, 0.18);
+  border-color: rgba(183, 121, 31, 0.26);
   background:
-    linear-gradient(135deg, rgba(255, 250, 239, 0.98), rgba(255, 247, 231, 0.92)),
-    #fffaf0;
-  box-shadow: 0 8px 22px rgba(82, 58, 27, 0.06);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 251, 243, 0.96)),
+    #ffffff;
+  box-shadow: 0 12px 30px rgba(82, 58, 27, 0.1);
 }
 
 .incoming-donation-summary {
