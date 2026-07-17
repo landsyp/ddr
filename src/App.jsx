@@ -130,6 +130,7 @@ const copy = {
     donorForm: {
       title: "Add donor",
       success: "Donor saved.",
+      updated: "Donor updated.",
       new: "New donor",
       subtitle: "Keep donor contact details, giving history, and segmentation ready for receipting.",
       number: "Number",
@@ -494,6 +495,7 @@ const copy = {
     donorForm: {
       title: "Ajouter un donateur",
       success: "Donateur enregistré.",
+      updated: "Donateur mis à jour.",
       new: "Nouveau donateur",
       subtitle: "Gardez les coordonnées, l'historique des dons et la segmentation des donateurs prêts pour les reçus.",
       number: "Numéro",
@@ -1002,7 +1004,7 @@ function App() {
         body: JSON.stringify({
           ...data,
           membre: data.membre === "on",
-          recu: data.recu !== "off",
+          recu: data.recu === "on",
         }),
       });
       event.currentTarget.reset();
@@ -1019,6 +1021,23 @@ function App() {
         body: JSON.stringify({ actif }),
       });
       await refresh(actif ? t.donorForm.reactivated : t.donorForm.archived);
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
+  async function updateDonor(donor, data) {
+    try {
+      await api(`/api/donors/${donor.donateurID}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          ...data,
+          actif: donor.actif !== false,
+          membre: data.membre === "on",
+          recu: data.recu === "on",
+        }),
+      });
+      await refresh(t.donorForm.updated);
     } catch (saveError) {
       showError(saveError.message);
     }
@@ -1435,6 +1454,7 @@ function App() {
             onArchive={archiveDonor}
             onSearch={handleSearch}
             onSubmit={handleAddDonor}
+            onUpdate={updateDonor}
           />
         )}
         {!loading && activeView === "accounts" && (
@@ -2390,8 +2410,9 @@ function BankingView({ accounts, t }) {
   );
 }
 
-function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, onSubmit }) {
+function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, onSubmit, onUpdate }) {
   const [activeDrawer, setActiveDrawer] = useState(null);
+  const [editingDonor, setEditingDonor] = useState(null);
   const donorExportRows = donors.map((donor) => ({
     Number: donor.numero,
     Donor: donor.fullName,
@@ -2408,7 +2429,12 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
       <ViewHeader
         title={t.donorDirectory}
         subtitle={t.donorForm.subtitle}
+        action={t.donorForm.title}
         icon={Users}
+        onAction={() => {
+          setEditingDonor(null);
+          setActiveDrawer("add");
+        }}
         stacked
       />
 
@@ -2441,96 +2467,75 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
             <BooleanIcon key={`receipt-${donor.donateurID}`} value={donor.recu} trueLabel={t.common.yes} falseLabel={t.common.no} />,
             currency(donor.totalDonations || 0),
             donor.lastGift || "-",
-            <button className="secondary-button compact" type="button" onClick={() => onArchive(donor, !donor.actif)} key={`archive-${donor.donateurID}`}>
-              {donor.actif ? t.common.archive : t.common.activate}
-            </button>,
+            <div className="account-actions" key={`actions-${donor.donateurID}`}>
+              <button
+                className="icon-button table-icon"
+                type="button"
+                onClick={() => {
+                  setEditingDonor(donor);
+                  setActiveDrawer("edit");
+                }}
+                aria-label={`${t.common.edit} ${donor.fullName}`}
+                title={t.common.edit}
+              >
+                <Pencil size={16} />
+              </button>
+              <button className="secondary-button compact" type="button" onClick={() => onArchive(donor, !donor.actif)}>
+                {donor.actif ? t.common.archive : t.common.activate}
+              </button>
+            </div>,
           ])}
         />
       </Panel>
 
       <div className={`donor-edge-drawers ${activeDrawer ? "has-open-drawer" : ""}`}>
-        <button className={`donor-edge-tab ${activeDrawer === "add" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "add" ? null : "add")} aria-label={t.donorForm.new} title={t.donorForm.new} aria-expanded={activeDrawer === "add"} aria-controls="donor-add-drawer">
+        <button
+          className={`donor-edge-tab ${activeDrawer === "add" ? "active" : ""}`}
+          type="button"
+          onClick={() => {
+            setEditingDonor(null);
+            setActiveDrawer((drawer) => drawer === "add" ? null : "add");
+          }}
+          aria-label={t.donorForm.new}
+          title={t.donorForm.new}
+          aria-expanded={activeDrawer === "add"}
+          aria-controls="donor-add-drawer"
+        >
           <UserPlus size={18} />
         </button>
         <button className={`donor-edge-tab ${activeDrawer === "stats" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "stats" ? null : "stats")} aria-label={t.donorForm.totals} title={t.donorForm.totals} aria-expanded={activeDrawer === "stats"} aria-controls="donor-stats-drawer">
           <BarChart3 size={18} />
         </button>
 
-        {activeDrawer === "add" && (
+        {(activeDrawer === "add" || activeDrawer === "edit") && (
           <aside className="donor-edge-panel" id="donor-add-drawer">
             <div className="panel-header">
               <div>
-                <UserPlus size={18} />
-                <h2>{t.donorForm.title}</h2>
+                {activeDrawer === "edit" ? <Pencil size={18} /> : <UserPlus size={18} />}
+                <h2>{activeDrawer === "edit" ? t.common.edit : t.donorForm.title}</h2>
               </div>
               <button className="icon-button" type="button" onClick={() => setActiveDrawer(null)} aria-label={t.common.close || t.common.cancel}>
                 <X size={16} />
               </button>
             </div>
-            <form className="form-grid" onSubmit={onSubmit}>
-              <label>
-                {t.donorForm.number}
-                <input name="numero" placeholder={t.donorForm.autoNumber} />
-              </label>
-              <label>
-                {t.donorForm.firstName}
-                <input name="prenom" required />
-              </label>
-              <label>
-                {t.donorForm.lastName}
-                <input name="nom" required />
-              </label>
-              <label>
-                Email
-                <input name="courriel" type="email" />
-              </label>
-              <label>
-                {t.donorForm.address}
-                <input name="adresse" />
-              </label>
-              <label>
-                {t.donorForm.city}
-                <input name="ville" />
-              </label>
-              <label>
-                {t.donorForm.postalCode}
-                <input name="code_postal" />
-              </label>
-              <label>
-                {t.donorForm.province}
-                <select name="provinceID" defaultValue="1">
-                  {bootstrap?.provinces?.map((province) => (
-                    <option value={province.provinceID} key={province.provinceID}>
-                      {province.abreviation} - {province.provinceEtat_en}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                {t.donorForm.cell}
-                <input name="tel_cellulaire" />
-              </label>
-              <label>
-                {t.donorForm.residence}
-                <input name="tel_residence" />
-              </label>
-              <label className="checkbox-label">
-                <input name="membre" type="checkbox" />
-                <span>{t.common.member}</span>
-              </label>
-              <label className="checkbox-label">
-                <input name="recu" type="checkbox" defaultChecked />
-                <span>{t.donorForm.receiptsEnabled}</span>
-              </label>
-              <label className="full-field">
-                {t.donorForm.notes}
-                <textarea name="notes" rows="3" />
-              </label>
-              <button className="primary-button form-submit" type="submit">
-                <UserPlus size={17} />
-                <span>{t.donorForm.title}</span>
-              </button>
-            </form>
+            <DonorForm
+              bootstrap={bootstrap}
+              donor={activeDrawer === "edit" ? editingDonor : null}
+              onSubmit={async (event) => {
+                if (activeDrawer === "edit" && editingDonor) {
+                  event.preventDefault();
+                  await onUpdate(editingDonor, formObject(event.currentTarget));
+                  setActiveDrawer(null);
+                  setEditingDonor(null);
+                  return;
+                }
+
+                await onSubmit(event);
+                setActiveDrawer(null);
+              }}
+              submitLabel={activeDrawer === "edit" ? t.common.save : t.donorForm.title}
+              t={t}
+            />
           </aside>
         )}
 
@@ -2562,6 +2567,75 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
         )}
       </div>
     </section>
+  );
+}
+
+function DonorForm({ bootstrap, donor, onSubmit, submitLabel, t }) {
+  return (
+    <form className="form-grid" onSubmit={onSubmit}>
+              <label>
+                {t.donorForm.number}
+                <input name="numero" placeholder={t.donorForm.autoNumber} defaultValue={donor?.numero || ""} />
+              </label>
+              <label>
+                {t.donorForm.firstName}
+                <input name="prenom" required defaultValue={donor?.prenom || ""} />
+              </label>
+              <label>
+                {t.donorForm.lastName}
+                <input name="nom" required defaultValue={donor?.nom || ""} />
+              </label>
+              <label>
+                Email
+                <input name="courriel" type="email" defaultValue={donor?.courriel || ""} />
+              </label>
+              <label>
+                {t.donorForm.address}
+                <input name="adresse" defaultValue={donor?.adresse || ""} />
+              </label>
+              <label>
+                {t.donorForm.city}
+                <input name="ville" defaultValue={donor?.ville || ""} />
+              </label>
+              <label>
+                {t.donorForm.postalCode}
+                <input name="code_postal" defaultValue={donor?.code_postal || ""} />
+              </label>
+              <label>
+                {t.donorForm.province}
+                <select name="provinceID" defaultValue={donor?.provinceID || "1"}>
+                  {bootstrap?.provinces?.map((province) => (
+                    <option value={province.provinceID} key={province.provinceID}>
+                      {province.abreviation} - {province.provinceEtat_en}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                {t.donorForm.cell}
+                <input name="tel_cellulaire" defaultValue={donor?.tel_cellulaire || ""} />
+              </label>
+              <label>
+                {t.donorForm.residence}
+                <input name="tel_residence" defaultValue={donor?.tel_residence || ""} />
+              </label>
+              <label className="checkbox-label">
+                <input name="membre" type="checkbox" defaultChecked={Boolean(donor?.membre)} />
+                <span>{t.common.member}</span>
+              </label>
+              <label className="checkbox-label">
+                <input name="recu" type="checkbox" defaultChecked={donor ? Boolean(donor.recu) : true} />
+                <span>{t.donorForm.receiptsEnabled}</span>
+              </label>
+              <label className="full-field">
+                {t.donorForm.notes}
+                <textarea name="notes" rows="3" defaultValue={donor?.notes || ""} />
+              </label>
+              <button className="primary-button form-submit" type="submit">
+                <UserPlus size={17} />
+                <span>{submitLabel}</span>
+              </button>
+    </form>
   );
 }
 
