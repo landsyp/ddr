@@ -2161,6 +2161,21 @@ function savedBankingConnections(accounts) {
   }
 }
 
+function maskSensitiveValue(value = "", visibleCount = 4) {
+  const cleanValue = String(value).trim();
+  const visibleValue = cleanValue.replace(/\s/g, "").slice(-visibleCount);
+  return visibleValue ? `**** ${visibleValue}` : "";
+}
+
+function maskEmail(value = "") {
+  const [name = "", domain = ""] = String(value).trim().split("@");
+  if (!name || !domain) {
+    return maskSensitiveValue(value);
+  }
+
+  return `${name.slice(0, 2)}***@${domain}`;
+}
+
 function BankingView({ accounts, t }) {
   const bankingProviders = [
     { value: "Banque Nationale", label: "Banque Nationale", type: "bank" },
@@ -2204,9 +2219,13 @@ function BankingView({ accounts, t }) {
       {
         id: `bank-${Date.now()}`,
         institution: data.provider,
-        accountNumber: data.accountNumber || data.paypalEmail || data.stripeAccount,
+        accountNumber: selectedProvider.type === "paypal"
+          ? maskEmail(data.paypalEmail)
+          : maskSensitiveValue(data.accountNumber || data.stripeAccount),
         transit: selectedProvider.type === "bank" ? data.transit : selectedProvider.label,
-        iban: selectedProvider.type === "bank" ? data.iban : data.stripeAccount || data.paypalEmail,
+        iban: selectedProvider.type === "paypal"
+          ? maskEmail(data.paypalEmail)
+          : maskSensitiveValue(data.iban || data.stripeAccount),
         scope: data.scope,
         accountIds: data.scope === "all" ? [] : selectedAccountIds,
       },
