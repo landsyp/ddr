@@ -1661,9 +1661,9 @@ tr.donation-register-pending-row:hover td {
 
 .pending-donations-band {
   display: grid;
-  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  grid-template-columns: 1fr;
   gap: 16px;
-  align-items: center;
+  align-items: start;
   padding: 18px;
   border: 1px solid rgba(183, 121, 31, 0.24);
   border-radius: 8px;
