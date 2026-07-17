@@ -2871,9 +2871,12 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [editingAccountId, setEditingAccountId] = useState(null);
   const [expandedAccountId, setExpandedAccountId] = useState(null);
+  const [activeDrawer, setActiveDrawer] = useState(null);
   const [accountPendingDelete, setAccountPendingDelete] = useState(null);
   const selectedAccount = accounts.find((account) => account.compteID === selectedAccountId);
   const expandedAccount = accounts.find((account) => account.compteID === expandedAccountId);
+  const receiptableAccountCount = accounts.filter((account) => account.recu).length;
+  const receiptEligibilityPercent = accounts.length ? (receiptableAccountCount / accounts.length) * 100 : 0;
 
   useEffect(() => {
     if (!accounts.length) {
@@ -2918,7 +2921,13 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
       setSelectedAccountId(createdAccount.compteID);
       setEditingAccountId(null);
       setExpandedAccountId(null);
+      setActiveDrawer(null);
     }
+  }
+
+  function openAddAccountDrawer() {
+    setActiveDrawer("add");
+    window.setTimeout(() => focusTarget("account-form"), 0);
   }
 
   async function confirmDeleteAccount() {
@@ -2936,8 +2945,9 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
         title={t.accounts.title}
         subtitle={t.accounts.subtitle}
         action={t.accounts.add}
-        actionTargetId="account-form"
+        onAction={openAddAccountDrawer}
         icon={ClipboardList}
+        stacked
       />
 
       {expandedAccount ? (
@@ -3018,9 +3028,18 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
         </Panel>
       )}
 
-      <div className="two-column form-layout">
-        <Panel id="account-form" title={t.accounts.add} icon={Plus}>
-          <form className="form-grid" onSubmit={submitNewAccount}>
+      <div className={`donor-edge-drawers account-edge-drawers ${activeDrawer ? "has-open-drawer" : ""}`}>
+        <button className={`donor-edge-tab ${activeDrawer === "add" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "add" ? null : "add")} aria-label={t.accounts.add} title={t.accounts.add} aria-expanded={activeDrawer === "add"} aria-controls="account-add-drawer">
+          <Plus size={18} />
+        </button>
+        <button className={`donor-edge-tab ${activeDrawer === "eligibility" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "eligibility" ? null : "eligibility")} aria-label={t.accounts.eligibility} title={t.accounts.eligibility} aria-expanded={activeDrawer === "eligibility"} aria-controls="account-eligibility-drawer">
+          <ReceiptText size={18} />
+        </button>
+
+        {activeDrawer === "add" && (
+          <aside className="donor-edge-panel app-edge-panel" id="account-add-drawer">
+            <EdgePanelHeader icon={Plus} title={t.accounts.add} subtitle={t.accounts.subtitle} onClose={() => setActiveDrawer(null)} t={t} />
+          <form className="form-grid" id="account-form" onSubmit={submitNewAccount}>
             <label>
               {t.accounts.accountNumber}
               <input name="noCompte" required type="number" />
@@ -3038,19 +3057,39 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
               <span>{t.accounts.add}</span>
             </button>
           </form>
-        </Panel>
+          </aside>
+        )}
 
-        <Panel title={t.accounts.eligibility} icon={ReceiptText}>
-          <div className="readiness">
+        {activeDrawer === "eligibility" && (
+          <aside className="donor-edge-panel app-edge-panel" id="account-eligibility-drawer">
+            <EdgePanelHeader icon={ReceiptText} title={t.accounts.eligibility} subtitle={t.accounts.eligibilityText} onClose={() => setActiveDrawer(null)} t={t} />
+            <div className="account-eligibility-panel">
+              <div className="readiness">
             <div>
-              <strong>{accounts.filter((account) => account.recu).length}</strong>
+                  <strong>{receiptableAccountCount}</strong>
               <span>{t.accounts.eligibilityText}</span>
             </div>
             <div className="progress">
-              <span style={{ width: `${accounts.length ? (accounts.filter((account) => account.recu).length / accounts.length) * 100 : 0}%` }} />
+                  <span style={{ width: `${receiptEligibilityPercent}%` }} />
             </div>
           </div>
-        </Panel>
+              <div className="account-eligibility-stats">
+                <div>
+                  <span>{t.accounts.receiptable}</span>
+                  <strong>{receiptableAccountCount}</strong>
+                </div>
+                <div>
+                  <span>{t.accounts.noReceipt}</span>
+                  <strong>{accounts.length - receiptableAccountCount}</strong>
+                </div>
+                <div>
+                  <span>{t.nav.accounts}</span>
+                  <strong>{accounts.length}</strong>
+                </div>
+              </div>
+            </div>
+          </aside>
+        )}
       </div>
 
       {accountPendingDelete && (

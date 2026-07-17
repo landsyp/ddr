@@ -1499,6 +1499,44 @@ tr.donation-register-pending-row:hover td {
   justify-self: end;
 }
 
+.account-eligibility-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.account-eligibility-panel .readiness {
+  margin: 0;
+}
+
+.account-eligibility-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.account-eligibility-stats > div {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.account-eligibility-stats span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.account-eligibility-stats strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--brand);
+  font-size: 1.3rem;
+}
+
 .receipt-eligibility {
   justify-content: center;
   min-width: 118px;
@@ -3368,6 +3406,10 @@ tr.donation-register-pending-row:hover td {
   .user-access-metrics {
     grid-template-columns: 1fr;
     min-width: 0;
+  }
+
+  .account-eligibility-stats {
+    grid-template-columns: 1fr;
   }
 
   .payment-method-card,
