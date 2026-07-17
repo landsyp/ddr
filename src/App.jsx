@@ -24,6 +24,7 @@ import {
   Menu,
   Minimize2,
   Palette,
+  PauseCircle,
   Pencil,
   Plus,
   Printer,
@@ -2924,7 +2925,7 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, on
                 aria-label={`${donor.actif ? t.common.deactivate : t.common.activate} ${donor.fullName}`}
                 title={donor.actif ? t.common.deactivate : t.common.activate}
               >
-                {donor.actif ? <X size={16} /> : <CheckCircle2 size={16} />}
+                {donor.actif ? <PauseCircle size={16} /> : <CheckCircle2 size={16} />}
               </button>
               <button
                 className="icon-button table-icon danger"
