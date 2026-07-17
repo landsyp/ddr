@@ -3271,6 +3271,12 @@ tr.donation-register-pending-row:hover td {
   animation: quick-menu-in 160ms ease-out;
 }
 
+.quick-launcher-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .quick-launcher-title {
   padding: 2px 4px 6px;
   color: var(--muted);
@@ -3303,27 +3309,42 @@ tr.donation-register-pending-row:hover td {
   outline: 0;
 }
 
-.quick-launcher-toggle {
+.quick-launcher-toggle,
+.quick-launcher-help {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 62px;
-  height: 62px;
-  border: 1px solid rgba(255, 255, 255, 0.48);
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
   color: #ffffff;
-  box-shadow:
-    0 18px 46px rgba(22, 79, 72, 0.34),
-    0 0 0 8px rgba(29, 111, 95, 0.08);
   transition:
     transform 160ms ease,
     box-shadow 160ms ease;
 }
 
+.quick-launcher-toggle {
+  width: 62px;
+  height: 62px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  box-shadow:
+    0 18px 46px rgba(22, 79, 72, 0.34),
+    0 0 0 8px rgba(29, 111, 95, 0.08);
+}
+
+.quick-launcher-help {
+  width: 50px;
+  height: 50px;
+  border: 1px solid rgba(29, 111, 95, 0.2);
+  background: #ffffff;
+  color: var(--brand);
+  box-shadow: 0 16px 34px rgba(22, 79, 72, 0.18);
+}
+
 .quick-launcher-toggle:hover,
-.quick-launcher-toggle:focus-visible {
+.quick-launcher-toggle:focus-visible,
+.quick-launcher-help:hover,
+.quick-launcher-help:focus-visible {
   transform: translateY(-2px);
   box-shadow:
     0 24px 58px rgba(22, 79, 72, 0.4),

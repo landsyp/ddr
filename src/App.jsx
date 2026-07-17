@@ -157,7 +157,8 @@ const copy = {
       tourSubtitle: "A quick walkthrough of the donor workspace.",
       tourSteps: [
         { title: "Search and export", body: "Filter the donor directory, then export the visible list as CSV or Excel." },
-        { title: "Side actions", body: "Use the side tabs to add a donor or open donor totals without leaving the directory." },
+        { title: "Add donor tab", body: "The user-plus side tab opens the form to add a new donor without leaving the directory." },
+        { title: "Stats tab", body: "The chart side tab opens donor totals and a quick summary of recent donor activity." },
         { title: "Edit donors", body: "Use the pencil in each row to update a donor profile from the side panel." },
       ],
       tourDone: "Got it",
@@ -562,7 +563,8 @@ const copy = {
       tourSubtitle: "Un aperçu rapide de l'espace de travail des donateurs.",
       tourSteps: [
         { title: "Recherche et exports", body: "Filtrez le répertoire des donateurs, puis exportez la liste visible en CSV ou Excel." },
-        { title: "Actions sur le côté", body: "Utilisez les onglets latéraux pour ajouter un donateur ou ouvrir les statistiques sans quitter le répertoire." },
+        { title: "Onglet Ajouter", body: "L'onglet latéral avec l'icône utilisateur-plus ouvre le formulaire pour ajouter un donateur sans quitter le répertoire." },
+        { title: "Onglet statistiques", body: "L'onglet latéral avec le graphique ouvre les totaux et un résumé rapide de l'activité des donateurs." },
         { title: "Modifier les donateurs", body: "Utilisez le crayon dans chaque ligne pour modifier un profil depuis le panneau latéral." },
       ],
       tourDone: "Compris",
@@ -939,6 +941,7 @@ function App() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+  const [tourRequest, setTourRequest] = useState(0);
   const [authToken, setAuthToken] = useState(() => localStorage.getItem("ddr-token") || "");
   const [currentUser, setCurrentUser] = useState(() => {
     if (!localStorage.getItem("ddr-token")) {
@@ -1402,6 +1405,11 @@ function App() {
     openView(notification.target);
   }
 
+  function launchPageTour() {
+    setQuickActionsOpen(false);
+    setTourRequest((request) => request + 1);
+  }
+
   function handleSavePalette(customPalette) {
     setSavedPalettes((currentPalettes) => {
       const paletteId = customPalette.id || `custom-${Date.now()}`;
@@ -1544,6 +1552,7 @@ function App() {
             onSearch={handleSearch}
             onSubmit={handleAddDonor}
             onUpdate={updateDonor}
+            tourRequest={tourRequest}
           />
         )}
         {!loading && activeView === "accounts" && (
@@ -1621,7 +1630,9 @@ function App() {
 
       {!loading && (
         <QuickActionLauncher
+          activeView={activeView}
           isOpen={quickActionsOpen}
+          onHelp={launchPageTour}
           onToggle={() => setQuickActionsOpen((open) => !open)}
           onViewChange={openView}
           t={t}
@@ -1953,13 +1964,14 @@ function Overview({ accounts, dashboard, donations, t, onViewChange }) {
   );
 }
 
-function QuickActionLauncher({ isOpen, onToggle, onViewChange, t }) {
+function QuickActionLauncher({ activeView, isOpen, onHelp, onToggle, onViewChange, t }) {
   const quickActions = [
     [Plus, t.actions[0], "donations"],
     [Users, t.actions[1], "donors"],
     [ReceiptText, t.actions[2], "receipts"],
     [BarChart3, t.actions[3], "reports"],
   ];
+  const hasPageTour = activeView === "donors";
 
   return (
     <div className={`quick-launcher ${isOpen ? "is-open" : ""}`}>
@@ -1975,15 +1987,28 @@ function QuickActionLauncher({ isOpen, onToggle, onViewChange, t }) {
         </div>
       )}
 
-      <button
-        className="quick-launcher-toggle"
-        type="button"
-        aria-expanded={isOpen}
-        aria-label={t.overview.quickActions}
-        onClick={onToggle}
-      >
-        {isOpen ? <X size={22} /> : <Plus size={24} />}
-      </button>
+      <div className="quick-launcher-buttons">
+        {hasPageTour && (
+          <button
+            className="quick-launcher-help"
+            type="button"
+            aria-label={t.donorForm.tourReplay}
+            title={t.donorForm.tourReplay}
+            onClick={onHelp}
+          >
+            <HelpCircle size={21} />
+          </button>
+        )}
+        <button
+          className="quick-launcher-toggle"
+          type="button"
+          aria-expanded={isOpen}
+          aria-label={t.overview.quickActions}
+          onClick={onToggle}
+        >
+          {isOpen ? <X size={22} /> : <Plus size={24} />}
+        </button>
+      </div>
     </div>
   );
 }
@@ -2666,7 +2691,7 @@ function BankingView({ accounts, t }) {
   );
 }
 
-function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, onSubmit, onUpdate }) {
+function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, onSubmit, onUpdate, tourRequest }) {
   const [activeDrawer, setActiveDrawer] = useState(null);
   const [editingDonor, setEditingDonor] = useState(null);
   const [showTour, setShowTour] = useState(false);
@@ -2688,6 +2713,12 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
       localStorage.setItem(tourKey, "seen");
     }
   }, []);
+
+  useEffect(() => {
+    if (tourRequest > 0) {
+      setShowTour(true);
+    }
+  }, [tourRequest]);
 
   function closeTour() {
     localStorage.setItem("weserve-tour-donors", "seen");
@@ -2775,9 +2806,6 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
         </button>
         <button className={`donor-edge-tab ${activeDrawer === "stats" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "stats" ? null : "stats")} aria-label={t.donorForm.totals} title={t.donorForm.totals} aria-expanded={activeDrawer === "stats"} aria-controls="donor-stats-drawer">
           <BarChart3 size={18} />
-        </button>
-        <button className="donor-edge-tab tour-help-tab" type="button" onClick={() => setShowTour(true)} aria-label={t.donorForm.tourReplay} title={t.donorForm.tourReplay}>
-          <HelpCircle size={18} />
         </button>
 
         {(activeDrawer === "add" || activeDrawer === "edit") && (
