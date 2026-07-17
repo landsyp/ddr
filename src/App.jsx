@@ -166,6 +166,8 @@ const copy = {
       add: "Add donation",
       success: "Donation added to the register.",
       accountMix: "Account mix",
+      import: "Import donations",
+      importHelp: "Upload bank, PayPal, or CSV donation files before categorizing them.",
       register: "Donation register",
       searchRegister: "Search donations",
       showAllPending: "Show all pending",
@@ -535,6 +537,8 @@ const copy = {
       add: "Ajouter le don",
       success: "Le don a été ajouté au registre.",
       accountMix: "Répartition par compte",
+      import: "Importer des dons",
+      importHelp: "Téléversez des fichiers bancaires, PayPal ou CSV avant de les catégoriser.",
       register: "Registre des dons",
       searchRegister: "Rechercher dans les dons",
       showAllPending: "Afficher tous les dons en attente",
@@ -1918,8 +1922,11 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
         title={t.nav.donations}
         subtitle={t.donationForm.subtitle}
         action={t.donationForm.add}
+        secondaryAction={t.donationForm.import}
         icon={CircleDollarSign}
         onAction={() => setActiveDrawer("add")}
+        onSecondaryAction={() => setActiveDrawer("import")}
+        secondaryIcon={Download}
         stacked
       />
 
@@ -1946,9 +1953,9 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
                     {t.donationForm.detectedDonor}: {detectedDonor?.fullName || donation.donorNumber}
                   </p>
                 </div>
-                <button className="secondary-button compact" type="button" onClick={() => setCategorizingDonationId(isCategorizing ? null : donation.id)}>
-                  <Link2 size={15} />
-                  <span>{t.banking.categorize}</span>
+                <button className="categorize-chip-button" type="button" onClick={() => setCategorizingDonationId(isCategorizing ? null : donation.id)} aria-label={t.banking.categorize} title={t.banking.categorize}>
+                  <Link2 size={14} />
+                  <span>Cat.</span>
                 </button>
               </div>
               {isCategorizing && (
@@ -1997,10 +2004,10 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
               ? <span className="status-pill pending donation-pending" key={`pending-${row.id}`}>{t.common.pending}</span>
               : <StatusPill key={`status-${row.id}`} t={t} value={row.status} />,
             row.status === "pending" ? (
-              <button className="icon-button table-icon categorize-icon-button" type="button" key={`categorize-${row.id}`} aria-label={t.banking.categorize} title={t.banking.categorize} onClick={() => {
+              <button className="categorize-chip-button is-icon-only" type="button" key={`categorize-${row.id}`} aria-label={t.banking.categorize} title={t.banking.categorize} onClick={() => {
                 setRegisterCategorizingDonationId((currentId) => currentId === row.id ? null : row.id);
               }}>
-                <Link2 size={15} />
+                <span>Cat.</span>
               </button>
             ) : (
               <button className="icon-button table-icon" type="button" onClick={() => onDelete(row.raw)} aria-label={t.common.delete} key={`delete-${row.id}`}>
@@ -2039,6 +2046,9 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
         <button className={`donor-edge-tab ${activeDrawer === "add" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "add" ? null : "add")} aria-label={t.donationForm.add} title={t.donationForm.add} aria-expanded={activeDrawer === "add"}>
           <Plus size={18} />
         </button>
+        <button className={`donor-edge-tab ${activeDrawer === "import" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "import" ? null : "import")} aria-label={t.donationForm.import} title={t.donationForm.import} aria-expanded={activeDrawer === "import"}>
+          <Download size={18} />
+        </button>
         <button className={`donor-edge-tab ${activeDrawer === "stats" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "stats" ? null : "stats")} aria-label={t.donationForm.accountMix} title={t.donationForm.accountMix} aria-expanded={activeDrawer === "stats"}>
           <BarChart3 size={18} />
         </button>
@@ -2059,6 +2069,32 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
               }}
               t={t}
             />
+          </aside>
+        )}
+
+        {activeDrawer === "import" && (
+          <aside className="donor-edge-panel app-edge-panel" id="donation-import-drawer">
+            <EdgePanelHeader icon={Download} title={t.donationForm.import} subtitle={t.donationForm.importHelp} onClose={() => setActiveDrawer(null)} t={t} />
+            <div className="donation-import-dropzone">
+              <Download size={24} />
+              <strong>{t.donationForm.import}</strong>
+              <span>CSV, PayPal, bank export</span>
+              <input type="file" accept=".csv,.xls,.xlsx" aria-label={t.donationForm.import} />
+            </div>
+            <div className="donation-import-steps">
+              <div>
+                <span>1</span>
+                <p>{t.banking.newDonations}</p>
+              </div>
+              <div>
+                <span>2</span>
+                <p>{t.banking.categorize}</p>
+              </div>
+              <div>
+                <span>3</span>
+                <p>{t.donationForm.register}</p>
+              </div>
+            </div>
           </aside>
         )}
 
@@ -3744,7 +3780,7 @@ function SupportView({ t, onViewChange }) {
   );
 }
 
-function ViewHeader({ title, subtitle, action, actionTargetId, icon: Icon, onAction, stacked = false }) {
+function ViewHeader({ title, subtitle, action, actionTargetId, icon: Icon, onAction, secondaryAction, secondaryIcon: SecondaryIcon = Download, onSecondaryAction, stacked = false }) {
   const handleAction = onAction || (actionTargetId ? () => focusTarget(actionTargetId) : null);
 
   return (
@@ -3754,12 +3790,22 @@ function ViewHeader({ title, subtitle, action, actionTargetId, icon: Icon, onAct
         <h1>{title}</h1>
         <p>{subtitle}</p>
       </div>
-      {action && handleAction && (
-        <button className="primary-button" type="button" onClick={handleAction}>
-          <Plus size={17} />
-          <span>{action}</span>
-        </button>
-      )}
+      {(action && handleAction) || (secondaryAction && onSecondaryAction) ? (
+        <div className="view-header-actions">
+          {action && handleAction && (
+            <button className="primary-button" type="button" onClick={handleAction}>
+              <Plus size={17} />
+              <span>{action}</span>
+            </button>
+          )}
+          {secondaryAction && onSecondaryAction && (
+            <button className="secondary-button" type="button" onClick={onSecondaryAction}>
+              <SecondaryIcon size={17} />
+              <span>{secondaryAction}</span>
+            </button>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
