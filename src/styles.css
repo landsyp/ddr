@@ -1402,6 +1402,51 @@ td {
   color: var(--brand);
 }
 
+.bank-brand-mark {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: var(--bank-soft, var(--green-soft));
+  color: var(--bank-color, var(--brand));
+  overflow: hidden;
+}
+
+.bank-brand-mark span {
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.bank-brand-mark svg {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 13px;
+  height: 13px;
+  opacity: 0.42;
+}
+
+.bank-brand-mark.large {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+}
+
+.bank-brand-mark.large span {
+  font-size: 0.84rem;
+}
+
+.bank-brand-mark.large svg {
+  right: 7px;
+  bottom: 7px;
+  width: 16px;
+  height: 16px;
+}
+
 .payment-method-card strong,
 .payment-method-card span,
 .banking-connection span,
@@ -1418,7 +1463,7 @@ td {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--brand);
+  color: var(--bank-color, var(--brand));
   font-size: 0.82rem;
 }
 
@@ -1476,6 +1521,7 @@ td {
 }
 
 .linked-bank-tile {
+  position: relative;
   display: grid;
   gap: 16px;
   min-height: 300px;
@@ -1486,6 +1532,15 @@ td {
   color: var(--ink);
   text-align: left;
   box-shadow: var(--shadow-tile);
+  overflow: hidden;
+}
+
+.linked-bank-tile::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: var(--bank-color, var(--brand));
+  content: "";
 }
 
 .payment-method-tile {

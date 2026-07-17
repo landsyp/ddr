@@ -2052,10 +2052,51 @@ function CategorizeDonationForm({ accounts, detectedDonor, donation, donors, onS
   );
 }
 
+function bankBrand(institution = "") {
+  const name = institution.toLowerCase();
+
+  if (name.includes("paypal")) {
+    return { code: "PP", color: "#0070ba", soft: "#e6f4ff" };
+  }
+
+  if (name.includes("stripe")) {
+    return { code: "STR", color: "#635bff", soft: "#eeecff" };
+  }
+
+  if (name.includes("rbc") || name.includes("royal bank")) {
+    return { code: "RBC", color: "#0051a5", soft: "#e7f0fb" };
+  }
+
+  if (name.includes("nationale") || name.includes("national")) {
+    return { code: "NBC", color: "#d71920", soft: "#fdeaea" };
+  }
+
+  if (name.includes("td")) {
+    return { code: "TD", color: "#00843d", soft: "#e6f5ec" };
+  }
+
+  if (name.includes("bmo")) {
+    return { code: "BMO", color: "#0079c1", soft: "#e6f3fb" };
+  }
+
+  if (name.includes("cibc")) {
+    return { code: "CIBC", color: "#8a1538", soft: "#fae8ef" };
+  }
+
+  if (name.includes("scotia")) {
+    return { code: "SB", color: "#ed1b2f", soft: "#fde8eb" };
+  }
+
+  return { code: "BANK", color: "#1d6f5f", soft: "#e8f4ef" };
+}
+
 function BankingConnection({ icon: Icon, label, meta, t }) {
+  const brand = bankBrand(`${label} ${meta}`);
+
   return (
-    <article className="banking-connection">
-      <div>
+    <article className="banking-connection" style={{ "--bank-color": brand.color, "--bank-soft": brand.soft }}>
+      <div className="bank-brand-mark">
+        <span>{brand.code}</span>
         <Icon size={18} />
       </div>
       <span>{label}</span>
@@ -2133,10 +2174,14 @@ function BankingView({ accounts, t }) {
       />
 
       <div className="banking-tile-grid">
-        {linkedAccounts.map((bankAccount) => (
-          <article className="linked-bank-tile" key={bankAccount.id}>
+        {linkedAccounts.map((bankAccount) => {
+          const brand = bankBrand(bankAccount.institution);
+
+          return (
+          <article className="linked-bank-tile" key={bankAccount.id} style={{ "--bank-color": brand.color, "--bank-soft": brand.soft }}>
             <div className="linked-bank-topline">
-              <div className="payment-card-mark">
+              <div className="bank-brand-mark large">
+                <span>{brand.code}</span>
                 <Landmark size={20} />
               </div>
               <span className="status-pill issued"><CheckCircle2 size={14} /> {t.banking.linked}</span>
@@ -2161,7 +2206,8 @@ function BankingView({ accounts, t }) {
               <p>{accountNames(bankAccount)}</p>
             </div>
           </article>
-        ))}
+          );
+        })}
 
         <button className="linked-bank-tile add-bank-tile" type="button" onClick={() => setAddBankOpen((open) => !open)} aria-expanded={addBankOpen}>
           <span><Plus size={28} /></span>
