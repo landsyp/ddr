@@ -1843,7 +1843,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
   const [manualFormOpen, setManualFormOpen] = useState(false);
   const [categorizingDonationId, setCategorizingDonationId] = useState(null);
   const linkedBankAccounts = savedBankingConnections(accounts);
-  const [expandedBankConnectionId, setExpandedBankConnectionId] = useState(linkedBankAccounts[0]?.id || null);
+  const [bankingConnectionsOpen, setBankingConnectionsOpen] = useState(true);
 
   return (
     <section className="view-stack">
@@ -1901,25 +1901,37 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
         </div>
       </section>
 
-      <Panel title={t.banking.title} icon={Landmark}>
+      <section className={`panel banking-section-accordion ${bankingConnectionsOpen ? "is-expanded" : ""}`}>
+        <button
+          className="banking-section-toggle"
+          type="button"
+          onClick={() => setBankingConnectionsOpen((isOpen) => !isOpen)}
+          aria-expanded={bankingConnectionsOpen}
+        >
+          <div>
+            <Landmark size={18} />
+            <h2>{t.banking.title}</h2>
+          </div>
+          <span className="banking-section-count">{linkedBankAccounts.length}</span>
+          <ChevronDown size={18} />
+        </button>
+
+        {bankingConnectionsOpen && (
         <div className="banking-subtle-layout">
           <p className="panel-copy">{t.banking.subtitle}</p>
           <div className="banking-accordion-list">
             {linkedBankAccounts.map((bankAccount) => (
-              <BankingConnectionAccordion
+              <BankingConnectionRow
                 bankAccount={bankAccount}
                 detail={bankingAccountNames(bankAccount, accounts, t)}
-                isExpanded={expandedBankConnectionId === bankAccount.id}
                 key={bankAccount.id}
-                onToggle={() => setExpandedBankConnectionId((currentId) => (
-                  currentId === bankAccount.id ? null : bankAccount.id
-                ))}
                 t={t}
               />
             ))}
           </div>
         </div>
-      </Panel>
+        )}
+      </section>
 
       <Panel id="donation-form" title={t.banking.recordManual} icon={Plus}>
         <button className="manual-donation-toggle" type="button" onClick={() => setManualFormOpen((open) => !open)} aria-expanded={manualFormOpen}>
@@ -2128,41 +2140,37 @@ function BankBrandIcon({ brand, size = 18 }) {
   return <Landmark size={size} />;
 }
 
-function BankingConnectionAccordion({ bankAccount, detail, isExpanded, onToggle, t }) {
+function BankingConnectionRow({ bankAccount, detail, t }) {
   const brand = bankBrand(`${bankAccount.institution} ${bankAccount.accountNumber}`);
 
   return (
-    <article className={`banking-accordion-item ${isExpanded ? "is-expanded" : ""}`} style={{ "--bank-color": brand.color, "--bank-soft": brand.soft }}>
-      <button className="banking-accordion-summary" type="button" onClick={onToggle} aria-expanded={isExpanded}>
+    <article className="banking-connection-row" style={{ "--bank-color": brand.color, "--bank-soft": brand.soft }}>
+      <div className="banking-connection-main">
         <div className="bank-brand-mark">
           <BankBrandIcon brand={brand} size={18} />
         </div>
-        <div className="banking-accordion-title">
+        <div className="banking-connection-title">
           <span>{bankAccount.institution}</span>
           <small>{bankAccount.accountNumber}</small>
         </div>
-        <strong><CheckCircle2 size={15} /> {t.banking.linked}</strong>
-        <ChevronDown size={18} />
-      </button>
-
-      {isExpanded && (
-        <div className="banking-accordion-detail">
-          <dl className="banking-detail-list">
-            <div>
-              <dt>{t.banking.transitNumber}</dt>
-              <dd>{bankAccount.transit}</dd>
-            </div>
-            <div>
-              <dt>{t.banking.ibanNumber}</dt>
-              <dd>{bankAccount.iban}</dd>
-            </div>
-          </dl>
-          <div className="banking-scope-box">
-            <strong>{t.banking.accountScope}</strong>
-            <p>{detail}</p>
+        <span className="status-pill issued"><CheckCircle2 size={14} /> {t.banking.linked}</span>
+      </div>
+      <div className="banking-connection-detail">
+        <dl className="banking-detail-list">
+          <div>
+            <dt>{t.banking.transitNumber}</dt>
+            <dd>{bankAccount.transit}</dd>
           </div>
+          <div>
+            <dt>{t.banking.ibanNumber}</dt>
+            <dd>{bankAccount.iban}</dd>
+          </div>
+        </dl>
+        <div className="banking-scope-box">
+          <strong>{t.banking.accountScope}</strong>
+          <p>{detail}</p>
         </div>
-      )}
+      </div>
     </article>
   );
 }

@@ -1507,46 +1507,96 @@ td {
   gap: 10px;
 }
 
-.banking-accordion-item {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 8px 22px rgba(25, 46, 49, 0.055);
+.banking-section-accordion {
+  padding: 0;
   overflow: hidden;
 }
 
-.banking-accordion-summary {
+.banking-section-toggle {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 12px;
   align-items: center;
   width: 100%;
-  padding: 14px;
+  padding: 18px;
   border: 0;
   background: transparent;
   color: var(--ink);
   text-align: left;
 }
 
-.banking-accordion-summary > svg {
+.banking-section-toggle > div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.banking-section-toggle h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.banking-section-toggle > svg {
   color: var(--muted);
   transition: transform 160ms ease;
 }
 
-.banking-accordion-item.is-expanded .banking-accordion-summary > svg {
+.banking-section-accordion.is-expanded .banking-section-toggle > svg {
   transform: rotate(180deg);
 }
 
-.banking-accordion-title {
+.banking-section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--brand);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.banking-section-accordion .banking-subtle-layout {
+  padding: 0 18px 18px;
+}
+
+.banking-connection-row {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(25, 46, 49, 0.055);
+}
+
+.banking-connection-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.banking-connection-main .status-pill {
+  gap: 6px;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.banking-connection-title {
   min-width: 0;
 }
 
-.banking-accordion-title span,
-.banking-accordion-title small {
+.banking-connection-title span,
+.banking-connection-title small {
   display: block;
 }
 
-.banking-accordion-title span {
+.banking-connection-title span {
   overflow: hidden;
   color: var(--ink);
   font-weight: 850;
@@ -1554,25 +1604,15 @@ td {
   white-space: nowrap;
 }
 
-.banking-accordion-title small {
+.banking-connection-title small {
   margin-top: 3px;
   overflow-wrap: anywhere;
   color: var(--muted);
 }
 
-.banking-accordion-summary strong {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  color: var(--bank-color, var(--brand));
-  font-size: 0.82rem;
-  white-space: nowrap;
-}
-
-.banking-accordion-detail {
+.banking-connection-detail {
   display: grid;
   gap: 10px;
-  padding: 0 14px 14px;
 }
 
 .banking-tile-grid {
@@ -2464,7 +2504,8 @@ td {
 
   .payment-method-card,
   .banking-connection,
-  .banking-accordion-summary,
+  .banking-section-toggle,
+  .banking-connection-main,
   .incoming-donation,
   .incoming-donation-summary,
   .theme-preview,
@@ -2473,20 +2514,25 @@ td {
     grid-template-columns: 1fr;
   }
 
-  .banking-accordion-summary {
+  .banking-section-toggle,
+  .banking-connection-main {
     gap: 10px;
   }
 
-  .banking-accordion-summary .bank-brand-mark {
+  .banking-connection-main .bank-brand-mark {
     width: 40px;
     height: 40px;
   }
 
-  .banking-accordion-summary > svg {
-    justify-self: start;
+  .banking-section-toggle {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .banking-accordion-summary strong {
+  .banking-section-toggle > svg {
+    justify-self: end;
+  }
+
+  .banking-connection-main .status-pill {
     justify-self: start;
   }
 
