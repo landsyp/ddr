@@ -745,8 +745,8 @@ const defaultReceiptPeriod = {
 };
 
 const incomingDonationQueue = [
-  { id: "bank-001", source: "Stripe payout", date: "2026-07-16", amount: 250, donorNumber: "1", note: "Grace Family - online gift" },
-  { id: "paypal-014", source: "PayPal", date: "2026-07-15", amount: 75, donorNumber: "2", note: "Monthly support" },
+  { id: "bank-001", source: "Stripe payout", date: "2026-07-16", amount: 250, donorNumber: "1", methodID: 4, methodLabel: "Card", note: "Grace Family - online gift" },
+  { id: "paypal-014", source: "PayPal", date: "2026-07-15", amount: 75, donorNumber: "2", methodID: 4, methodLabel: "Card", note: "Monthly support" },
 ];
 
 async function api(path, options = {}) {
@@ -1067,7 +1067,7 @@ function App() {
           compteID: data.compteID,
           montant: pendingDonation.amount,
           dateDon: pendingDonation.date,
-          methodeDonID: data.methodeDonID,
+          methodeDonID: pendingDonation.methodID,
           description: pendingDonation.note,
         }),
       });
@@ -1820,7 +1820,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
               <div>
                 <span className="status-pill pending">{t.common.pending}</span>
                 <strong>{currency(donation.amount)}</strong>
-                <small>{donation.source} • {donation.date}</small>
+                <small>{donation.source} • {donation.date} • {donation.methodLabel}</small>
                 <p>{donation.note}</p>
                 <p className="detected-donor">
                   {t.donationForm.detectedDonor}: {detectedDonor?.fullName || donation.donorNumber}
@@ -1833,7 +1833,6 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
               {isCategorizing && (
                 <CategorizeDonationForm
                   accounts={accounts}
-                  bootstrap={bootstrap}
                   detectedDonor={detectedDonor}
                   donation={donation}
                   donors={donors}
@@ -1943,7 +1942,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
                 donors.find((donor) => donor.numero === donation.donorNumber)?.fullName || donation.donorNumber,
                 donation.date,
                 "-",
-                t.banking.imported,
+                donation.methodLabel || t.banking.imported,
                 currency(donation.amount),
                 <span className="status-pill pending" key={`pending-${donation.id}`}>{t.common.pending}</span>,
                 <button className="secondary-button compact" type="button" key={`categorize-${donation.id}`}>
@@ -1971,7 +1970,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
   );
 }
 
-function CategorizeDonationForm({ accounts, bootstrap, detectedDonor, donation, donors, onSubmit, t }) {
+function CategorizeDonationForm({ accounts, detectedDonor, donation, donors, onSubmit, t }) {
   function submitCategorization(event) {
     event.preventDefault();
     const data = formObject(event.currentTarget);
@@ -2004,16 +2003,6 @@ function CategorizeDonationForm({ accounts, bootstrap, detectedDonor, donation, 
           {accounts.map((account) => (
             <option value={account.compteID} key={account.compteID}>
               {account.noCompte} - {account.nom}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        {t.donationForm.method}
-        <select name="methodeDonID" defaultValue={bootstrap?.methods?.[0]?.methodeDonID || ""}>
-          {bootstrap?.methods?.map((method) => (
-            <option value={method.methodeDonID} key={method.methodeDonID}>
-              {method.methode_en}
             </option>
           ))}
         </select>
