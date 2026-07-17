@@ -885,6 +885,27 @@ function archiveDonor(id, actif, context = {}) {
   return getDonor(id, context);
 }
 
+function deleteDonor(id, context = {}) {
+  const donorID = Number(id);
+  const orgID = organizationID(context);
+  const donor = getDonor(donorID, context);
+  if (!donor) {
+    throw new Error("Donor not found.");
+  }
+
+  const activityCount =
+    Number(get("SELECT COUNT(*) AS count FROM dons WHERE donateurID = ?", [donorID])?.count || 0) +
+    Number(get("SELECT COUNT(*) AS count FROM recus WHERE donateurID = ? AND organismeID = ?", [donorID, orgID])?.count || 0) +
+    Number(get("SELECT COUNT(*) AS count FROM envois WHERE donateurID = ? AND organismeID = ?", [donorID, orgID])?.count || 0);
+
+  if (activityCount > 0) {
+    throw new Error("This donor has activity and cannot be deleted. Set the donor inactive instead.");
+  }
+
+  run("DELETE FROM donateurs WHERE donateurID = ? AND organismeID = ?", [donorID, orgID]);
+  return donor;
+}
+
 function getDonor(id, context = {}) {
   return normalizeDonor(get(
     `SELECT d.*, p.abreviation AS province,
@@ -1290,6 +1311,7 @@ export const store = {
   createDonor,
   updateDonor,
   archiveDonor,
+  deleteDonor,
   listAccounts,
   createAccount,
   updateAccount,

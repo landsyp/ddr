@@ -1181,6 +1181,16 @@ tr.donation-register-pending-row:hover td {
   color: var(--brand);
 }
 
+.donor-status-pill.is-active {
+  background: var(--green-soft);
+  color: var(--brand);
+}
+
+.donor-status-pill.is-inactive {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
 .account-actions,
 .account-edit-actions {
   display: flex;

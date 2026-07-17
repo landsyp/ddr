@@ -228,6 +228,11 @@ async function handleAPI(request, response, pathname) {
     return;
   }
 
+  if (params && method === "DELETE") {
+    sendJSON(response, 200, store.deleteDonor(params.id, auth));
+    return;
+  }
+
   params = route(method, pathname, "/api/donors/:id/archive");
   if (params && method === "PATCH") {
     const body = await readJSON(request);

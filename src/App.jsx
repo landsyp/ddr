@@ -1,6 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import {
-  Archive,
   BarChart3,
   Bell,
   BookOpenCheck,
@@ -98,6 +97,7 @@ const copy = {
       admin: "Admin",
       user: "User",
       active: "Active",
+      inactive: "Inactive",
       yes: "Yes",
       no: "No",
       member: "Member",
@@ -166,6 +166,9 @@ const copy = {
       tourReplay: "Show tutorial",
       reactivated: "Donor reactivated.",
       archived: "Donor archived.",
+      deleted: "Donor deleted.",
+      deleteTitle: "Delete this donor?",
+      deleteBody: "Are you sure you want to delete {name}? Donors with existing donations should be set inactive instead.",
     },
     donationForm: {
       title: "Record a donation",
@@ -504,6 +507,7 @@ const copy = {
       admin: "Admin",
       user: "Utilisateur",
       active: "Actif",
+      inactive: "Inactif",
       yes: "Oui",
       no: "Non",
       member: "Membre",
@@ -572,6 +576,9 @@ const copy = {
       tourReplay: "Voir le tutoriel",
       reactivated: "Donateur réactivé.",
       archived: "Donateur archivé.",
+      deleted: "Donateur supprimé.",
+      deleteTitle: "Supprimer ce donateur?",
+      deleteBody: "Voulez-vous vraiment supprimer {name}? Les donateurs avec des dons existants devraient plutôt être désactivés.",
     },
     donationForm: {
       title: "Enregistrer un don",
@@ -1095,7 +1102,7 @@ function App() {
       await Promise.all([
         api("/api/bootstrap"),
         api("/api/dashboard"),
-        api(`/api/donors?search=${encodeURIComponent(search)}`),
+        api(`/api/donors?active=all&search=${encodeURIComponent(search)}`),
         api("/api/accounts"),
         api("/api/donations?limit=500"),
         api("/api/receipts"),
@@ -1232,6 +1239,15 @@ function App() {
         body: JSON.stringify({ actif }),
       });
       await refresh(actif ? t.donorForm.reactivated : t.donorForm.archived);
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
+  async function deleteDonor(donor) {
+    try {
+      await api(`/api/donors/${donor.donateurID}`, { method: "DELETE" });
+      await refresh(t.donorForm.deleted);
     } catch (saveError) {
       showError(saveError.message);
     }
@@ -1494,7 +1510,7 @@ function App() {
     try {
       const term = value.trim().toLowerCase();
       const [donorData, donationData, accountData, receiptData] = await Promise.all([
-        api(`/api/donors?search=${encodeURIComponent(value)}`),
+        api(`/api/donors?active=all&search=${encodeURIComponent(value)}`),
         api(`/api/donations?search=${encodeURIComponent(value)}&limit=500`),
         api("/api/accounts"),
         api("/api/receipts"),
@@ -1675,6 +1691,7 @@ function App() {
             setQuery={setQuery}
             t={t}
             onArchive={archiveDonor}
+            onDelete={deleteDonor}
             onSearch={handleSearch}
             onSubmit={handleAddDonor}
             onUpdate={updateDonor}
@@ -2826,9 +2843,10 @@ function BankingView({ accounts, t }) {
   );
 }
 
-function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, onSubmit, onUpdate }) {
+function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, onSearch, onSubmit, onUpdate }) {
   const [activeDrawer, setActiveDrawer] = useState(null);
   const [editingDonor, setEditingDonor] = useState(null);
+  const [donorPendingDelete, setDonorPendingDelete] = useState(null);
   const donorExportRows = donors.map((donor) => ({
     Number: donor.numero,
     Donor: donor.fullName,
@@ -2873,8 +2891,11 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
         </div>
         <DataTable
           t={t}
-          columns={["No.", t.donationForm.donor, t.common.email, t.donorForm.city, t.common.member, t.nav.receipts, t.donorForm.lifetime, t.donorForm.lastGift, ""]}
+          columns={[t.common.status, "No.", t.donationForm.donor, t.common.email, t.donorForm.city, t.common.member, t.nav.receipts, t.donorForm.lifetime, t.donorForm.lastGift, ""]}
           rows={donors.map((donor) => [
+            <span className={`status-pill donor-status-pill ${donor.actif ? "is-active" : "is-inactive"}`} key={`status-${donor.donateurID}`}>
+              {donor.actif ? t.common.active : t.common.inactive}
+            </span>,
             donor.numero,
             donor.fullName,
             donor.courriel || "-",
@@ -2900,10 +2921,19 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
                 className={`icon-button table-icon ${donor.actif ? "" : "success"}`}
                 type="button"
                 onClick={() => onArchive(donor, !donor.actif)}
-                aria-label={`${donor.actif ? t.common.archive : t.common.activate} ${donor.fullName}`}
-                title={donor.actif ? t.common.archive : t.common.activate}
+                aria-label={`${donor.actif ? t.common.deactivate : t.common.activate} ${donor.fullName}`}
+                title={donor.actif ? t.common.deactivate : t.common.activate}
               >
-                {donor.actif ? <Archive size={16} /> : <CheckCircle2 size={16} />}
+                {donor.actif ? <X size={16} /> : <CheckCircle2 size={16} />}
+              </button>
+              <button
+                className="icon-button table-icon danger"
+                type="button"
+                onClick={() => setDonorPendingDelete(donor)}
+                aria-label={`${t.common.delete} ${donor.fullName}`}
+                title={t.common.delete}
+              >
+                <Trash2 size={16} />
               </button>
             </div>,
           ])}
@@ -2978,6 +3008,21 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
           </aside>
         )}
       </div>
+
+      {donorPendingDelete && (
+        <ConfirmDialog
+          body={t.donorForm.deleteBody.replace("{name}", donorPendingDelete.fullName)}
+          confirmLabel={t.common.delete}
+          isDanger
+          onCancel={() => setDonorPendingDelete(null)}
+          onConfirm={async () => {
+            await onDelete(donorPendingDelete);
+            setDonorPendingDelete(null);
+          }}
+          t={t}
+          title={t.donorForm.deleteTitle}
+        />
+      )}
 
     </section>
   );
