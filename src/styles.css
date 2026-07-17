@@ -1658,7 +1658,7 @@ tr.donation-register-pending-row:hover td {
 }
 
 .settings-page .payment-tile-grid {
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .settings-page .payment-method-tile {
@@ -2961,6 +2961,7 @@ tr.donation-register-pending-row:hover td {
   .pending-donations-band,
   .banking-subtle-layout,
   .categorize-donation-form,
+  .settings-page .payment-tile-grid,
   .payment-tile-grid,
   .banking-tile-grid {
     grid-template-columns: 1fr;
