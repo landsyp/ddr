@@ -1891,10 +1891,13 @@ tr.donation-register-pending-row:hover td {
 }
 
 .payment-card-mark {
-  width: 58px;
-  background: var(--ink);
-  color: #ffffff;
-  font-weight: 950;
+  width: 76px;
+  height: 44px;
+  padding: 5px 7px;
+  border: 1px solid rgba(27, 31, 42, 0.08);
+  background: #ffffff;
+  color: var(--ink);
+  box-shadow: 0 10px 22px rgba(27, 31, 42, 0.08);
   letter-spacing: 0;
 }
 
@@ -1904,18 +1907,47 @@ tr.donation-register-pending-row:hover td {
 }
 
 .payment-card-mark.visa {
-  background: #1a4fb7;
+  background: #ffffff;
 }
 
 .payment-card-mark.mastercard {
-  background:
-    radial-gradient(circle at 36% 50%, #eb001b 0 25%, transparent 26%),
-    radial-gradient(circle at 64% 50%, #f79e1b 0 25%, transparent 26%),
-    #252b33;
+  background: #ffffff;
 }
 
 .payment-card-mark.amex {
   background: #2e77bc;
+  color: #ffffff;
+}
+
+.payment-logo-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.visa-logo text {
+  fill: #1a1f71;
+  font-family: "Arial Black", Arial, sans-serif;
+  font-size: 28px;
+  font-style: italic;
+  font-weight: 950;
+  letter-spacing: -2px;
+}
+
+.mastercard-logo .mc-left {
+  fill: #eb001b;
+}
+
+.mastercard-logo .mc-right {
+  fill: #f79e1b;
+  mix-blend-mode: multiply;
+}
+
+.mastercard-logo text {
+  fill: #252b33;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
 }
 
 .bank-brand-mark {

@@ -3598,15 +3598,41 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
 function paymentCardBrand(brand = "") {
   const normalizedBrand = brand.toLowerCase();
   if (normalizedBrand.includes("visa")) {
-    return { className: "visa", label: "VISA" };
+    return { className: "visa", label: "Visa", type: "visa" };
   }
   if (normalizedBrand.includes("mastercard") || normalizedBrand.includes("master card")) {
-    return { className: "mastercard", label: "MC" };
+    return { className: "mastercard", label: "Mastercard", type: "mastercard" };
   }
   if (normalizedBrand.includes("amex") || normalizedBrand.includes("american express")) {
-    return { className: "amex", label: "AMEX" };
+    return { className: "amex", label: "American Express", type: "amex" };
   }
-  return { className: "card", label: "CARD" };
+  return { className: "card", label: "Card", type: "card" };
+}
+
+function PaymentCardLogo({ brand }) {
+  if (brand.type === "visa") {
+    return (
+      <svg aria-label={brand.label} className="payment-logo-svg visa-logo" role="img" viewBox="0 0 92 36">
+        <text x="3" y="27">VISA</text>
+      </svg>
+    );
+  }
+
+  if (brand.type === "mastercard") {
+    return (
+      <svg aria-label={brand.label} className="payment-logo-svg mastercard-logo" role="img" viewBox="0 0 92 44">
+        <circle className="mc-left" cx="38" cy="17" r="14" />
+        <circle className="mc-right" cx="54" cy="17" r="14" />
+        <text x="18" y="38">mastercard</text>
+      </svg>
+    );
+  }
+
+  if (brand.type === "amex") {
+    return <span>AMEX</span>;
+  }
+
+  return <CreditCard size={20} />;
 }
 
 function PaymentMethodCard({ brand, details, expiry, isDefault = false, t }) {
@@ -3616,7 +3642,7 @@ function PaymentMethodCard({ brand, details, expiry, isDefault = false, t }) {
     <article className="payment-method-tile">
       <div className="linked-bank-topline">
         <div className={`payment-card-mark ${cardBrand.className}`}>
-          <span>{cardBrand.label}</span>
+          <PaymentCardLogo brand={cardBrand} />
         </div>
         {isDefault && <span className="status-pill issued"><CheckCircle2 size={14} /> {t.settings.defaultMethod}</span>}
       </div>
