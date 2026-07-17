@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
   Bell,
@@ -1870,6 +1870,7 @@ function QuickActionLauncher({ isOpen, onToggle, onViewChange, t }) {
 
 function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t, onCategorizePending, onDelete, onSubmit }) {
   const [categorizingDonationId, setCategorizingDonationId] = useState(null);
+  const [registerCategorizingDonationId, setRegisterCategorizingDonationId] = useState(null);
   const [activeDrawer, setActiveDrawer] = useState(null);
   const [showAllPending, setShowAllPending] = useState(false);
   const [donationSearch, setDonationSearch] = useState("");
@@ -1993,8 +1994,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
               : <StatusPill key={`status-${row.id}`} t={t} value={row.status} />,
             row.status === "pending" ? (
               <button className="icon-button table-icon categorize-icon-button" type="button" key={`categorize-${row.id}`} aria-label={t.banking.categorize} title={t.banking.categorize} onClick={() => {
-                setShowAllPending(true);
-                setCategorizingDonationId(row.id);
+                setRegisterCategorizingDonationId((currentId) => currentId === row.id ? null : row.id);
               }}>
                 <Link2 size={15} />
               </button>
@@ -2005,6 +2005,29 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
             ),
           ])}
           rowClassName={(row) => String(row[6]?.props?.className || "").includes("donation-pending") ? "donation-register-pending-row" : ""}
+          expandedRowContent={(row) => {
+            const pendingDonation = pendingDonations.find((donation) => donation.id === row[0]);
+            if (!pendingDonation || registerCategorizingDonationId !== pendingDonation.id) {
+              return null;
+            }
+
+            const detectedDonor = donors.find((donor) => donor.numero === pendingDonation.donorNumber);
+            return (
+              <div className="donation-register-accordion">
+                <CategorizeDonationForm
+                  accounts={accounts}
+                  detectedDonor={detectedDonor}
+                  donation={pendingDonation}
+                  donors={donors}
+                  onSubmit={(data) => {
+                    onCategorizePending(pendingDonation, data);
+                    setRegisterCategorizingDonationId(null);
+                  }}
+                  t={t}
+                />
+              </div>
+            );
+          }}
         />
       </Panel>
 
@@ -3779,7 +3802,7 @@ function Panel({ id, title, icon: Icon, children }) {
   );
 }
 
-function DataTable({ columns, rows, t, emptyMessage, rowClassName }) {
+function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowContent }) {
   return (
     <div className="table-wrap">
       <table>
@@ -3794,11 +3817,22 @@ function DataTable({ columns, rows, t, emptyMessage, rowClassName }) {
               <td colSpan={columns.length}>{emptyMessage || t?.common?.noRecords || "No records found"}</td>
             </tr>
           ) : (
-            rows.map((row, rowIndex) => (
-              <tr className={rowClassName?.(row, rowIndex) || ""} key={`${rowIndex}-${row[0]}`}>
-                {row.map((cell, cellIndex) => <td key={`${rowIndex}-${cellIndex}`}>{cell}</td>)}
-              </tr>
-            ))
+            rows.map((row, rowIndex) => {
+              const expandedContent = expandedRowContent?.(row, rowIndex);
+
+              return (
+                <Fragment key={`${rowIndex}-${row[0]}-group`}>
+                  <tr className={rowClassName?.(row, rowIndex) || ""} key={`${rowIndex}-${row[0]}`}>
+                    {row.map((cell, cellIndex) => <td key={`${rowIndex}-${cellIndex}`}>{cell}</td>)}
+                  </tr>
+                  {expandedContent && (
+                    <tr className="table-expanded-row" key={`${rowIndex}-${row[0]}-expanded`}>
+                      <td colSpan={columns.length}>{expandedContent}</td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })
           )}
         </tbody>
       </table>

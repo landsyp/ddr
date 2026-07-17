@@ -803,6 +803,24 @@ tr.donation-register-pending-row:hover td {
   background: rgba(255, 244, 221, 0.62);
 }
 
+.table-expanded-row td {
+  padding: 0;
+  background: rgba(255, 244, 221, 0.46);
+}
+
+.donation-register-accordion {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.donation-register-accordion .categorize-donation-form {
+  border: 1px solid rgba(183, 121, 31, 0.18);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 244, 221, 0.48)),
+    #ffffff;
+  box-shadow: 0 10px 24px rgba(82, 58, 27, 0.08);
+}
+
 .status-pill,
 .segment {
   display: inline-flex;
