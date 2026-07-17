@@ -1853,7 +1853,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
         icon={CircleDollarSign}
       />
 
-      <section className="pending-donations-band">
+      <section className={`pending-donations-band ${categorizingDonationId ? "has-categorizing" : ""}`}>
         <div>
           <span className="eyebrow"><Bell size={15} /> {t.common.pending}</span>
           <h2>{t.banking.newDonations}</h2>
@@ -1866,19 +1866,21 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
 
             return (
             <article className={`incoming-donation ${isCategorizing ? "is-categorizing" : ""}`} key={donation.id}>
-              <div>
-                <span className="status-pill pending">{t.common.pending}</span>
-                <strong>{currency(donation.amount)}</strong>
-                <small>{donation.source} • {donation.date} • {donation.methodLabel}</small>
-                <p>{donation.note}</p>
-                <p className="detected-donor">
-                  {t.donationForm.detectedDonor}: {detectedDonor?.fullName || donation.donorNumber}
-                </p>
+              <div className="incoming-donation-summary">
+                <div>
+                  <span className="status-pill pending">{t.common.pending}</span>
+                  <strong>{currency(donation.amount)}</strong>
+                  <small>{donation.source} • {donation.date} • {donation.methodLabel}</small>
+                  <p>{donation.note}</p>
+                  <p className="detected-donor">
+                    {t.donationForm.detectedDonor}: {detectedDonor?.fullName || donation.donorNumber}
+                  </p>
+                </div>
+                <button className="secondary-button compact" type="button" onClick={() => setCategorizingDonationId(isCategorizing ? null : donation.id)}>
+                  <Link2 size={15} />
+                  <span>{t.banking.categorize}</span>
+                </button>
               </div>
-              <button className="secondary-button compact" type="button" onClick={() => setCategorizingDonationId(isCategorizing ? null : donation.id)}>
-                <Link2 size={15} />
-                <span>{t.banking.categorize}</span>
-              </button>
               {isCategorizing && (
                 <CategorizeDonationForm
                   accounts={accounts}

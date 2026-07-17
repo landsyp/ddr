@@ -1486,6 +1486,11 @@ td {
   margin-top: 12px;
 }
 
+.pending-donations-band.has-categorizing {
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
 .banking-subtle-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
@@ -1700,7 +1705,6 @@ td {
 
 .incoming-donation {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 14px;
@@ -1712,8 +1716,12 @@ td {
   box-shadow: 0 14px 34px rgba(82, 58, 27, 0.11);
 }
 
-.incoming-donation.is-categorizing {
-  grid-template-columns: 1fr;
+.incoming-donation-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  min-width: 0;
 }
 
 .incoming-donation strong,
@@ -1734,11 +1742,15 @@ td {
 
 .categorize-donation-form {
   display: grid;
-  grid-template-columns: minmax(240px, 1.2fr) minmax(240px, 1fr) auto;
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
   align-items: end;
-  padding-top: 14px;
+  width: 100%;
+  min-width: 0;
+  padding: 14px;
   border-top: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
 }
 
 .categorize-donation-form label {
@@ -1762,6 +1774,10 @@ td {
 
 .categorize-donation-form select {
   padding-right: 42px;
+}
+
+.categorize-donation-form .primary-button {
+  min-width: 150px;
 }
 
 .categorize-donation-form input[readonly] {
@@ -2373,10 +2389,16 @@ td {
   .payment-method-card,
   .banking-connection,
   .incoming-donation,
+  .incoming-donation-summary,
   .theme-preview,
   .palette-list.saved,
   .custom-palette-builder .custom-palette-name {
     grid-template-columns: 1fr;
+  }
+
+  .incoming-donation-summary .secondary-button,
+  .categorize-donation-form .primary-button {
+    width: 100%;
   }
 
   .account-accordion-summary {
