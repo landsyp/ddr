@@ -1923,7 +1923,6 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
             {linkedBankAccounts.map((bankAccount) => (
               <BankingConnectionRow
                 bankAccount={bankAccount}
-                detail={bankingAccountNames(bankAccount, accounts, t)}
                 key={bankAccount.id}
                 t={t}
               />
@@ -2140,7 +2139,7 @@ function BankBrandIcon({ brand, size = 18 }) {
   return <Landmark size={size} />;
 }
 
-function BankingConnectionRow({ bankAccount, detail, t }) {
+function BankingConnectionRow({ bankAccount, t }) {
   const brand = bankBrand(`${bankAccount.institution} ${bankAccount.accountNumber}`);
 
   return (
@@ -2154,22 +2153,6 @@ function BankingConnectionRow({ bankAccount, detail, t }) {
           <small>{bankAccount.accountNumber}</small>
         </div>
         <span className="status-pill issued"><CheckCircle2 size={14} /> {t.banking.linked}</span>
-      </div>
-      <div className="banking-connection-detail">
-        <dl className="banking-detail-list">
-          <div>
-            <dt>{t.banking.transitNumber}</dt>
-            <dd>{bankAccount.transit}</dd>
-          </div>
-          <div>
-            <dt>{t.banking.ibanNumber}</dt>
-            <dd>{bankAccount.iban}</dd>
-          </div>
-        </dl>
-        <div className="banking-scope-box">
-          <strong>{t.banking.accountScope}</strong>
-          <p>{detail}</p>
-        </div>
       </div>
     </article>
   );

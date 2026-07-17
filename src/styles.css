@@ -1610,11 +1610,6 @@ td {
   color: var(--muted);
 }
 
-.banking-connection-detail {
-  display: grid;
-  gap: 10px;
-}
-
 .banking-tile-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
