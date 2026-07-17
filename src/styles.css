@@ -1127,6 +1127,248 @@ td {
   padding: 18px;
 }
 
+.subscription-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.subscription-plan {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  min-height: 360px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.subscription-plan.is-featured {
+  border-color: rgba(29, 111, 95, 0.35);
+  background: #ffffff;
+  box-shadow: 0 18px 46px rgba(25, 46, 49, 0.12);
+}
+
+.subscription-plan > span:not(.plan-badge) {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.subscription-plan strong {
+  font-size: 2rem;
+}
+
+.subscription-plan p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.subscription-plan ul {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.subscription-plan li {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+
+.subscription-plan button {
+  align-self: end;
+}
+
+.plan-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  min-height: 26px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--brand);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.plan-note-list,
+.payment-method-list,
+.banking-card-list,
+.incoming-donation-list,
+.palette-list {
+  display: grid;
+  gap: 12px;
+}
+
+.plan-note,
+.payment-method-card,
+.banking-connection,
+.incoming-donation,
+.palette-option {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.plan-note,
+.payment-method-card,
+.banking-connection {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+}
+
+.plan-note {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.payment-card-mark,
+.banking-connection > div {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: var(--green-soft);
+  color: var(--brand);
+}
+
+.payment-method-card strong,
+.payment-method-card span,
+.banking-connection span,
+.banking-connection small {
+  display: block;
+}
+
+.payment-method-card small,
+.banking-connection small {
+  color: var(--muted);
+}
+
+.banking-connection strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--brand);
+  font-size: 0.82rem;
+}
+
+.incoming-donation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+}
+
+.incoming-donation strong,
+.incoming-donation small {
+  display: block;
+  margin-top: 6px;
+}
+
+.incoming-donation p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.palette-option {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  color: var(--ink);
+  text-align: left;
+}
+
+.palette-option.is-selected {
+  border-color: rgba(29, 111, 95, 0.45);
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(25, 46, 49, 0.1);
+}
+
+.palette-swatches {
+  display: flex;
+  gap: 8px;
+}
+
+.palette-swatches i {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+}
+
+.theme-preview {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  min-height: 260px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.theme-preview-sidebar {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--preview-brand);
+  color: #ffffff;
+}
+
+.theme-preview-sidebar span {
+  font-weight: 900;
+}
+
+.theme-preview-sidebar i {
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.theme-preview-main {
+  display: grid;
+  gap: 14px;
+  align-content: center;
+  padding: 18px;
+  background: #ffffff;
+}
+
+.theme-preview-main span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.theme-preview-main strong {
+  font-size: 1.5rem;
+}
+
+.theme-preview-main div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.theme-preview-main button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--preview-accent);
+  color: #ffffff;
+  font-weight: 900;
+}
+
 .pricing-card strong {
   display: block;
   margin-top: 8px;
@@ -1373,6 +1615,7 @@ td {
 @media (max-width: 1180px) {
   .metric-grid,
   .report-grid,
+  .subscription-plan-grid,
   .account-detail-grid,
   .account-detail-grid.is-expanded {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1459,10 +1702,18 @@ td {
 
   .metric-grid,
   .report-grid,
+  .subscription-plan-grid,
   .account-detail-grid,
   .account-detail-grid.is-expanded,
   .form-grid,
   .action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-method-card,
+  .banking-connection,
+  .incoming-donation,
+  .theme-preview {
     grid-template-columns: 1fr;
   }
 

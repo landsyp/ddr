@@ -5,28 +5,36 @@ import {
   BookOpenCheck,
   Building2,
   Check,
+  CheckCircle2,
   ChevronDown,
   CircleDollarSign,
   ClipboardList,
+  CreditCard,
   Download,
   FileCheck2,
   FileText,
   Maximize2,
   HelpCircle,
+  Landmark,
   LayoutDashboard,
+  Link2,
   LockKeyhole,
   Mail,
   Menu,
   Minimize2,
+  Palette,
   Pencil,
   Plus,
   Printer,
   ReceiptText,
   Search,
   Settings,
+  ShieldCheck,
+  Sparkles,
   Trash2,
   UserPlus,
   Users,
+  Wallet,
   X,
 } from "lucide-react";
 import receiptImage from "../images/recu.png";
@@ -43,6 +51,7 @@ const copy = {
       receipts: "Receipts",
       reports: "Reports",
       subscription: "Subscription",
+      customization: "Customization",
     },
     overview: {
       eyebrow: "Operations dashboard",
@@ -100,6 +109,10 @@ const copy = {
       save: "Save",
       cancel: "Cancel",
       confirm: "Confirm",
+      connect: "Connect",
+      manage: "Manage",
+      recommended: "Recommended",
+      pending: "Pending",
       generated: "Generated",
       queued: "Queued",
       delivered: "Delivered",
@@ -175,6 +188,19 @@ const copy = {
       deleteTitle: "Delete this account?",
       deleteBody: "Are you sure you want to delete account {number} - {name}? This action cannot be undone.",
     },
+    customization: {
+      title: "Customization",
+      subtitle: "Tune the workspace look and feel for your organization.",
+      palette: "Color palette",
+      preview: "Interface preview",
+      apply: "Apply palette",
+      current: "Current palette",
+      options: [
+        ["Evergreen", "Calm green for finance and operations"],
+        ["Harbor", "Blue accent with a crisp SaaS feel"],
+        ["Plum", "Warmer accent for a more branded workspace"],
+      ],
+    },
     donorDirectory: "Donor directory",
     receipts: {
       title: "Receipt center",
@@ -247,6 +273,28 @@ const copy = {
       memberNumber: "Member number",
       security: "Security: 50 + 20",
       annualRevenue: "Annual revenue",
+      plans: "Subscription options",
+      choose: "Choose plan",
+      plansList: [
+        {
+          name: "Basic",
+          price: "$29/mo",
+          description: "For small teams getting started.",
+          features: ["Donor and donation tracking", "Manual receipts", "CSV exports"],
+        },
+        {
+          name: "Gold",
+          price: "$59/mo",
+          description: "For growing organizations that need automation.",
+          features: ["Everything in Basic", "Receipt batches", "Bank notifications", "Priority support"],
+        },
+        {
+          name: "Premium",
+          price: "$99/mo",
+          description: "For organizations with advanced workflows.",
+          features: ["Everything in Gold", "Multi-user controls", "Payment method management", "Advanced reporting"],
+        },
+      ],
     },
     settings: {
       title: "Organization settings",
@@ -276,6 +324,23 @@ const copy = {
       role: "Role",
       userAdded: "User added to this workspace.",
       userUpdated: "User access updated.",
+      paymentMethods: "Payment methods",
+      paymentSubtitle: "Manage the cards and billing methods used for your WeSERVE subscription.",
+      defaultMethod: "Default",
+      expires: "Expires",
+      addPayment: "Add payment method",
+      customizationShortcut: "Customize interface",
+    },
+    banking: {
+      title: "Banking connections",
+      subtitle: "Connect bank or PayPal accounts so new donations can appear automatically for review.",
+      bankAccount: "Bank account",
+      paypal: "PayPal account",
+      linked: "Linked",
+      newDonations: "New donations",
+      newDonationHelp: "Incoming transactions are tagged as pending until you assign a donor and account.",
+      categorize: "Categorize",
+      imported: "Imported",
     },
     support: {
       title: "Support and tutorials",
@@ -308,6 +373,7 @@ const copy = {
       receipts: "Reçus",
       reports: "Rapports",
       subscription: "Abonnement",
+      customization: "Personnalisation",
     },
     overview: {
       eyebrow: "Tableau de bord",
@@ -365,6 +431,10 @@ const copy = {
       save: "Enregistrer",
       cancel: "Annuler",
       confirm: "Confirmer",
+      connect: "Connecter",
+      manage: "Gérer",
+      recommended: "Recommandé",
+      pending: "En attente",
       generated: "Généré",
       queued: "En file d'attente",
       delivered: "Livré",
@@ -440,6 +510,19 @@ const copy = {
       deleteTitle: "Supprimer ce compte?",
       deleteBody: "Voulez-vous vraiment supprimer le compte {number} - {name}? Cette action ne peut pas être annulée.",
     },
+    customization: {
+      title: "Personnalisation",
+      subtitle: "Ajustez l'apparence de l'espace de travail pour votre organisme.",
+      palette: "Palette de couleurs",
+      preview: "Aperçu de l'interface",
+      apply: "Appliquer la palette",
+      current: "Palette actuelle",
+      options: [
+        ["Evergreen", "Vert calme pour la finance et les opérations"],
+        ["Harbor", "Accent bleu avec une allure SaaS nette"],
+        ["Plum", "Accent plus chaleureux pour une image personnalisée"],
+      ],
+    },
     donorDirectory: "Répertoire des donateurs",
     receipts: {
       title: "Centre des reçus",
@@ -512,6 +595,28 @@ const copy = {
       memberNumber: "Numéro de membre",
       security: "Sécurité : 50 + 20",
       annualRevenue: "Revenu annuel",
+      plans: "Options d'abonnement",
+      choose: "Choisir le forfait",
+      plansList: [
+        {
+          name: "Basic",
+          price: "29 $/mois",
+          description: "Pour les petites équipes qui démarrent.",
+          features: ["Suivi des donateurs et des dons", "Reçus manuels", "Exports CSV"],
+        },
+        {
+          name: "Gold",
+          price: "59 $/mois",
+          description: "Pour les organismes en croissance.",
+          features: ["Tout dans Basic", "Lots de reçus", "Notifications bancaires", "Support prioritaire"],
+        },
+        {
+          name: "Premium",
+          price: "99 $/mois",
+          description: "Pour les flux de travail avancés.",
+          features: ["Tout dans Gold", "Contrôles multiutilisateurs", "Gestion des paiements", "Rapports avancés"],
+        },
+      ],
     },
     settings: {
       title: "Paramètres de l'organisme",
@@ -541,6 +646,23 @@ const copy = {
       role: "Rôle",
       userAdded: "Utilisateur ajouté à cet espace.",
       userUpdated: "Accès utilisateur mis à jour.",
+      paymentMethods: "Méthodes de paiement",
+      paymentSubtitle: "Gérez les cartes et méthodes de facturation utilisées pour votre abonnement WeSERVE.",
+      defaultMethod: "Par défaut",
+      expires: "Expire",
+      addPayment: "Ajouter une méthode de paiement",
+      customizationShortcut: "Personnaliser l'interface",
+    },
+    banking: {
+      title: "Connexions bancaires",
+      subtitle: "Connectez un compte bancaire ou PayPal pour faire apparaître automatiquement les nouveaux dons à réviser.",
+      bankAccount: "Compte bancaire",
+      paypal: "Compte PayPal",
+      linked: "Connecté",
+      newDonations: "Nouveaux dons",
+      newDonationHelp: "Les transactions entrantes restent en attente jusqu'à l'attribution d'un donateur et d'un compte.",
+      categorize: "Catégoriser",
+      imported: "Importé",
     },
     support: {
       title: "Support et tutoriels",
@@ -572,6 +694,7 @@ const navItems = [
   { id: "receipts", icon: ReceiptText },
   { id: "reports", icon: BarChart3 },
   { id: "subscription", icon: Building2 },
+  { id: "customization", icon: Palette },
 ];
 
 const defaultReceiptPeriod = {
@@ -650,6 +773,7 @@ function App() {
   const [query, setQuery] = useState("");
   const [member, setMember] = useState(false);
   const [subscriptionAnswer, setSubscriptionAnswer] = useState("");
+  const [palette, setPalette] = useState("Evergreen");
   const t = copy[language];
 
   async function loadWorkspace(search = query) {
@@ -1209,11 +1333,19 @@ function App() {
             onSubmit={handleSubscription}
           />
         )}
+        {!loading && activeView === "customization" && (
+          <CustomizationView
+            palette={palette}
+            setPalette={setPalette}
+            t={t}
+          />
+        )}
         {!loading && activeView === "settings" && (
           <SettingsView
             bootstrap={bootstrap}
             t={t}
             user={displayUser}
+            onCustomize={() => openView("customization")}
             onCreateUser={handleCreateUser}
             onSubmit={handleUpdateOrganization}
             onUserStatus={toggleUser}
@@ -1517,6 +1649,11 @@ function QuickActionLauncher({ isOpen, onToggle, onViewChange, t }) {
 }
 
 function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubmit }) {
+  const incomingDonations = [
+    { id: "bank-001", source: "Stripe payout", date: "2026-07-16", amount: 250, note: "Grace Family - online gift" },
+    { id: "paypal-014", source: "PayPal", date: "2026-07-15", amount: 75, note: "Monthly support" },
+  ];
+
   return (
     <section className="view-stack">
       <ViewHeader
@@ -1526,6 +1663,36 @@ function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubm
         actionTargetId="donation-form"
         icon={CircleDollarSign}
       />
+
+      <div className="two-column form-layout">
+        <Panel title={t.banking.title} icon={Landmark}>
+          <p className="panel-copy">{t.banking.subtitle}</p>
+          <div className="banking-card-list">
+            <BankingConnection icon={Landmark} label={t.banking.bankAccount} meta="RBC •••• 0921" t={t} />
+            <BankingConnection icon={Wallet} label={t.banking.paypal} meta="finance@grace.local" t={t} />
+          </div>
+        </Panel>
+
+        <Panel title={t.banking.newDonations} icon={Bell}>
+          <p className="panel-copy">{t.banking.newDonationHelp}</p>
+          <div className="incoming-donation-list">
+            {incomingDonations.map((donation) => (
+              <article className="incoming-donation" key={donation.id}>
+                <div>
+                  <span className="status-pill pending">{t.common.pending}</span>
+                  <strong>{currency(donation.amount)}</strong>
+                  <small>{donation.source} • {donation.date}</small>
+                  <p>{donation.note}</p>
+                </div>
+                <button className="secondary-button compact" type="button">
+                  <Link2 size={15} />
+                  <span>{t.banking.categorize}</span>
+                </button>
+              </article>
+            ))}
+          </div>
+        </Panel>
+      </div>
 
       <div className="two-column form-layout">
         <Panel id="donation-form" title={t.donationForm.title} icon={Plus}>
@@ -1611,6 +1778,19 @@ function Donations({ accounts, bootstrap, donations, donors, t, onDelete, onSubm
         />
       </Panel>
     </section>
+  );
+}
+
+function BankingConnection({ icon: Icon, label, meta, t }) {
+  return (
+    <article className="banking-connection">
+      <div>
+        <Icon size={18} />
+      </div>
+      <span>{label}</span>
+      <small>{meta}</small>
+      <strong><CheckCircle2 size={15} /> {t.banking.linked}</strong>
+    </article>
   );
 }
 
@@ -2230,60 +2410,74 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
         icon={Building2}
       />
 
-      <div className="two-column form-layout">
-        <Panel title={t.subscription.pricing} icon={CircleDollarSign}>
-          <div className="pricing-list">
-            <PricingCard revenue="0 - $50,000" member="$60/year" nonMember="$70/year" />
-            <PricingCard revenue="$50,001 +" member="$70/year" nonMember="$85/year" />
-          </div>
-        </Panel>
+      <Panel title={t.subscription.plans} icon={Sparkles}>
+        <div className="subscription-plan-grid">
+          {t.subscription.plansList.map((plan, index) => (
+            <article className={`subscription-plan ${index === 1 ? "is-featured" : ""}`} key={plan.name}>
+              {index === 1 && <span className="plan-badge">{t.common.recommended}</span>}
+              <span>{plan.name}</span>
+              <strong>{plan.price}</strong>
+              <p>{plan.description}</p>
+              <ul>
+                {plan.features.map((feature) => (
+                  <li key={feature}><CheckCircle2 size={16} /> {feature}</li>
+                ))}
+              </ul>
+              <button className={index === 1 ? "primary-button" : "secondary-button"} type="button">
+                <span>{t.subscription.choose}</span>
+              </button>
+            </article>
+          ))}
+        </div>
+      </Panel>
 
+      <div className="two-column form-layout">
         <Panel id="subscription-form" title={t.subscription.title} icon={ClipboardList}>
           <form className="form-grid subscription-form" onSubmit={onSubmit}>
             <label>
-              Charity name
+              {t.subscription.charityName}
               <input name="organisme" required maxLength="50" />
             </label>
             <label>
-              Registration number
+              {t.subscription.registrationNumber}
               <input name="enregistrement" required maxLength="30" />
             </label>
             <label>
-              Person in charge
+              {t.subscription.personInCharge}
               <input name="responsable" required maxLength="50" />
             </label>
             <label>
-              Email
+              {t.common.email}
               <input name="responsable_courriel" required type="email" />
             </label>
             <label>
-              Address
+              {t.subscription.address}
               <input name="adresse" />
             </label>
             <label>
-              City
+              {t.subscription.city}
               <input name="ville" />
             </label>
             <label>
-              Province
+              {t.subscription.province}
               <input name="province" defaultValue="Quebec" />
             </label>
             <label>
-              Phone
+              {t.subscription.phone}
               <input name="telephone" />
             </label>
             <label className="checkbox-label">
               <input checked={member} onChange={(event) => setMember(event.target.checked)} type="checkbox" />
-              <span>Member</span>
+              <span>{t.common.member}</span>
             </label>
             {member && (
               <label>
-                Member number
+                {t.subscription.memberNumber}
                 <input name="nomembre" />
               </label>
             )}
             <label>
-              Security: 50 + 20
+              {t.subscription.security}
               <input
                 required
                 value={subscriptionAnswer}
@@ -2297,12 +2491,23 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
             </button>
           </form>
         </Panel>
+
+        <Panel title={t.subscription.pricing} icon={ShieldCheck}>
+          <div className="plan-note-list">
+            {t.subscription.plansList.map((plan) => (
+              <div className="plan-note" key={`note-${plan.name}`}>
+                <span>{plan.name}</span>
+                <strong>{plan.price}</strong>
+              </div>
+            ))}
+          </div>
+        </Panel>
       </div>
     </section>
   );
 }
 
-function SettingsView({ bootstrap, t, user, onCreateUser, onSubmit, onUserStatus }) {
+function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit, onUserStatus }) {
   const organization = bootstrap?.organisme || {};
   const users = bootstrap?.users?.length ? bootstrap.users : [user].filter(Boolean);
 
@@ -2434,6 +2639,121 @@ function SettingsView({ bootstrap, t, user, onCreateUser, onSubmit, onUserStatus
               ),
             ])}
           />
+        </Panel>
+      </div>
+
+      <div className="two-column form-layout">
+        <Panel title={t.settings.paymentMethods} icon={CreditCard}>
+          <p className="panel-copy">{t.settings.paymentSubtitle}</p>
+          <div className="payment-method-list">
+            <PaymentMethodCard
+              brand="Visa"
+              details="•••• 4242"
+              expiry="04/29"
+              isDefault
+              t={t}
+            />
+            <PaymentMethodCard
+              brand="Mastercard"
+              details="•••• 1881"
+              expiry="11/28"
+              t={t}
+            />
+          </div>
+          <button className="secondary-button" type="button">
+            <Plus size={16} />
+            <span>{t.settings.addPayment}</span>
+          </button>
+        </Panel>
+
+        <Panel title={t.customization.title} icon={Palette}>
+          <p className="panel-copy">{t.customization.subtitle}</p>
+          <button className="primary-button" type="button" onClick={onCustomize}>
+            <Palette size={16} />
+            <span>{t.settings.customizationShortcut}</span>
+          </button>
+        </Panel>
+      </div>
+    </section>
+  );
+}
+
+function PaymentMethodCard({ brand, details, expiry, isDefault = false, t }) {
+  return (
+    <article className="payment-method-card">
+      <div className="payment-card-mark">
+        <CreditCard size={18} />
+      </div>
+      <div>
+        <strong>{brand}</strong>
+        <span>{details}</span>
+      </div>
+      <small>{t.settings.expires} {expiry}</small>
+      {isDefault && <span className="status-pill issued">{t.settings.defaultMethod}</span>}
+      <button className="icon-button table-icon" type="button" aria-label={t.common.manage}>
+        <Pencil size={15} />
+      </button>
+    </article>
+  );
+}
+
+function CustomizationView({ palette, setPalette, t }) {
+  const palettes = [
+    { name: "Evergreen", colors: ["#1d6f5f", "#2f6fbb", "#b7791f"] },
+    { name: "Harbor", colors: ["#2563eb", "#0f766e", "#64748b"] },
+    { name: "Plum", colors: ["#7c3aed", "#db2777", "#334155"] },
+  ];
+  const activePalette = palettes.find((item) => item.name === palette) || palettes[0];
+
+  return (
+    <section className="view-stack">
+      <ViewHeader
+        title={t.customization.title}
+        subtitle={t.customization.subtitle}
+        icon={Palette}
+      />
+
+      <div className="two-column form-layout">
+        <Panel title={t.customization.palette} icon={Palette}>
+          <div className="palette-list">
+            {palettes.map((option, index) => (
+              <button
+                className={palette === option.name ? "palette-option is-selected" : "palette-option"}
+                key={option.name}
+                type="button"
+                onClick={() => setPalette(option.name)}
+              >
+                <span className="palette-swatches">
+                  {option.colors.map((color) => <i key={color} style={{ background: color }} />)}
+                </span>
+                <strong>{t.customization.options[index][0]}</strong>
+                <small>{t.customization.options[index][1]}</small>
+              </button>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel title={t.customization.preview} icon={Sparkles}>
+          <div className="theme-preview" style={{ "--preview-brand": activePalette.colors[0], "--preview-accent": activePalette.colors[1] }}>
+            <div className="theme-preview-sidebar">
+              <span>{t.product}</span>
+              <i />
+              <i />
+              <i />
+            </div>
+            <div className="theme-preview-main">
+              <span>{t.customization.current}: {palette}</span>
+              <strong>{t.overview.title}</strong>
+              <div>
+                <button type="button">{t.actions[0]}</button>
+                <button type="button">{t.actions[3]}</button>
+              </div>
+            </div>
+          </div>
+          <button className="primary-button" type="button">
+            <Check size={16} />
+            <span>{t.customization.apply}</span>
+          </button>
         </Panel>
       </div>
     </section>
