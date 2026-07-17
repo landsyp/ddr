@@ -1843,7 +1843,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
   const [manualFormOpen, setManualFormOpen] = useState(false);
   const [categorizingDonationId, setCategorizingDonationId] = useState(null);
   const linkedBankAccounts = savedBankingConnections(accounts);
-  const [bankingConnectionsOpen, setBankingConnectionsOpen] = useState(true);
+  const [bankingConnectionsOpen, setBankingConnectionsOpen] = useState(false);
 
   return (
     <section className="view-stack">
