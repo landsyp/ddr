@@ -1537,6 +1537,16 @@ tr.donation-register-pending-row:hover td {
   font-size: 1.3rem;
 }
 
+.account-eligibility-stats .is-no-receipt {
+  border-color: rgba(184, 69, 69, 0.22);
+  background: var(--red-soft);
+}
+
+.account-eligibility-stats .is-no-receipt strong,
+.account-eligibility-stats .is-no-receipt span {
+  color: var(--red);
+}
+
 .receipt-eligibility {
   justify-content: center;
   min-width: 118px;

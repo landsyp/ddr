@@ -3087,7 +3087,7 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
                   <span>{t.accounts.receiptable}</span>
                   <strong>{receiptableAccountCount}</strong>
                 </div>
-                <div>
+                <div className="is-no-receipt">
                   <span>{t.accounts.noReceipt}</span>
                   <strong>{accounts.length - receiptableAccountCount}</strong>
                 </div>
