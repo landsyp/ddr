@@ -1239,10 +1239,13 @@ function App() {
 
   async function archiveDonor(donor, actif) {
     try {
-      await api(`/api/donors/${donor.donateurID}/archive`, {
+      const updatedDonor = await api(`/api/donors/${donor.donateurID}/archive`, {
         method: "PATCH",
         body: JSON.stringify({ actif }),
       });
+      setDonors((currentDonors) => currentDonors.map((item) => (
+        item.donateurID === donor.donateurID ? { ...item, ...updatedDonor, actif } : item
+      )));
       await refresh(actif ? t.donorForm.reactivated : t.donorForm.archived);
     } catch (saveError) {
       showError(saveError.message);
@@ -3029,8 +3032,9 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, on
           icon={PauseCircle}
           onCancel={() => setDonorPendingDeactivate(null)}
           onConfirm={async () => {
-            await onArchive(donorPendingDeactivate, false);
+            const donor = donorPendingDeactivate;
             setDonorPendingDeactivate(null);
+            await onArchive(donor, false);
           }}
           t={t}
           title={t.donorForm.deactivateTitle}
