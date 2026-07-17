@@ -825,6 +825,7 @@ tr.donation-register-pending-row:hover td {
 .segment {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   min-height: 26px;
   padding: 0 9px;
   border-radius: 999px;
@@ -1889,6 +1890,34 @@ tr.donation-register-pending-row:hover td {
   color: var(--brand);
 }
 
+.payment-card-mark {
+  width: 58px;
+  background: var(--ink);
+  color: #ffffff;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.payment-card-mark span {
+  color: inherit;
+  font-size: 0.78rem;
+}
+
+.payment-card-mark.visa {
+  background: #1a4fb7;
+}
+
+.payment-card-mark.mastercard {
+  background:
+    radial-gradient(circle at 36% 50%, #eb001b 0 25%, transparent 26%),
+    radial-gradient(circle at 64% 50%, #f79e1b 0 25%, transparent 26%),
+    #252b33;
+}
+
+.payment-card-mark.amex {
+  background: #2e77bc;
+}
+
 .bank-brand-mark {
   display: inline-flex;
   align-items: center;
@@ -2172,8 +2201,10 @@ tr.donation-register-pending-row:hover td {
 }
 
 .add-payment-tile {
+  grid-column: 1 / -1;
   place-items: center;
   align-content: center;
+  min-height: 180px;
   border-style: dashed;
   background:
     linear-gradient(135deg, rgba(233, 241, 251, 0.82), rgba(255, 255, 255, 0.96)),

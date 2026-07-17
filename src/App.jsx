@@ -3595,12 +3595,28 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
   );
 }
 
+function paymentCardBrand(brand = "") {
+  const normalizedBrand = brand.toLowerCase();
+  if (normalizedBrand.includes("visa")) {
+    return { className: "visa", label: "VISA" };
+  }
+  if (normalizedBrand.includes("mastercard") || normalizedBrand.includes("master card")) {
+    return { className: "mastercard", label: "MC" };
+  }
+  if (normalizedBrand.includes("amex") || normalizedBrand.includes("american express")) {
+    return { className: "amex", label: "AMEX" };
+  }
+  return { className: "card", label: "CARD" };
+}
+
 function PaymentMethodCard({ brand, details, expiry, isDefault = false, t }) {
+  const cardBrand = paymentCardBrand(brand);
+
   return (
     <article className="payment-method-tile">
       <div className="linked-bank-topline">
-        <div className="payment-card-mark">
-          <CreditCard size={20} />
+        <div className={`payment-card-mark ${cardBrand.className}`}>
+          <span>{cardBrand.label}</span>
         </div>
         {isDefault && <span className="status-pill issued"><CheckCircle2 size={14} /> {t.settings.defaultMethod}</span>}
       </div>
