@@ -879,6 +879,8 @@ const navItems = [
   { id: "customization", icon: Palette },
 ];
 
+const appViews = new Set([...navItems.map((item) => item.id), "settings", "support"]);
+
 const userSeatPlans = {
   Basic: { seats: 1, next: "Gold" },
   Gold: { seats: 1, next: "Premium" },
@@ -1046,7 +1048,10 @@ function getPageTour(t, view) {
 
 function App() {
   const [language, setLanguage] = useState("en");
-  const [activeView, setActiveView] = useState("overview");
+  const [activeView, setActiveView] = useState(() => {
+    const savedView = localStorage.getItem("weserve-active-view");
+    return appViews.has(savedView) ? savedView : "overview";
+  });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -1085,6 +1090,12 @@ function App() {
     target: "donations",
   }));
   const pageTour = getPageTour(t, activeView);
+
+  useEffect(() => {
+    if (appViews.has(activeView)) {
+      localStorage.setItem("weserve-active-view", activeView);
+    }
+  }, [activeView]);
 
   useEffect(() => {
     if (!currentUser || loading || !pageTour) {
@@ -1207,6 +1218,7 @@ function App() {
   function clearSession() {
     localStorage.removeItem("ddr-user");
     localStorage.removeItem("ddr-token");
+    localStorage.removeItem("weserve-active-view");
     setAuthToken("");
     setCurrentUser(null);
     setActiveView("overview");
@@ -1536,6 +1548,7 @@ function App() {
   }
 
   function openView(view) {
+    localStorage.setItem("weserve-active-view", view);
     setActiveView(view);
     setMobileOpen(false);
     setQuickActionsOpen(false);
