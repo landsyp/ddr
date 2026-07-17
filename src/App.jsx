@@ -153,6 +153,15 @@ const copy = {
       filter: "Filter donors",
       lifetime: "Lifetime",
       lastGift: "Last gift",
+      tourTitle: "Donor page tour",
+      tourSubtitle: "A quick walkthrough of the donor workspace.",
+      tourSteps: [
+        { title: "Search and export", body: "Filter the donor directory, then export the visible list as CSV or Excel." },
+        { title: "Side actions", body: "Use the side tabs to add a donor or open donor totals without leaving the directory." },
+        { title: "Edit donors", body: "Use the pencil in each row to update a donor profile from the side panel." },
+      ],
+      tourDone: "Got it",
+      tourReplay: "Show tutorial",
       reactivated: "Donor reactivated.",
       archived: "Donor archived.",
     },
@@ -549,6 +558,15 @@ const copy = {
       filter: "Filtrer les donateurs",
       lifetime: "Total à vie",
       lastGift: "Dernier don",
+      tourTitle: "Tutoriel de la page Donateurs",
+      tourSubtitle: "Un aperçu rapide de l'espace de travail des donateurs.",
+      tourSteps: [
+        { title: "Recherche et exports", body: "Filtrez le répertoire des donateurs, puis exportez la liste visible en CSV ou Excel." },
+        { title: "Actions sur le côté", body: "Utilisez les onglets latéraux pour ajouter un donateur ou ouvrir les statistiques sans quitter le répertoire." },
+        { title: "Modifier les donateurs", body: "Utilisez le crayon dans chaque ligne pour modifier un profil depuis le panneau latéral." },
+      ],
+      tourDone: "Compris",
+      tourReplay: "Voir le tutoriel",
       reactivated: "Donateur réactivé.",
       archived: "Donateur archivé.",
     },
@@ -2651,6 +2669,7 @@ function BankingView({ accounts, t }) {
 function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, onSubmit, onUpdate }) {
   const [activeDrawer, setActiveDrawer] = useState(null);
   const [editingDonor, setEditingDonor] = useState(null);
+  const [showTour, setShowTour] = useState(false);
   const donorExportRows = donors.map((donor) => ({
     Number: donor.numero,
     Donor: donor.fullName,
@@ -2661,6 +2680,19 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
     Lifetime: donor.totalDonations || 0,
     LastGift: donor.lastGift || "",
   }));
+
+  useEffect(() => {
+    const tourKey = "weserve-tour-donors";
+    if (!localStorage.getItem(tourKey)) {
+      setShowTour(true);
+      localStorage.setItem(tourKey, "seen");
+    }
+  }, []);
+
+  function closeTour() {
+    localStorage.setItem("weserve-tour-donors", "seen");
+    setShowTour(false);
+  }
 
   return (
     <section className="view-stack donor-page">
@@ -2744,6 +2776,9 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
         <button className={`donor-edge-tab ${activeDrawer === "stats" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "stats" ? null : "stats")} aria-label={t.donorForm.totals} title={t.donorForm.totals} aria-expanded={activeDrawer === "stats"} aria-controls="donor-stats-drawer">
           <BarChart3 size={18} />
         </button>
+        <button className="donor-edge-tab tour-help-tab" type="button" onClick={() => setShowTour(true)} aria-label={t.donorForm.tourReplay} title={t.donorForm.tourReplay}>
+          <HelpCircle size={18} />
+        </button>
 
         {(activeDrawer === "add" || activeDrawer === "edit") && (
           <aside className="donor-edge-panel" id="donor-add-drawer">
@@ -2794,6 +2829,16 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
           </aside>
         )}
       </div>
+
+      {showTour && (
+        <PageTourOverlay
+          steps={t.donorForm.tourSteps}
+          subtitle={t.donorForm.tourSubtitle}
+          title={t.donorForm.tourTitle}
+          doneLabel={t.donorForm.tourDone}
+          onClose={closeTour}
+        />
+      )}
     </section>
   );
 }
@@ -3138,6 +3183,42 @@ function ConfirmDialog({ body, confirmLabel, isDanger = false, onCancel, onConfi
             <span>{confirmLabel || t.common.confirm}</span>
           </button>
         </div>
+      </section>
+    </div>
+  );
+}
+
+function PageTourOverlay({ doneLabel, onClose, steps, subtitle, title }) {
+  return (
+    <div className="page-tour-overlay" role="presentation" onClick={onClose}>
+      <section className="page-tour-card" role="dialog" aria-modal="true" aria-labelledby="page-tour-title" onClick={(event) => event.stopPropagation()}>
+        <div className="page-tour-header">
+          <span>
+            <HelpCircle size={20} />
+          </span>
+          <div>
+            <h2 id="page-tour-title">{title}</h2>
+            <p>{subtitle}</p>
+          </div>
+          <button className="icon-button" type="button" onClick={onClose} aria-label={doneLabel}>
+            <X size={16} />
+          </button>
+        </div>
+        <div className="page-tour-steps">
+          {steps.map((step, index) => (
+            <article className="page-tour-step" key={step.title}>
+              <span>{index + 1}</span>
+              <div>
+                <h3>{step.title}</h3>
+                <p>{step.body}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+        <button className="primary-button page-tour-done" type="button" onClick={onClose}>
+          <Check size={16} />
+          <span>{doneLabel}</span>
+        </button>
       </section>
     </div>
   );

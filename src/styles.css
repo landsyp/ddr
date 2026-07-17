@@ -3159,6 +3159,81 @@ tr.donation-register-pending-row:hover td {
   margin-top: 8px;
 }
 
+.page-tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 24, 0.58);
+  backdrop-filter: grayscale(0.7) blur(3px);
+}
+
+.page-tour-card {
+  display: grid;
+  gap: 16px;
+  width: min(640px, 100%);
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 30px 90px rgba(13, 31, 34, 0.32);
+}
+
+.page-tour-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+}
+
+.page-tour-header > span,
+.page-tour-step > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: var(--green-soft);
+  color: var(--brand);
+  font-weight: 900;
+}
+
+.page-tour-header h2,
+.page-tour-step h3 {
+  margin: 0;
+}
+
+.page-tour-header p,
+.page-tour-step p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.page-tour-steps {
+  display: grid;
+  gap: 10px;
+}
+
+.page-tour-step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(232, 244, 239, 0.52), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+}
+
+.page-tour-done {
+  justify-self: end;
+}
+
 .quick-launcher {
   position: fixed;
   right: clamp(18px, 3vw, 34px);
@@ -3419,6 +3494,11 @@ tr.donation-register-pending-row:hover td {
   }
 
   .account-eligibility-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .page-tour-step,
+  .page-tour-header {
     grid-template-columns: 1fr;
   }
 
