@@ -167,6 +167,7 @@ const copy = {
       success: "Donation added to the register.",
       accountMix: "Account mix",
       import: "Import donations",
+      chooseFile: "Choose file",
       importHelp: "Upload CSV, Excel, PayPal, or bank export files before categorizing them.",
       register: "Donation register",
       registered: "Registered",
@@ -539,6 +540,7 @@ const copy = {
       success: "Le don a été ajouté au registre.",
       accountMix: "Répartition par compte",
       import: "Importer des dons",
+      chooseFile: "Choisir un fichier",
       importHelp: "Téléversez des fichiers CSV, Excel, PayPal ou bancaires avant de les catégoriser.",
       register: "Registre des dons",
       registered: "Enregistrés",
@@ -2089,7 +2091,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
               <span>CSV, Excel, PayPal, bank export</span>
               <label className="file-picker-button">
                 <Plus size={16} />
-                <span>{t.donationForm.import}</span>
+                <span>{t.donationForm.chooseFile}</span>
                 <input type="file" accept=".csv,.xls,.xlsx" aria-label={t.donationForm.import} />
               </label>
             </div>
