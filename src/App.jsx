@@ -167,6 +167,10 @@ const copy = {
       success: "Donation added to the register.",
       accountMix: "Account mix",
       register: "Donation register",
+      searchRegister: "Search donations",
+      showAllPending: "Show all pending",
+      collapsePending: "Collapse pending",
+      averageGift: "Average gift",
       deleted: "Donation deleted.",
       confirmDelete: "Delete donation {id} from {name}?",
       detectedDonor: "Detected donor",
@@ -532,6 +536,10 @@ const copy = {
       success: "Le don a été ajouté au registre.",
       accountMix: "Répartition par compte",
       register: "Registre des dons",
+      searchRegister: "Rechercher dans les dons",
+      showAllPending: "Afficher tous les dons en attente",
+      collapsePending: "Réduire les dons en attente",
+      averageGift: "Don moyen",
       deleted: "Don supprimé.",
       confirmDelete: "Supprimer le don {id} de {name}?",
       detectedDonor: "Donateur détecté",
@@ -1861,19 +1869,53 @@ function QuickActionLauncher({ isOpen, onToggle, onViewChange, t }) {
 }
 
 function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t, onCategorizePending, onDelete, onSubmit }) {
-  const [manualFormOpen, setManualFormOpen] = useState(false);
   const [categorizingDonationId, setCategorizingDonationId] = useState(null);
+  const [activeDrawer, setActiveDrawer] = useState(null);
+  const [showAllPending, setShowAllPending] = useState(false);
+  const [donationSearch, setDonationSearch] = useState("");
   const linkedBankAccounts = savedBankingConnections(accounts);
-  const [bankingConnectionsOpen, setBankingConnectionsOpen] = useState(false);
+  const visiblePendingDonations = showAllPending ? pendingDonations : pendingDonations.slice(0, 3);
+  const hiddenPendingCount = Math.max(0, pendingDonations.length - visiblePendingDonations.length);
+  const allDonationRows = [
+    ...pendingDonations.map((donation) => ({
+      id: donation.id,
+      donor: donors.find((donor) => donor.numero === donation.donorNumber)?.fullName || donation.donorNumber,
+      date: donation.date,
+      account: "-",
+      method: donation.methodLabel || t.banking.imported,
+      amount: donation.amount,
+      status: "pending",
+      source: donation.source,
+      raw: donation,
+    })),
+    ...donations.map((donation) => ({
+      id: donation.donID,
+      donor: donation.donorName,
+      date: donation.dateDon,
+      account: `${donation.noCompte} - ${donation.libelleCompte}`,
+      method: donation.methode_en || t.common.unspecified,
+      amount: donation.montant,
+      status: donation.receiptStatus,
+      source: donation.description || "",
+      raw: donation,
+    })),
+  ];
+  const normalizedSearch = donationSearch.trim().toLowerCase();
+  const filteredDonationRows = normalizedSearch
+    ? allDonationRows.filter((row) => `${row.id} ${row.donor} ${row.date} ${row.account} ${row.method} ${row.source} ${row.status}`.toLowerCase().includes(normalizedSearch))
+    : allDonationRows;
+  const donationTotal = donations.reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
+  const averageGift = donations.length ? donationTotal / donations.length : 0;
 
   return (
-    <section className="view-stack">
+    <section className="view-stack donation-page">
       <ViewHeader
         title={t.nav.donations}
         subtitle={t.donationForm.subtitle}
         action={t.donationForm.add}
-        actionTargetId="donation-form"
         icon={CircleDollarSign}
+        onAction={() => setActiveDrawer("add")}
+        stacked
       />
 
       <section className={`pending-donations-band ${categorizingDonationId ? "has-categorizing" : ""}`}>
@@ -1883,7 +1925,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
           <p className="panel-copy">{t.banking.newDonationHelp}</p>
         </div>
         <div className="incoming-donation-list">
-          {pendingDonations.length ? pendingDonations.map((donation) => {
+          {pendingDonations.length ? visiblePendingDonations.map((donation) => {
             const detectedDonor = donors.find((donor) => donor.numero === donation.donorNumber);
             const isCategorizing = categorizingDonationId === donation.id;
 
@@ -1919,149 +1961,178 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
           }) : (
             <div className="incoming-empty-state">{t.donationForm.noPendingDonations}</div>
           )}
-        </div>
-      </section>
-
-      <section className={`panel banking-section-accordion ${bankingConnectionsOpen ? "is-expanded" : ""}`}>
-        <button
-          className="banking-section-toggle"
-          type="button"
-          onClick={() => setBankingConnectionsOpen((isOpen) => !isOpen)}
-          aria-expanded={bankingConnectionsOpen}
-        >
-          <div>
-            <Landmark size={18} />
-            <h2>{t.banking.title}</h2>
-          </div>
-          <span className="banking-section-count">{linkedBankAccounts.length}</span>
-          <ChevronDown size={18} />
-        </button>
-
-        {bankingConnectionsOpen && (
-        <div className="banking-subtle-layout">
-          <p className="panel-copy">{t.banking.subtitle}</p>
-          <div className="banking-accordion-list">
-            {linkedBankAccounts.map((bankAccount) => (
-              <BankingConnectionRow
-                bankAccount={bankAccount}
-                key={bankAccount.id}
-                t={t}
-              />
-            ))}
-          </div>
-        </div>
-        )}
-      </section>
-
-      <Panel id="donation-form" title={t.banking.recordManual} icon={Plus}>
-        <button className="manual-donation-toggle" type="button" onClick={() => setManualFormOpen((open) => !open)} aria-expanded={manualFormOpen}>
-          <div>
-            <strong>{t.donationForm.title}</strong>
-            <span>{t.banking.manualHelp}</span>
-          </div>
-          <ChevronDown size={18} />
-        </button>
-
-        {manualFormOpen && (
-          <form className="form-grid donation-manual-form" onSubmit={onSubmit}>
-            <label>
-              {t.donationForm.donor}
-              <select name="donateurID" required>
-                {donors.map((donor) => (
-                  <option value={donor.donateurID} key={donor.donateurID}>
-                    {donor.numero} - {donor.fullName}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              {t.donationForm.account}
-              <select name="compteID" required>
-                {accounts.map((account) => (
-                  <option value={account.compteID} key={account.compteID}>
-                    {account.noCompte} - {account.nom}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              {t.donationForm.amount}
-              <input name="montant" required min="1" step="0.01" type="number" placeholder="125.00" />
-            </label>
-            <label>
-              {t.donationForm.date}
-              <input name="dateDon" required type="date" defaultValue="2026-07-06" />
-            </label>
-            <label>
-              {t.donationForm.method}
-              <select name="methodeDonID" defaultValue={bootstrap?.methods?.[0]?.methodeDonID || ""}>
-                {bootstrap?.methods?.map((method) => (
-                  <option value={method.methodeDonID} key={method.methodeDonID}>
-                    {method.methode_en}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              {t.donationForm.description}
-              <input name="description" placeholder={t.donationForm.descriptionPlaceholder} />
-            </label>
-            <button className="primary-button form-submit" type="submit">
-              <Plus size={17} />
-              <span>{t.donationForm.add}</span>
+          {pendingDonations.length > 3 && (
+            <button className="secondary-button compact pending-toggle" type="button" onClick={() => setShowAllPending((isOpen) => !isOpen)}>
+              <ChevronDown size={15} />
+              <span>{showAllPending ? t.donationForm.collapsePending : `${t.donationForm.showAllPending} (${hiddenPendingCount})`}</span>
             </button>
-          </form>
-        )}
+          )}
+        </div>
+      </section>
+
+      <Panel title={t.donationForm.register} icon={FileText}>
+        <div className="table-toolbar">
+          <div className="search-box inline">
+            <Search size={17} />
+            <input value={donationSearch} onChange={(event) => setDonationSearch(event.target.value)} placeholder={t.donationForm.searchRegister} />
+          </div>
+          <span className="status-pill issued">{filteredDonationRows.length}</span>
+        </div>
+        <DataTable
+          t={t}
+          columns={["ID", t.donationForm.donor, t.donationForm.date, t.donationForm.account, t.donationForm.method, t.donationForm.amount, t.common.status, ""]}
+          rows={filteredDonationRows.map((row) => [
+            row.id,
+            row.donor,
+            row.date,
+            row.account,
+            row.method,
+            currency(row.amount),
+            row.status === "pending"
+              ? <span className="status-pill pending" key={`pending-${row.id}`}>{t.common.pending}</span>
+              : <StatusPill key={`status-${row.id}`} t={t} value={row.status} />,
+            row.status === "pending" ? (
+              <button className="secondary-button compact" type="button" key={`categorize-${row.id}`} onClick={() => {
+                setShowAllPending(true);
+                setCategorizingDonationId(row.id);
+              }}>
+                <Link2 size={15} />
+                <span>{t.banking.categorize}</span>
+              </button>
+            ) : (
+              <button className="icon-button table-icon" type="button" onClick={() => onDelete(row.raw)} aria-label={t.common.delete} key={`delete-${row.id}`}>
+                <Trash2 size={15} />
+              </button>
+            ),
+          ])}
+        />
       </Panel>
 
-      <div className="two-column form-layout">
-        <Panel title={t.donationForm.accountMix} icon={BarChart3}>
-          <div className="account-list">
-            {accounts.map((account) => (
-              <div className="account-row" key={account.compteID}>
-                <span>{account.noCompte} - {account.nom}</span>
-                <strong>{currency(account.total || 0)}</strong>
-                <div className="progress"><span style={{ width: `${Math.min(100, (account.total || 0) / 20)}%` }} /></div>
-              </div>
-            ))}
-          </div>
-        </Panel>
+      <div className={`donor-edge-drawers donation-edge-drawers ${activeDrawer ? "has-open-drawer" : ""}`}>
+        <button className={`donor-edge-tab ${activeDrawer === "add" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "add" ? null : "add")} aria-label={t.donationForm.add} title={t.donationForm.add} aria-expanded={activeDrawer === "add"}>
+          <Plus size={18} />
+        </button>
+        <button className={`donor-edge-tab ${activeDrawer === "stats" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "stats" ? null : "stats")} aria-label={t.donationForm.accountMix} title={t.donationForm.accountMix} aria-expanded={activeDrawer === "stats"}>
+          <BarChart3 size={18} />
+        </button>
+        <button className={`donor-edge-tab ${activeDrawer === "banking" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "banking" ? null : "banking")} aria-label={t.banking.title} title={t.banking.title} aria-expanded={activeDrawer === "banking"}>
+          <Landmark size={18} />
+        </button>
 
-        <Panel title={t.donationForm.register} icon={FileText}>
-          <DataTable
-            t={t}
-            columns={["ID", t.donationForm.donor, t.donationForm.date, t.donationForm.account, t.donationForm.method, t.donationForm.amount, t.common.status, ""]}
-            rows={[
-              ...pendingDonations.map((donation) => [
-                donation.id,
-                donors.find((donor) => donor.numero === donation.donorNumber)?.fullName || donation.donorNumber,
-                donation.date,
-                "-",
-                donation.methodLabel || t.banking.imported,
-                currency(donation.amount),
-                <span className="status-pill pending" key={`pending-${donation.id}`}>{t.common.pending}</span>,
-                <button className="secondary-button compact" type="button" key={`categorize-${donation.id}`}>
-                  <Link2 size={15} />
-                  <span>{t.banking.categorize}</span>
-                </button>,
-              ]),
-              ...donations.map((donation) => [
-                donation.donID,
-                donation.donorName,
-                donation.dateDon,
-                `${donation.noCompte} - ${donation.libelleCompte}`,
-                donation.methode_en || t.common.unspecified,
-                currency(donation.montant),
-                <StatusPill key={`status-${donation.donID}`} t={t} value={donation.receiptStatus} />,
-                <button className="icon-button table-icon" type="button" onClick={() => onDelete(donation)} aria-label={t.common.delete} key={`delete-${donation.donID}`}>
-                  <Trash2 size={15} />
-                </button>,
-              ]),
-            ]}
-          />
-        </Panel>
+        {activeDrawer === "add" && (
+          <aside className="donor-edge-panel app-edge-panel" id="donation-add-drawer">
+            <EdgePanelHeader icon={Plus} title={t.donationForm.add} subtitle={t.banking.manualHelp} onClose={() => setActiveDrawer(null)} t={t} />
+            <DonationForm
+              accounts={accounts}
+              bootstrap={bootstrap}
+              donors={donors}
+              onSubmit={async (event) => {
+                await onSubmit(event);
+                setActiveDrawer(null);
+              }}
+              t={t}
+            />
+          </aside>
+        )}
+
+        {activeDrawer === "stats" && (
+          <aside className="donor-edge-panel app-edge-panel" id="donation-stats-drawer">
+            <EdgePanelHeader icon={BarChart3} title={t.donationForm.accountMix} subtitle={t.donationForm.register} onClose={() => setActiveDrawer(null)} t={t} />
+            <div className="edge-stat-grid">
+              <div className="donor-total-summary">
+                <span>{t.donationForm.register}</span>
+                <strong>{donations.length}</strong>
+              </div>
+              <div className="donor-total-summary">
+                <span>{t.donationForm.amount}</span>
+                <strong>{currency(donationTotal)}</strong>
+              </div>
+              <div className="donor-total-summary">
+                <span>{t.common.pending}</span>
+                <strong>{pendingDonations.length}</strong>
+              </div>
+              <div className="donor-total-summary">
+                <span>{t.donationForm.averageGift}</span>
+                <strong>{currency(averageGift)}</strong>
+              </div>
+            </div>
+            <div className="account-list">
+              {accounts.map((account) => (
+                <div className="account-row" key={account.compteID}>
+                  <span>{account.noCompte} - {account.nom}</span>
+                  <strong>{currency(account.total || 0)}</strong>
+                  <div className="progress"><span style={{ width: `${Math.min(100, (account.total || 0) / 20)}%` }} /></div>
+                </div>
+              ))}
+            </div>
+          </aside>
+        )}
+
+        {activeDrawer === "banking" && (
+          <aside className="donor-edge-panel app-edge-panel" id="donation-banking-drawer">
+            <EdgePanelHeader icon={Landmark} title={t.banking.title} subtitle={t.banking.subtitle} onClose={() => setActiveDrawer(null)} t={t} />
+            <div className="banking-accordion-list">
+              {linkedBankAccounts.map((bankAccount) => (
+                <BankingConnectionRow bankAccount={bankAccount} key={bankAccount.id} t={t} />
+              ))}
+            </div>
+          </aside>
+        )}
       </div>
     </section>
+  );
+}
+
+function DonationForm({ accounts, bootstrap, donors, onSubmit, t }) {
+  return (
+    <form className="form-grid donation-manual-form" onSubmit={onSubmit}>
+      <label>
+        {t.donationForm.donor}
+        <select name="donateurID" required>
+          {donors.map((donor) => (
+            <option value={donor.donateurID} key={donor.donateurID}>
+              {donor.numero} - {donor.fullName}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        {t.donationForm.account}
+        <select name="compteID" required>
+          {accounts.map((account) => (
+            <option value={account.compteID} key={account.compteID}>
+              {account.noCompte} - {account.nom}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        {t.donationForm.amount}
+        <input name="montant" required min="1" step="0.01" type="number" placeholder="125.00" />
+      </label>
+      <label>
+        {t.donationForm.date}
+        <input name="dateDon" required type="date" defaultValue="2026-07-06" />
+      </label>
+      <label>
+        {t.donationForm.method}
+        <select name="methodeDonID" defaultValue={bootstrap?.methods?.[0]?.methodeDonID || ""}>
+          {bootstrap?.methods?.map((method) => (
+            <option value={method.methodeDonID} key={method.methodeDonID}>
+              {method.methode_en}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        {t.donationForm.description}
+        <input name="description" placeholder={t.donationForm.descriptionPlaceholder} />
+      </label>
+      <button className="primary-button form-submit" type="submit">
+        <Plus size={17} />
+        <span>{t.donationForm.add}</span>
+      </button>
+    </form>
   );
 }
 
@@ -2509,15 +2580,13 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
 
         {(activeDrawer === "add" || activeDrawer === "edit") && (
           <aside className="donor-edge-panel" id="donor-add-drawer">
-            <div className="panel-header">
-              <div>
-                {activeDrawer === "edit" ? <Pencil size={18} /> : <UserPlus size={18} />}
-                <h2>{activeDrawer === "edit" ? t.common.edit : t.donorForm.title}</h2>
-              </div>
-              <button className="icon-button" type="button" onClick={() => setActiveDrawer(null)} aria-label={t.common.close || t.common.cancel}>
-                <X size={16} />
-              </button>
-            </div>
+            <EdgePanelHeader
+              icon={activeDrawer === "edit" ? Pencil : UserPlus}
+              title={activeDrawer === "edit" ? t.common.edit : t.donorForm.title}
+              subtitle={t.donorForm.subtitle}
+              onClose={() => setActiveDrawer(null)}
+              t={t}
+            />
             <DonorForm
               bootstrap={bootstrap}
               donor={activeDrawer === "edit" ? editingDonor : null}
@@ -2541,15 +2610,7 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onSearch, on
 
         {activeDrawer === "stats" && (
           <aside className="donor-edge-panel" id="donor-stats-drawer">
-            <div className="panel-header">
-              <div>
-                <BarChart3 size={18} />
-                <h2>{t.donorForm.totals}</h2>
-              </div>
-              <button className="icon-button" type="button" onClick={() => setActiveDrawer(null)} aria-label={t.common.close || t.common.cancel}>
-                <X size={16} />
-              </button>
-            </div>
+            <EdgePanelHeader icon={BarChart3} title={t.donorForm.totals} subtitle={t.donorForm.directory} onClose={() => setActiveDrawer(null)} t={t} />
             <div className="donor-total-summary">
               <span>{t.donorForm.totals}</span>
               <strong>{donors.length}</strong>
@@ -3683,6 +3744,24 @@ function BooleanIcon({ value, trueLabel, falseLabel }) {
     <span className={`boolean-icon ${isTrue ? "is-true" : "is-false"}`} aria-label={isTrue ? trueLabel : falseLabel} title={isTrue ? trueLabel : falseLabel}>
       {isTrue ? <Check size={16} /> : <X size={16} />}
     </span>
+  );
+}
+
+function EdgePanelHeader({ icon: Icon, title, subtitle, onClose, t }) {
+  return (
+    <div className="edge-panel-hero">
+      <div className="edge-panel-icon">
+        <Icon size={20} />
+      </div>
+      <div>
+        <span className="eyebrow">WeSERVE SaaS</span>
+        <h2>{title}</h2>
+        {subtitle && <p>{subtitle}</p>}
+      </div>
+      <button className="icon-button" type="button" onClick={onClose} aria-label={t.common.close || t.common.cancel}>
+        <X size={16} />
+      </button>
+    </div>
   );
 }
 

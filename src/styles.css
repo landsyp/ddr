@@ -1106,7 +1106,7 @@ td {
   right: 54px;
   width: min(520px, calc(100vw - 76px));
   max-height: min(720px, calc(100vh - 220px));
-  padding: 18px;
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #ffffff;
@@ -1116,6 +1116,56 @@ td {
 
 .donor-edge-panel .form-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 18px;
+}
+
+.app-edge-panel {
+  width: min(560px, calc(100vw - 76px));
+}
+
+.edge-panel-hero {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 18px;
+  border-bottom: 1px solid rgba(217, 227, 225, 0.8);
+  background:
+    linear-gradient(135deg, rgba(232, 244, 239, 0.92), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+}
+
+.edge-panel-hero .eyebrow {
+  margin-bottom: 6px;
+  color: var(--brand);
+}
+
+.edge-panel-hero h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.22rem;
+}
+
+.edge-panel-hero p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.edge-panel-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(29, 111, 95, 0.18);
 }
 
 .donor-total-summary {
@@ -1139,6 +1189,22 @@ td {
   color: var(--brand-dark);
   font-size: 2.4rem;
   line-height: 1;
+}
+
+.donor-edge-panel > .donor-total-summary {
+  margin: 18px;
+}
+
+.edge-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 18px 18px 10px;
+}
+
+.donor-edge-panel > .account-list,
+.donor-edge-panel > .banking-accordion-list {
+  padding: 0 18px 18px;
 }
 
 .account-accordion {
@@ -2025,6 +2091,14 @@ td {
   background: rgba(255, 255, 255, 0.62);
   color: var(--muted);
   text-align: center;
+}
+
+.pending-toggle {
+  justify-self: end;
+}
+
+.pending-toggle svg {
+  transition: transform 160ms ease;
 }
 
 .manual-donation-toggle {
