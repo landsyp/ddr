@@ -42,6 +42,12 @@ textarea {
   font: inherit;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: #9aa8ad;
+  opacity: 0.72;
+}
+
 select {
   appearance: none;
   background-image:
