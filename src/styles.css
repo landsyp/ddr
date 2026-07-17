@@ -1650,6 +1650,77 @@ tr.donation-register-pending-row:hover td {
   border-bottom: 1px solid var(--line);
 }
 
+.user-access-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  margin: 18px 18px 0;
+  padding: 16px;
+  border: 1px solid rgba(217, 227, 225, 0.78);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(232, 244, 239, 0.88), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+  box-shadow: var(--shadow-tile);
+}
+
+.user-access-card.is-limited {
+  border-color: rgba(183, 121, 31, 0.28);
+  background:
+    linear-gradient(135deg, rgba(255, 246, 225, 0.82), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+}
+
+.user-access-card h3 {
+  margin: 10px 0 5px;
+  font-size: 1.12rem;
+}
+
+.user-access-card p {
+  max-width: 680px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.user-access-card > .primary-button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.user-access-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(92px, 1fr));
+  gap: 10px;
+  min-width: min(420px, 100%);
+}
+
+.user-access-metrics > div {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.user-access-metrics span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.user-access-metrics strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--brand);
+  font-size: 1.35rem;
+}
+
+.user-access-metrics .is-warning strong {
+  color: var(--amber);
+}
+
 .account-settings-card {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -3171,6 +3242,7 @@ tr.donation-register-pending-row:hover td {
   .pending-donations-band,
   .banking-subtle-layout,
   .categorize-donation-form,
+  .user-access-card,
   .settings-page .payment-tile-grid,
   .payment-tile-grid,
   .banking-tile-grid {
@@ -3237,6 +3309,11 @@ tr.donation-register-pending-row:hover td {
   .settings-profile-form,
   .action-grid {
     grid-template-columns: 1fr;
+  }
+
+  .user-access-metrics {
+    grid-template-columns: 1fr;
+    min-width: 0;
   }
 
   .payment-method-card,

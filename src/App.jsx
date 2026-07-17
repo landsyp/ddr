@@ -337,6 +337,13 @@ const copy = {
       upgradePlan: "Upgrade plan",
       planHelp: "Gold plan active with receipt batches, bank notifications, and priority support.",
       users: "Users",
+      userAccessTitle: "User access",
+      userAccessHelp: "Access seats are attached to the organization. Admins can manage users while standard users only see their own account.",
+      activeSeats: "Active seats",
+      seatsRemaining: "Seats remaining",
+      includedSeats: "Included seats",
+      upgradeToAddUsers: "Upgrade to add more users",
+      userLimitReached: "Your current plan has reached its user access limit.",
       save: "Update profile",
       saved: "Organization profile updated.",
       organizationName: "Organization name",
@@ -354,6 +361,8 @@ const copy = {
       folio: "Folio",
       organizationActive: "Organization active",
       temporaryPassword: "Temporary password",
+      firstName: "First name",
+      lastName: "Last name",
       adminAccess: "Admin access",
       addUser: "Add user",
       language: "Language",
@@ -721,6 +730,13 @@ const copy = {
       upgradePlan: "Améliorer le plan",
       planHelp: "Plan Gold actif avec lots de reçus, notifications bancaires et support prioritaire.",
       users: "Utilisateurs",
+      userAccessTitle: "Accès utilisateurs",
+      userAccessHelp: "Les accès sont rattachés à l'organisation. Les admins peuvent gérer les utilisateurs; les utilisateurs standards voient seulement leur compte.",
+      activeSeats: "Accès actifs",
+      seatsRemaining: "Accès restants",
+      includedSeats: "Accès inclus",
+      upgradeToAddUsers: "Améliorer pour ajouter des utilisateurs",
+      userLimitReached: "Votre plan actuel a atteint sa limite d'accès utilisateurs.",
       save: "Mettre à jour le profil",
       saved: "Profil de l'organisme mis à jour.",
       organizationName: "Nom de l'organisme",
@@ -738,6 +754,8 @@ const copy = {
       folio: "Folio",
       organizationActive: "Organisme actif",
       temporaryPassword: "Mot de passe temporaire",
+      firstName: "Prénom",
+      lastName: "Nom",
       adminAccess: "Accès administrateur",
       addUser: "Ajouter un utilisateur",
       language: "Langue",
@@ -822,6 +840,12 @@ const navItems = [
   { id: "subscription", icon: Building2 },
   { id: "customization", icon: Palette },
 ];
+
+const userSeatPlans = {
+  Basic: { seats: 1, next: "Gold" },
+  Gold: { seats: 1, next: "Premium" },
+  Premium: { seats: 8, next: null },
+};
 
 const defaultReceiptPeriod = {
   dateDebut: "2026-01-01",
@@ -3428,6 +3452,11 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
   const organization = bootstrap?.organisme || {};
   const users = bootstrap?.users?.length ? bootstrap.users : [user].filter(Boolean);
   const isAdmin = Boolean(user?.admin);
+  const currentPlanName = "Gold";
+  const currentSeatPlan = userSeatPlans[currentPlanName];
+  const activeSeatCount = users.filter((account) => account?.actif !== false).length;
+  const seatsRemaining = Math.max(currentSeatPlan.seats - activeSeatCount, 0);
+  const canAddUser = seatsRemaining > 0;
   const [addPaymentOpen, setAddPaymentOpen] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState(null);
   const [openSettingsSections, setOpenSettingsSections] = useState({
@@ -3579,43 +3608,80 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
           isOpen={openSettingsSections.users}
           onToggle={() => toggleSettingsSection("users")}
         >
-          <form className="form-grid user-form" onSubmit={onCreateUser}>
+          <div className={`user-access-card ${canAddUser ? "" : "is-limited"}`}>
+            <div>
+              <span className="status-pill issued">{currentPlanName}</span>
+              <h3>{t.settings.userAccessTitle}</h3>
+              <p>{canAddUser ? t.settings.userAccessHelp : t.settings.userLimitReached}</p>
+            </div>
+            <div className="user-access-metrics">
+              <div>
+                <span>{t.settings.activeSeats}</span>
+                <strong>{activeSeatCount}</strong>
+              </div>
+              <div>
+                <span>{t.settings.includedSeats}</span>
+                <strong>{currentSeatPlan.seats}</strong>
+              </div>
+              <div className={canAddUser ? "" : "is-warning"}>
+                <span>{t.settings.seatsRemaining}</span>
+                <strong>{seatsRemaining}</strong>
+              </div>
+            </div>
+            {!canAddUser && (
+              <button className="primary-button" type="button" onClick={() => setActiveDrawer("plan")}>
+                <Sparkles size={17} />
+                <span>{t.settings.upgradeToAddUsers}</span>
+              </button>
+            )}
+          </div>
+          <form
+            className="form-grid user-form"
+            onSubmit={(event) => {
+              if (!canAddUser) {
+                event.preventDefault();
+                setActiveDrawer("plan");
+                return;
+              }
+              onCreateUser(event);
+            }}
+          >
             <label>
-              First name
-              <input name="prenom" required maxLength="50" />
+              {t.settings.firstName}
+              <input name="prenom" required maxLength="50" disabled={!canAddUser} />
             </label>
             <label>
-              Last name
-              <input name="nom" required maxLength="50" />
+              {t.settings.lastName}
+              <input name="nom" required maxLength="50" disabled={!canAddUser} />
             </label>
             <label>
-              Email
-              <input name="email" required type="email" />
+              {t.common.email}
+              <input name="email" required type="email" disabled={!canAddUser} />
             </label>
             <label>
-              Temporary password
-              <input name="password" required minLength="8" type="password" />
+              {t.settings.temporaryPassword}
+              <input name="password" required minLength="8" type="password" disabled={!canAddUser} />
             </label>
             <label className="checkbox-label">
-              <input name="admin" type="checkbox" />
-              <span>Admin access</span>
+              <input name="admin" type="checkbox" disabled={!canAddUser} />
+              <span>{t.settings.adminAccess}</span>
             </label>
-            <button className="primary-button form-submit" type="submit">
-              <UserPlus size={17} />
-              <span>Add user</span>
+            <button className="primary-button form-submit" type={canAddUser ? "submit" : "button"} onClick={!canAddUser ? () => setActiveDrawer("plan") : undefined}>
+              {canAddUser ? <UserPlus size={17} /> : <Sparkles size={17} />}
+              <span>{canAddUser ? t.settings.addUser : t.settings.upgradeToAddUsers}</span>
             </button>
           </form>
           <DataTable
-            columns={["Name", "Email", "Language", "Role", "Active", ""]}
+            columns={[t.common.name, t.common.email, t.settings.language, t.settings.role, t.common.active, ""]}
             rows={users.map((account) => [
-              `${account.prenom || ""} ${account.nom || ""}`.trim() || "User",
+              `${account.prenom || ""} ${account.nom || ""}`.trim() || t.common.user,
               account.courriel || "-",
               String(account.langue || "en").toUpperCase(),
-              account.admin ? "Admin" : "User",
-              account.actif === false ? "No" : "Yes",
+              account.admin ? t.common.admin : t.common.user,
+              account.actif === false ? t.common.no : t.common.yes,
               account.utilisateurID === user?.utilisateurID ? "-" : (
                 <button className="secondary-button compact" type="button" onClick={() => onUserStatus(account)} key={`user-${account.utilisateurID}`}>
-                  {account.actif === false ? "Activate" : "Deactivate"}
+                  {account.actif === false ? t.common.activate : t.common.deactivate}
                 </button>
               ),
             ])}
