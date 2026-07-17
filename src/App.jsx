@@ -951,6 +951,7 @@ function getPageTour(t, view) {
       steps: [
         { visual: "pending", title: fr ? "Dons en attente" : "Pending donations", body: fr ? "Les transactions bancaires ou PayPal arrivent ici avant d'être catégorisées." : "Bank or PayPal transactions land here before categorization." },
         { visual: "add", title: fr ? "Ajouter un don" : "Add donation", body: fr ? "L'onglet latéral ajoute un don manuel sans quitter la page." : "The side tab records a manual donation without leaving the page." },
+        { visual: "import", title: fr ? "Importer des dons" : "Import donations", body: fr ? "L'onglet import permet de téléverser un CSV, Excel, export PayPal ou export bancaire." : "The import tab uploads CSV, Excel, PayPal, or bank export files." },
         { visual: "banking", title: fr ? "Connexions bancaires" : "Banking connections", body: fr ? "L'onglet bancaire affiche les comptes connectés qui alimentent les nouveaux dons." : "The banking tab shows connected accounts feeding new donations." },
       ],
     },
@@ -3363,6 +3364,7 @@ function PageTourVisual({ visual }) {
     stats: BarChart3,
     edit: Pencil,
     help: HelpCircle,
+    import: Download,
     mail: Mail,
     palette: Palette,
     pending: Bell,
