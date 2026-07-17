@@ -3379,6 +3379,21 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
   const users = bootstrap?.users?.length ? bootstrap.users : [user].filter(Boolean);
   const [addPaymentOpen, setAddPaymentOpen] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState(null);
+  const [openSettingsSections, setOpenSettingsSections] = useState({
+    profile: true,
+    users: false,
+    payments: false,
+  });
+  const toggleSettingsSection = (section) => {
+    setOpenSettingsSections((openSections) => ({
+      ...openSections,
+      [section]: !openSections[section],
+    }));
+  };
+  const openProfileSection = () => {
+    setOpenSettingsSections((openSections) => ({ ...openSections, profile: true }));
+    window.setTimeout(() => focusTarget("organization-profile"), 0);
+  };
 
   return (
     <section className="view-stack settings-page">
@@ -3386,11 +3401,17 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
         title={t.settings.title}
         subtitle={t.settings.subtitle}
         action={t.settings.save}
-        actionTargetId="organization-profile"
+        onAction={openProfileSection}
         icon={Settings}
       />
 
-        <Panel id="organization-profile" title={t.settings.profile} icon={Building2}>
+        <SettingsAccordionSection
+          id="organization-profile"
+          title={t.settings.profile}
+          icon={Building2}
+          isOpen={openSettingsSections.profile}
+          onToggle={() => toggleSettingsSection("profile")}
+        >
           <form className="form-grid settings-profile-form" onSubmit={onSubmit} key={`${organization.organismeID}-${organization.organisme}-${organization.responsable_courriel}`}>
             <label>
               {t.settings.organizationName}
@@ -3463,9 +3484,14 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
               <span>{t.settings.save}</span>
             </button>
           </form>
-        </Panel>
+        </SettingsAccordionSection>
 
-        <Panel title={t.settings.users} icon={Users}>
+        <SettingsAccordionSection
+          title={t.settings.users}
+          icon={Users}
+          isOpen={openSettingsSections.users}
+          onToggle={() => toggleSettingsSection("users")}
+        >
           <form className="form-grid user-form" onSubmit={onCreateUser}>
             <label>
               First name
@@ -3507,9 +3533,14 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
               ),
             ])}
           />
-        </Panel>
+        </SettingsAccordionSection>
 
-        <Panel title={t.settings.paymentMethods} icon={CreditCard}>
+        <SettingsAccordionSection
+          title={t.settings.paymentMethods}
+          icon={CreditCard}
+          isOpen={openSettingsSections.payments}
+          onToggle={() => toggleSettingsSection("payments")}
+        >
           <p className="panel-copy">{t.settings.paymentSubtitle}</p>
           <div className="payment-tile-grid">
             <PaymentMethodCard
@@ -3555,7 +3586,7 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
               </button>
             </form>
           )}
-        </Panel>
+        </SettingsAccordionSection>
 
       <div className={`donor-edge-drawers settings-edge-drawers ${activeDrawer ? "has-open-drawer" : ""}`}>
         <button className={`donor-edge-tab ${activeDrawer === "plan" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "plan" ? null : "plan")} aria-label={t.settings.currentPlan} title={t.settings.currentPlan} aria-expanded={activeDrawer === "plan"}>
@@ -3946,6 +3977,25 @@ function Panel({ id, title, icon: Icon, children }) {
         </div>
       </div>
       {children}
+    </section>
+  );
+}
+
+function SettingsAccordionSection({ id, title, icon: Icon, isOpen, onToggle, children }) {
+  return (
+    <section className={`panel settings-accordion-section ${isOpen ? "is-open" : ""}`} id={id}>
+      <button className="panel-header settings-accordion-toggle" type="button" onClick={onToggle} aria-expanded={isOpen}>
+        <div>
+          <Icon size={18} />
+          <h2>{title}</h2>
+        </div>
+        <ChevronDown size={18} />
+      </button>
+      {isOpen && (
+        <div className="settings-accordion-content">
+          {children}
+        </div>
+      )}
     </section>
   );
 }
