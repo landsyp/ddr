@@ -1933,7 +1933,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
             <article className={`incoming-donation ${isCategorizing ? "is-categorizing" : ""}`} key={donation.id}>
               <div className="incoming-donation-summary">
                 <div>
-                  <span className="status-pill pending">{t.common.pending}</span>
+                  <span className="status-pill donation-pending">{t.common.pending}</span>
                   <strong>{currency(donation.amount)}</strong>
                   <small>{donation.source} • {donation.date} • {donation.methodLabel}</small>
                   <p>{donation.note}</p>
@@ -1989,15 +1989,14 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
             row.method,
             currency(row.amount),
             row.status === "pending"
-              ? <span className="status-pill pending" key={`pending-${row.id}`}>{t.common.pending}</span>
+              ? <span className="status-pill donation-pending" key={`pending-${row.id}`}>{t.common.pending}</span>
               : <StatusPill key={`status-${row.id}`} t={t} value={row.status} />,
             row.status === "pending" ? (
-              <button className="secondary-button compact" type="button" key={`categorize-${row.id}`} onClick={() => {
+              <button className="icon-button table-icon categorize-icon-button" type="button" key={`categorize-${row.id}`} aria-label={t.banking.categorize} title={t.banking.categorize} onClick={() => {
                 setShowAllPending(true);
                 setCategorizingDonationId(row.id);
               }}>
                 <Link2 size={15} />
-                <span>{t.banking.categorize}</span>
               </button>
             ) : (
               <button className="icon-button table-icon" type="button" onClick={() => onDelete(row.raw)} aria-label={t.common.delete} key={`delete-${row.id}`}>
@@ -2005,6 +2004,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
               </button>
             ),
           ])}
+          rowClassName={(row) => String(row[6]?.props?.className || "").includes("donation-pending") ? "donation-register-pending-row" : ""}
         />
       </Panel>
 
@@ -3779,7 +3779,7 @@ function Panel({ id, title, icon: Icon, children }) {
   );
 }
 
-function DataTable({ columns, rows, t, emptyMessage }) {
+function DataTable({ columns, rows, t, emptyMessage, rowClassName }) {
   return (
     <div className="table-wrap">
       <table>
@@ -3795,7 +3795,7 @@ function DataTable({ columns, rows, t, emptyMessage }) {
             </tr>
           ) : (
             rows.map((row, rowIndex) => (
-              <tr key={`${rowIndex}-${row[0]}`}>
+              <tr className={rowClassName?.(row, rowIndex) || ""} key={`${rowIndex}-${row[0]}`}>
                 {row.map((cell, cellIndex) => <td key={`${rowIndex}-${cellIndex}`}>{cell}</td>)}
               </tr>
             ))

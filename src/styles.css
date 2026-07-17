@@ -795,6 +795,14 @@ td {
   font-size: 0.9rem;
 }
 
+tr.donation-register-pending-row td {
+  background: rgba(29, 111, 95, 0.035);
+}
+
+tr.donation-register-pending-row:hover td {
+  background: rgba(29, 111, 95, 0.055);
+}
+
 .status-pill,
 .segment {
   display: inline-flex;
@@ -811,6 +819,11 @@ td {
 .status-pill.pending {
   background: var(--amber-soft);
   color: var(--amber);
+}
+
+.status-pill.donation-pending {
+  background: rgba(29, 111, 95, 0.1);
+  color: var(--brand-dark);
 }
 
 .status-pill.issued {
@@ -1648,31 +1661,32 @@ td {
 
 .pending-donations-band {
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-  gap: 18px;
+  grid-template-columns: minmax(220px, 0.55fr) minmax(0, 1.45fr);
+  gap: 14px;
   align-items: center;
-  padding: 20px;
-  border: 1px solid rgba(183, 121, 31, 0.28);
+  padding: 16px;
+  border: 1px solid rgba(29, 111, 95, 0.14);
   border-radius: 8px;
   background:
-    linear-gradient(135deg, rgba(255, 244, 221, 0.96), rgba(255, 255, 255, 0.98)),
-    var(--amber-soft);
-  box-shadow: 0 20px 56px rgba(82, 58, 27, 0.12);
+    linear-gradient(135deg, rgba(232, 244, 239, 0.54), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+  box-shadow: 0 14px 38px rgba(29, 111, 95, 0.07);
 }
 
 .pending-donations-band .eyebrow {
-  color: var(--amber);
+  color: var(--brand);
 }
 
 .pending-donations-band h2 {
   margin: 0;
   color: var(--ink);
-  font-size: clamp(1.5rem, 2.4vw, 2.2rem);
+  font-size: clamp(1.25rem, 2vw, 1.7rem);
   line-height: 1.05;
 }
 
 .pending-donations-band .panel-copy {
-  margin-top: 12px;
+  margin-top: 8px;
+  font-size: 0.92rem;
 }
 
 .pending-donations-band.has-categorizing {
@@ -2001,23 +2015,23 @@ td {
 
 .incoming-donation {
   display: grid;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
-  padding: 14px;
+  padding: 11px 12px;
 }
 
 .pending-donations-band .incoming-donation {
   border-color: rgba(29, 111, 95, 0.14);
   background:
-    linear-gradient(135deg, rgba(232, 244, 239, 0.42), rgba(255, 255, 255, 0.97)),
-    rgba(29, 111, 95, 0.035);
-  box-shadow: 0 14px 34px rgba(29, 111, 95, 0.065);
+    linear-gradient(135deg, rgba(232, 244, 239, 0.28), rgba(255, 255, 255, 0.98)),
+    rgba(29, 111, 95, 0.025);
+  box-shadow: 0 8px 22px rgba(29, 111, 95, 0.045);
 }
 
 .incoming-donation-summary {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 14px;
+  gap: 10px;
   align-items: center;
   min-width: 0;
 }
@@ -2025,16 +2039,17 @@ td {
 .incoming-donation strong,
 .incoming-donation small {
   display: block;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .incoming-donation p {
-  margin: 8px 0 0;
+  margin: 5px 0 0;
   color: var(--muted);
 }
 
 .incoming-donation .detected-donor {
   color: var(--ink);
+  font-size: 0.85rem;
   font-weight: 800;
 }
 
