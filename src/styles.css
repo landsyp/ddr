@@ -1551,8 +1551,8 @@ tr.donation-register-pending-row:hover td {
 
 .receipt-eligibility.is-not-receiptable,
 .receipt-eligibility-text.is-not-receiptable {
-  background: var(--amber-soft);
-  color: var(--amber);
+  background: var(--red-soft);
+  color: var(--red);
 }
 
 .receipt-eligibility-text {
