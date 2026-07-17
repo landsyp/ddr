@@ -1057,6 +1057,13 @@ tr.donation-register-pending-row:hover td {
   margin-bottom: 14px;
 }
 
+.register-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .export-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1235,6 +1242,16 @@ tr.donation-register-pending-row:hover td {
   line-height: 1;
 }
 
+.donor-total-summary.is-pending {
+  border-color: rgba(183, 121, 31, 0.2);
+  background: var(--amber-soft);
+}
+
+.donor-total-summary.is-pending span,
+.donor-total-summary.is-pending strong {
+  color: var(--amber);
+}
+
 .donor-edge-panel > .donor-total-summary {
   margin: 18px;
 }
@@ -1267,15 +1284,46 @@ tr.donation-register-pending-row:hover td {
   text-align: center;
 }
 
-.donation-import-dropzone input {
-  width: 100%;
-  max-width: 280px;
-  color: var(--muted);
-}
-
 .donation-import-dropzone span {
   color: var(--muted);
   font-size: 0.86rem;
+}
+
+.file-picker-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border: 1px solid rgba(29, 111, 95, 0.24);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--brand);
+  font-size: 0.88rem;
+  font-weight: 900;
+  box-shadow: 0 10px 22px rgba(29, 111, 95, 0.1);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.file-picker-button:hover {
+  background: var(--green-soft);
+}
+
+.file-picker-button span {
+  color: var(--brand);
+  font-size: 0.88rem;
+}
+
+.file-picker-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .donation-import-steps {
@@ -2151,9 +2199,9 @@ tr.donation-register-pending-row:hover td {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-width: 58px;
+  min-width: 104px;
   min-height: 38px;
-  padding: 0 11px;
+  padding: 0 13px;
   border: 1px solid rgba(183, 121, 31, 0.24);
   border-radius: 999px;
   background: #ffffff;
@@ -2233,10 +2281,19 @@ tr.donation-register-pending-row:hover td {
 
 .pending-toggle {
   justify-self: end;
+  border-color: rgba(183, 121, 31, 0.24);
+  background: #ffffff;
+  color: var(--amber);
+  box-shadow: 0 8px 18px rgba(82, 58, 27, 0.08);
 }
 
 .pending-toggle svg {
   transition: transform 160ms ease;
+}
+
+.pending-toggle:hover {
+  border-color: rgba(183, 121, 31, 0.36);
+  background: var(--amber-soft);
 }
 
 .manual-donation-toggle {

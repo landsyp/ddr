@@ -167,8 +167,9 @@ const copy = {
       success: "Donation added to the register.",
       accountMix: "Account mix",
       import: "Import donations",
-      importHelp: "Upload bank, PayPal, or CSV donation files before categorizing them.",
+      importHelp: "Upload CSV, Excel, PayPal, or bank export files before categorizing them.",
       register: "Donation register",
+      registered: "Registered",
       searchRegister: "Search donations",
       showAllPending: "Show all pending",
       collapsePending: "Collapse pending",
@@ -538,8 +539,9 @@ const copy = {
       success: "Le don a été ajouté au registre.",
       accountMix: "Répartition par compte",
       import: "Importer des dons",
-      importHelp: "Téléversez des fichiers bancaires, PayPal ou CSV avant de les catégoriser.",
+      importHelp: "Téléversez des fichiers CSV, Excel, PayPal ou bancaires avant de les catégoriser.",
       register: "Registre des dons",
+      registered: "Enregistrés",
       searchRegister: "Rechercher dans les dons",
       showAllPending: "Afficher tous les dons en attente",
       collapsePending: "Réduire les dons en attente",
@@ -1913,6 +1915,8 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
   const filteredDonationRows = normalizedSearch
     ? allDonationRows.filter((row) => `${row.id} ${row.donor} ${row.date} ${row.account} ${row.method} ${row.source} ${row.status}`.toLowerCase().includes(normalizedSearch))
     : allDonationRows;
+  const filteredPendingCount = filteredDonationRows.filter((row) => row.status === "pending").length;
+  const filteredRegisteredCount = filteredDonationRows.length - filteredPendingCount;
   const donationTotal = donations.reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
   const averageGift = donations.length ? donationTotal / donations.length : 0;
 
@@ -1955,7 +1959,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
                 </div>
                 <button className="categorize-chip-button" type="button" onClick={() => setCategorizingDonationId(isCategorizing ? null : donation.id)} aria-label={t.banking.categorize} title={t.banking.categorize}>
                   <Link2 size={14} />
-                  <span>Cat.</span>
+                  <span>{t.banking.categorize}</span>
                 </button>
               </div>
               {isCategorizing && (
@@ -1988,7 +1992,10 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
             <Search size={17} />
             <input value={donationSearch} onChange={(event) => setDonationSearch(event.target.value)} placeholder={t.donationForm.searchRegister} />
           </div>
-          <span className="status-pill issued">{filteredDonationRows.length}</span>
+          <div className="register-counts">
+            <span className="status-pill issued">{filteredRegisteredCount} {t.donationForm.registered}</span>
+            <span className="status-pill pending">{filteredPendingCount} {t.common.pending}</span>
+          </div>
         </div>
         <DataTable
           t={t}
@@ -2004,10 +2011,11 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
               ? <span className="status-pill pending donation-pending" key={`pending-${row.id}`}>{t.common.pending}</span>
               : <StatusPill key={`status-${row.id}`} t={t} value={row.status} />,
             row.status === "pending" ? (
-              <button className="categorize-chip-button is-icon-only" type="button" key={`categorize-${row.id}`} aria-label={t.banking.categorize} title={t.banking.categorize} onClick={() => {
+              <button className="categorize-chip-button" type="button" key={`categorize-${row.id}`} aria-label={t.banking.categorize} title={t.banking.categorize} onClick={() => {
                 setRegisterCategorizingDonationId((currentId) => currentId === row.id ? null : row.id);
               }}>
-                <span>Cat.</span>
+                <Link2 size={14} />
+                <span>{t.banking.categorize}</span>
               </button>
             ) : (
               <button className="icon-button table-icon" type="button" onClick={() => onDelete(row.raw)} aria-label={t.common.delete} key={`delete-${row.id}`}>
@@ -2078,8 +2086,12 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
             <div className="donation-import-dropzone">
               <Download size={24} />
               <strong>{t.donationForm.import}</strong>
-              <span>CSV, PayPal, bank export</span>
-              <input type="file" accept=".csv,.xls,.xlsx" aria-label={t.donationForm.import} />
+              <span>CSV, Excel, PayPal, bank export</span>
+              <label className="file-picker-button">
+                <Plus size={16} />
+                <span>{t.donationForm.import}</span>
+                <input type="file" accept=".csv,.xls,.xlsx" aria-label={t.donationForm.import} />
+              </label>
             </div>
             <div className="donation-import-steps">
               <div>
@@ -2110,7 +2122,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
                 <span>{t.donationForm.amount}</span>
                 <strong>{currency(donationTotal)}</strong>
               </div>
-              <div className="donor-total-summary">
+              <div className="donor-total-summary is-pending">
                 <span>{t.common.pending}</span>
                 <strong>{pendingDonations.length}</strong>
               </div>
