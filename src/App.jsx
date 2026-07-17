@@ -328,7 +328,10 @@ const copy = {
     settings: {
       title: "Organization settings",
       subtitle: "Update the charity profile fields used for receipts, replies, and deposit slips.",
-      profile: "Charity profile",
+      profile: "Organization profile",
+      currentPlan: "Current plan",
+      upgradePlan: "Upgrade plan",
+      planHelp: "Gold plan active with receipt batches, bank notifications, and priority support.",
       users: "Users",
       save: "Update profile",
       saved: "Organization profile updated.",
@@ -702,6 +705,9 @@ const copy = {
       title: "Paramètres de l'organisme",
       subtitle: "Mettez à jour les champs utilisés pour les reçus, les réponses et les dépôts.",
       profile: "Profil de l'organisme",
+      currentPlan: "Plan actuel",
+      upgradePlan: "Améliorer le plan",
+      planHelp: "Plan Gold actif avec lots de reçus, notifications bancaires et support prioritaire.",
       users: "Utilisateurs",
       save: "Mettre à jour le profil",
       saved: "Profil de l'organisme mis à jour.",
@@ -3370,9 +3376,10 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
   const organization = bootstrap?.organisme || {};
   const users = bootstrap?.users?.length ? bootstrap.users : [user].filter(Boolean);
   const [addPaymentOpen, setAddPaymentOpen] = useState(false);
+  const [activeDrawer, setActiveDrawer] = useState(null);
 
   return (
-    <section className="view-stack">
+    <section className="view-stack settings-page">
       <ViewHeader
         title={t.settings.title}
         subtitle={t.settings.subtitle}
@@ -3381,47 +3388,46 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
         icon={Settings}
       />
 
-      <div className="two-column form-layout">
         <Panel id="organization-profile" title={t.settings.profile} icon={Building2}>
-          <form className="form-grid" onSubmit={onSubmit} key={`${organization.organismeID}-${organization.organisme}-${organization.responsable_courriel}`}>
+          <form className="form-grid settings-profile-form" onSubmit={onSubmit} key={`${organization.organismeID}-${organization.organisme}-${organization.responsable_courriel}`}>
             <label>
-              Organization name
+              {t.settings.organizationName}
               <input name="organisme" required maxLength="150" defaultValue={organization.organisme || ""} />
             </label>
             <label>
-              Registration number
+              {t.settings.registrationNumber}
               <input name="enregistrement" required maxLength="30" defaultValue={organization.enregistrement || ""} />
             </label>
             <label>
-              Contact name
+              {t.settings.contactName}
               <input name="responsable" required maxLength="50" defaultValue={organization.responsable || ""} />
             </label>
             <label>
-              Contact email
+              {t.settings.contactEmail}
               <input name="responsable_courriel" required type="email" defaultValue={organization.responsable_courriel || ""} />
             </label>
             <label>
-              Reply email
+              {t.settings.replyEmail}
               <input name="reponse_courriel" type="email" defaultValue={organization.reponse_courriel || ""} />
             </label>
             <label>
-              Phone
+              {t.settings.phone}
               <input name="telephone" maxLength="30" defaultValue={organization.telephone || ""} />
             </label>
             <label className="full-field">
-              Address
+              {t.settings.address}
               <input name="adresse" maxLength="150" defaultValue={organization.adresse || ""} />
             </label>
             <label>
-              City
+              {t.settings.city}
               <input name="ville" required maxLength="50" defaultValue={organization.ville || ""} />
             </label>
             <label>
-              Postal code
+              {t.settings.postalCode}
               <input name="code_postal" maxLength="20" defaultValue={organization.code_postal || ""} />
             </label>
             <label>
-              Province
+              {t.settings.province}
               <select name="provinceID" defaultValue={organization.provinceID || 1}>
                 {bootstrap?.provinces?.map((province) => (
                   <option value={province.provinceID} key={province.provinceID}>
@@ -3431,24 +3437,24 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
               </select>
             </label>
             <label>
-              Currency
+              {t.settings.currency}
               <input name="devise" readOnly defaultValue={organization.devise || "CAD"} />
             </label>
             <label>
-              Transit
+              {t.settings.transit}
               <input name="transit" maxLength="20" defaultValue={organization.transit || ""} />
             </label>
             <label>
-              Folio
+              {t.settings.folio}
               <input name="folio" maxLength="30" defaultValue={organization.folio || ""} />
             </label>
             <label className="checkbox-label">
               <input name="membre" type="checkbox" defaultChecked={Boolean(organization.membre)} />
-              <span>Member</span>
+              <span>{t.common.member}</span>
             </label>
             <label className="checkbox-label">
               <input name="actif" type="checkbox" defaultChecked={organization.actif !== false} />
-              <span>Organization active</span>
+              <span>{t.settings.organizationActive}</span>
             </label>
             <button className="primary-button form-submit" type="submit">
               <Settings size={17} />
@@ -3500,9 +3506,7 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
             ])}
           />
         </Panel>
-      </div>
 
-      <div className="two-column form-layout">
         <Panel title={t.settings.paymentMethods} icon={CreditCard}>
           <p className="panel-copy">{t.settings.paymentSubtitle}</p>
           <div className="payment-tile-grid">
@@ -3547,13 +3551,45 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
           )}
         </Panel>
 
-        <Panel title={t.customization.title} icon={Palette}>
-          <p className="panel-copy">{t.customization.subtitle}</p>
-          <button className="primary-button" type="button" onClick={onCustomize}>
-            <Palette size={16} />
-            <span>{t.settings.customizationShortcut}</span>
-          </button>
-        </Panel>
+      <div className={`donor-edge-drawers settings-edge-drawers ${activeDrawer ? "has-open-drawer" : ""}`}>
+        <button className={`donor-edge-tab ${activeDrawer === "plan" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "plan" ? null : "plan")} aria-label={t.settings.currentPlan} title={t.settings.currentPlan} aria-expanded={activeDrawer === "plan"}>
+          <Sparkles size={18} />
+        </button>
+        <button className={`donor-edge-tab ${activeDrawer === "customization" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "customization" ? null : "customization")} aria-label={t.customization.title} title={t.customization.title} aria-expanded={activeDrawer === "customization"}>
+          <Palette size={18} />
+        </button>
+
+        {activeDrawer === "plan" && (
+          <aside className="donor-edge-panel app-edge-panel" id="settings-plan-drawer">
+            <EdgePanelHeader icon={Sparkles} title={t.settings.currentPlan} subtitle={t.settings.planHelp} onClose={() => setActiveDrawer(null)} t={t} />
+            <div className="settings-plan-card">
+              <span className="status-pill issued">Gold</span>
+              <strong>{t.subscription.plansList[1]?.price || "$59/mo"}</strong>
+              <p>{t.subscription.plansList[1]?.description}</p>
+              <ul>
+                {t.subscription.plansList[1]?.features.map((feature) => (
+                  <li key={feature}><CheckCircle2 size={15} /> {feature}</li>
+                ))}
+              </ul>
+              <button className="primary-button" type="button" onClick={() => setActiveDrawer(null)}>
+                <Sparkles size={16} />
+                <span>{t.settings.upgradePlan}</span>
+              </button>
+            </div>
+          </aside>
+        )}
+
+        {activeDrawer === "customization" && (
+          <aside className="donor-edge-panel app-edge-panel" id="settings-customization-drawer">
+            <EdgePanelHeader icon={Palette} title={t.customization.title} subtitle={t.customization.subtitle} onClose={() => setActiveDrawer(null)} t={t} />
+            <div className="settings-shortcut-panel">
+              <button className="primary-button" type="button" onClick={onCustomize}>
+                <Palette size={16} />
+                <span>{t.settings.customizationShortcut}</span>
+              </button>
+            </div>
+          </aside>
+        )}
       </div>
     </section>
   );

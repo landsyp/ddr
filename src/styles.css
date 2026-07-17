@@ -1575,6 +1575,98 @@ tr.donation-register-pending-row:hover td {
   border-bottom: 1px solid var(--line);
 }
 
+.settings-page {
+  position: relative;
+}
+
+.settings-page > .panel {
+  width: 100%;
+}
+
+.settings-profile-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.settings-profile-form label {
+  padding: 12px;
+  border: 1px solid rgba(217, 227, 225, 0.78);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(248, 251, 251, 0.96), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.settings-profile-form .checkbox-label {
+  display: flex;
+  min-height: 68px;
+  align-items: center;
+  text-transform: none;
+}
+
+.settings-profile-form .form-submit {
+  align-self: end;
+}
+
+.settings-page .payment-tile-grid {
+  grid-template-columns: 1fr;
+}
+
+.settings-page .payment-method-tile {
+  min-height: 0;
+}
+
+.settings-plan-card,
+.settings-shortcut-panel {
+  display: grid;
+  gap: 14px;
+  margin: 18px;
+}
+
+.settings-plan-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-tile);
+}
+
+.settings-plan-card > strong {
+  color: var(--brand-dark);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.settings-plan-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.settings-plan-card ul {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.settings-plan-card li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--ink);
+  font-weight: 750;
+}
+
+.settings-plan-card li svg {
+  color: var(--brand);
+}
+
 .panel-copy {
   margin: 0 0 16px;
   color: var(--muted);
@@ -2774,7 +2866,8 @@ tr.donation-register-pending-row:hover td {
   .report-grid,
   .subscription-plan-grid,
   .account-detail-grid,
-  .account-detail-grid.is-expanded {
+  .account-detail-grid.is-expanded,
+  .settings-profile-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2885,6 +2978,7 @@ tr.donation-register-pending-row:hover td {
   .account-detail-grid,
   .account-detail-grid.is-expanded,
   .form-grid,
+  .settings-profile-form,
   .action-grid {
     grid-template-columns: 1fr;
   }
