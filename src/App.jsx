@@ -348,6 +348,9 @@ const copy = {
       defaultMethod: "Default",
       expires: "Expires",
       addPayment: "Add payment method",
+      cardholder: "Cardholder",
+      cardNumber: "Card number",
+      expiryDate: "Expiry date",
       customizationShortcut: "Customize interface",
     },
     banking: {
@@ -705,6 +708,9 @@ const copy = {
       defaultMethod: "Par défaut",
       expires: "Expire",
       addPayment: "Ajouter une méthode de paiement",
+      cardholder: "Titulaire",
+      cardNumber: "Numéro de carte",
+      expiryDate: "Date d'expiration",
       customizationShortcut: "Personnaliser l'interface",
     },
     banking: {
@@ -2929,6 +2935,7 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
 function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit, onUserStatus }) {
   const organization = bootstrap?.organisme || {};
   const users = bootstrap?.users?.length ? bootstrap.users : [user].filter(Boolean);
+  const [addPaymentOpen, setAddPaymentOpen] = useState(false);
 
   return (
     <section className="view-stack">
@@ -3064,7 +3071,7 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
       <div className="two-column form-layout">
         <Panel title={t.settings.paymentMethods} icon={CreditCard}>
           <p className="panel-copy">{t.settings.paymentSubtitle}</p>
-          <div className="payment-method-list">
+          <div className="payment-tile-grid">
             <PaymentMethodCard
               brand="Visa"
               details="•••• 4242"
@@ -3078,11 +3085,32 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
               expiry="11/28"
               t={t}
             />
+            <button className="payment-method-tile add-payment-tile" type="button" onClick={() => setAddPaymentOpen((open) => !open)} aria-expanded={addPaymentOpen}>
+              <span><Plus size={28} /></span>
+              <strong>{t.settings.addPayment}</strong>
+              <small>{t.settings.paymentSubtitle}</small>
+            </button>
           </div>
-          <button className="secondary-button" type="button">
-            <Plus size={16} />
-            <span>{t.settings.addPayment}</span>
-          </button>
+          {addPaymentOpen && (
+            <form className="form-grid payment-link-form">
+              <label>
+                {t.settings.cardholder}
+                <input name="cardholder" placeholder="Grace Community Church" />
+              </label>
+              <label>
+                {t.settings.cardNumber}
+                <input name="cardNumber" placeholder="•••• •••• •••• 4242" />
+              </label>
+              <label>
+                {t.settings.expiryDate}
+                <input name="expiryDate" placeholder="04/29" />
+              </label>
+              <button className="primary-button form-submit" type="button" onClick={() => setAddPaymentOpen(false)}>
+                <CreditCard size={17} />
+                <span>{t.settings.addPayment}</span>
+              </button>
+            </form>
+          )}
         </Panel>
 
         <Panel title={t.customization.title} icon={Palette}>
@@ -3099,19 +3127,35 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
 
 function PaymentMethodCard({ brand, details, expiry, isDefault = false, t }) {
   return (
-    <article className="payment-method-card">
-      <div className="payment-card-mark">
-        <CreditCard size={18} />
+    <article className="payment-method-tile">
+      <div className="linked-bank-topline">
+        <div className="payment-card-mark">
+          <CreditCard size={20} />
+        </div>
+        {isDefault && <span className="status-pill issued"><CheckCircle2 size={14} /> {t.settings.defaultMethod}</span>}
       </div>
       <div>
-        <strong>{brand}</strong>
-        <span>{details}</span>
+        <span>{t.settings.paymentMethods}</span>
+        <h2>{brand}</h2>
+        <p>{details}</p>
       </div>
-      <small>{t.settings.expires} {expiry}</small>
-      {isDefault && <span className="status-pill issued">{t.settings.defaultMethod}</span>}
-      <button className="icon-button table-icon" type="button" aria-label={t.common.manage}>
-        <Pencil size={15} />
-      </button>
+      <dl className="banking-detail-list">
+        <div>
+          <dt>{t.settings.expires}</dt>
+          <dd>{expiry}</dd>
+        </div>
+        <div>
+          <dt>{t.common.status}</dt>
+          <dd>{isDefault ? t.settings.defaultMethod : t.common.active}</dd>
+        </div>
+      </dl>
+      <div className="banking-scope-box payment-scope-box">
+        <strong>{t.common.manage}</strong>
+        <p>{brand} {details}</p>
+        <button className="icon-button table-icon" type="button" aria-label={t.common.manage}>
+          <Pencil size={15} />
+        </button>
+      </div>
     </article>
   );
 }

@@ -660,6 +660,7 @@ button {
 .pricing-card,
 .subscription-plan,
 .payment-method-card,
+.payment-method-tile,
 .banking-connection,
 .linked-bank-tile,
 .incoming-donation,
@@ -673,6 +674,7 @@ button {
 .pricing-card:hover,
 .subscription-plan:hover,
 .payment-method-card:hover,
+.payment-method-tile:hover,
 .banking-connection:hover,
 .linked-bank-tile:hover,
 .incoming-donation:hover,
@@ -1352,6 +1354,7 @@ td {
 
 .plan-note-list,
 .payment-method-list,
+.payment-tile-grid,
 .banking-card-list,
 .incoming-donation-list,
 .palette-list {
@@ -1463,6 +1466,12 @@ td {
   gap: 16px;
 }
 
+.payment-tile-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
 .linked-bank-tile {
   display: grid;
   gap: 16px;
@@ -1474,6 +1483,79 @@ td {
   color: var(--ink);
   text-align: left;
   box-shadow: var(--shadow-tile);
+}
+
+.payment-method-tile {
+  display: grid;
+  gap: 16px;
+  min-height: 300px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  text-align: left;
+  box-shadow: var(--shadow-tile);
+}
+
+.payment-method-tile h2 {
+  margin: 6px 0 4px;
+  font-size: 1.35rem;
+}
+
+.payment-method-tile span,
+.payment-method-tile p,
+.payment-method-tile dd {
+  color: var(--muted);
+}
+
+.payment-method-tile p,
+.payment-method-tile dl,
+.payment-method-tile dd {
+  margin: 0;
+}
+
+.payment-scope-box {
+  position: relative;
+  padding-right: 58px;
+}
+
+.payment-scope-box .icon-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.add-payment-tile {
+  place-items: center;
+  align-content: center;
+  border-style: dashed;
+  background:
+    linear-gradient(135deg, rgba(233, 241, 251, 0.82), rgba(255, 255, 255, 0.96)),
+    #ffffff;
+  cursor: pointer;
+  text-align: center;
+}
+
+.add-payment-tile > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.add-payment-tile strong {
+  font-size: 1.1rem;
+}
+
+.payment-link-form {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
 }
 
 .linked-bank-topline {
@@ -2170,6 +2252,7 @@ td {
   .pending-donations-band,
   .banking-subtle-layout,
   .categorize-donation-form,
+  .payment-tile-grid,
   .banking-tile-grid {
     grid-template-columns: 1fr;
   }
