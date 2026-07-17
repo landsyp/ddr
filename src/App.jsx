@@ -84,6 +84,9 @@ const copy = {
       openMenu: "Open menu",
       closeMenu: "Close menu",
       notifications: "Notifications",
+      allNotifications: "All notifications",
+      noNotifications: "No notifications right now",
+      openNotification: "Open notification",
       openSettings: "Open organization settings",
       support: "Support",
       settings: "Settings",
@@ -197,6 +200,10 @@ const copy = {
       current: "Current palette",
       custom: "Custom palette",
       customDescription: "Create your own palette with brand, accent, and highlight colors.",
+      customName: "Palette name",
+      saveCustom: "Save palette",
+      savedPalettes: "Saved palettes",
+      savedSuccess: "Palette saved.",
       brandColor: "Brand",
       accentColor: "Accent",
       highlightColor: "Highlight",
@@ -414,6 +421,9 @@ const copy = {
       openMenu: "Ouvrir le menu",
       closeMenu: "Fermer le menu",
       notifications: "Notifications",
+      allNotifications: "Toutes les notifications",
+      noNotifications: "Aucune notification pour le moment",
+      openNotification: "Ouvrir la notification",
       openSettings: "Ouvrir les paramètres de l'organisme",
       support: "Support",
       settings: "Paramètres",
@@ -527,6 +537,10 @@ const copy = {
       current: "Palette actuelle",
       custom: "Palette personnalisée",
       customDescription: "Créez votre propre palette avec une couleur de marque, d'accent et de mise en valeur.",
+      customName: "Nom de la palette",
+      saveCustom: "Enregistrer la palette",
+      savedPalettes: "Palettes enregistrées",
+      savedSuccess: "Palette enregistrée.",
       brandColor: "Marque",
       accentColor: "Accent",
       highlightColor: "Mise en valeur",
@@ -795,7 +809,15 @@ function App() {
   const [member, setMember] = useState(false);
   const [subscriptionAnswer, setSubscriptionAnswer] = useState("");
   const [palette, setPalette] = useState("Evergreen");
+  const [savedPalettes, setSavedPalettes] = useState([]);
   const t = copy[language];
+  const notifications = incomingDonationQueue.map((donation) => ({
+    id: donation.id,
+    title: currency(donation.amount),
+    meta: `${donation.source} - ${donation.date}`,
+    body: donation.note,
+    target: "donations",
+  }));
 
   async function loadWorkspace(search = query) {
     setLoading(true);
@@ -1186,6 +1208,23 @@ function App() {
     setQuickActionsOpen(false);
   }
 
+  function handleNotificationSelect(notification) {
+    openView(notification.target);
+  }
+
+  function handleSavePalette(customPalette) {
+    setSavedPalettes((currentPalettes) => {
+      const paletteId = customPalette.id || `custom-${Date.now()}`;
+      const nextPalette = { ...customPalette, id: paletteId };
+      return [
+        nextPalette,
+        ...currentPalettes.filter((item) => item.id !== paletteId && item.name !== customPalette.name),
+      ];
+    });
+    setPalette(customPalette.id || customPalette.name);
+    showNotice(t.customization.savedSuccess);
+  }
+
   const activeOrg = bootstrap?.organisme;
   const displayUser = currentUser || bootstrap?.user;
 
@@ -1259,7 +1298,8 @@ function App() {
           language={language}
           onLanguageChange={setLanguage}
           onMenuClick={() => setMobileOpen(true)}
-          onNotifications={() => showNotice(t.banking.pendingNotification.replace("{count}", incomingDonationQueue.length))}
+          notifications={notifications}
+          onNotificationSelect={handleNotificationSelect}
           onProfileClick={() => openView("settings")}
           pendingDonationCount={incomingDonationQueue.length}
           onSearch={handleSearch}
@@ -1358,6 +1398,8 @@ function App() {
         {!loading && activeView === "customization" && (
           <CustomizationView
             palette={palette}
+            savedPalettes={savedPalettes}
+            onSavePalette={handleSavePalette}
             setPalette={setPalette}
             t={t}
           />
@@ -1512,7 +1554,14 @@ function LoginScreen({ error, language, onForgotPassword, onLanguageChange, onLo
   );
 }
 
-function Topbar({ language, onLanguageChange, onMenuClick, onNotifications, onProfileClick, onSearch, pendingDonationCount = 0, query, t, user }) {
+function Topbar({ language, notifications = [], onLanguageChange, onMenuClick, onNotificationSelect, onProfileClick, onSearch, pendingDonationCount = 0, query, t, user }) {
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  function selectNotification(notification) {
+    onNotificationSelect(notification);
+    setNotificationsOpen(false);
+  }
+
   return (
     <header className="topbar">
       <button className="icon-button menu-button" type="button" onClick={onMenuClick} aria-label={t.common.openMenu}>
@@ -1528,10 +1577,43 @@ function Topbar({ language, onLanguageChange, onMenuClick, onNotifications, onPr
         <button className="language-toggle" type="button" onClick={() => onLanguageChange(language === "en" ? "fr" : "en")}>
           {language === "en" ? "FR" : "EN"}
         </button>
-        <button className="icon-button notification-button" type="button" aria-label={t.banking.pendingNotification.replace("{count}", pendingDonationCount)} onClick={onNotifications}>
-          <Bell size={18} />
-          {pendingDonationCount > 0 && <span>{pendingDonationCount}</span>}
-        </button>
+        <div className="notification-menu">
+          <button
+            className="icon-button notification-button"
+            type="button"
+            aria-expanded={notificationsOpen}
+            aria-label={t.banking.pendingNotification.replace("{count}", pendingDonationCount)}
+            onClick={() => setNotificationsOpen((open) => !open)}
+          >
+            <Bell size={18} />
+            {pendingDonationCount > 0 && <span>{pendingDonationCount}</span>}
+          </button>
+          {notificationsOpen && (
+            <div className="notification-dropdown">
+              <div className="notification-dropdown-header">
+                <strong>{t.common.allNotifications}</strong>
+                <small>{t.banking.pendingNotification.replace("{count}", pendingDonationCount)}</small>
+              </div>
+              <div className="notification-list">
+                {notifications.length ? notifications.map((notification) => (
+                  <button
+                    className="notification-item"
+                    type="button"
+                    key={notification.id}
+                    onClick={() => selectNotification(notification)}
+                  >
+                    <span className="status-pill pending">{t.common.pending}</span>
+                    <strong>{notification.title}</strong>
+                    <small>{notification.meta}</small>
+                    <p>{notification.body}</p>
+                  </button>
+                )) : (
+                  <div className="notification-empty">{t.common.noNotifications}</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
         <button className="profile-chip" type="button" onClick={onProfileClick} aria-label={t.common.openSettings}>
           <span>{initials(user)}</span>
           <div>
@@ -2746,22 +2828,34 @@ function PaymentMethodCard({ brand, details, expiry, isDefault = false, t }) {
   );
 }
 
-function CustomizationView({ palette, setPalette, t }) {
+function CustomizationView({ onSavePalette, palette, savedPalettes, setPalette, t }) {
+  const [customName, setCustomName] = useState(t.customization.custom);
   const [customColors, setCustomColors] = useState(["#1d6f5f", "#2f6fbb", "#b7791f"]);
   const palettes = [
     { name: "Evergreen", colors: ["#1d6f5f", "#2f6fbb", "#b7791f"] },
     { name: "Harbor", colors: ["#2563eb", "#0f766e", "#64748b"] },
     { name: "Plum", colors: ["#7c3aed", "#db2777", "#334155"] },
   ];
+  const customDraft = { id: "Custom", name: customName || t.customization.custom, colors: customColors };
   const activePalette = palette === "Custom"
-    ? { name: t.customization.custom, colors: customColors }
-    : palettes.find((item) => item.name === palette) || palettes[0];
+    ? customDraft
+    : savedPalettes.find((item) => item.id === palette) || palettes.find((item) => item.name === palette) || palettes[0];
 
   function updateCustomColor(index, color) {
     setCustomColors((currentColors) => currentColors.map((currentColor, colorIndex) => (
       colorIndex === index ? color : currentColor
     )));
     setPalette("Custom");
+  }
+
+  function saveCustomPalette(event) {
+    event.preventDefault();
+    const name = customName.trim() || t.customization.custom;
+    onSavePalette({
+      id: `custom-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
+      name,
+      colors: customColors,
+    });
   }
 
   return (
@@ -2802,7 +2896,40 @@ function CustomizationView({ palette, setPalette, t }) {
             </button>
           </div>
 
-          <div className="custom-palette-builder">
+          {savedPalettes.length > 0 && (
+            <div className="saved-palette-section">
+              <h3>{t.customization.savedPalettes}</h3>
+              <div className="palette-list saved">
+                {savedPalettes.map((option) => (
+                  <button
+                    className={palette === option.id ? "palette-option is-selected" : "palette-option"}
+                    key={option.id}
+                    type="button"
+                    onClick={() => setPalette(option.id)}
+                  >
+                    <span className="palette-swatches">
+                      {option.colors.map((color) => <i key={color} style={{ background: color }} />)}
+                    </span>
+                    <strong>{option.name}</strong>
+                    <small>{t.customization.custom}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <form className="custom-palette-builder" onSubmit={saveCustomPalette}>
+            <label className="custom-palette-name">
+              <span>{t.customization.customName}</span>
+              <input
+                type="text"
+                value={customName}
+                onChange={(event) => {
+                  setCustomName(event.target.value);
+                  setPalette("Custom");
+                }}
+              />
+            </label>
             {[
               t.customization.brandColor,
               t.customization.accentColor,
@@ -2818,7 +2945,11 @@ function CustomizationView({ palette, setPalette, t }) {
                 <strong>{customColors[index].toUpperCase()}</strong>
               </label>
             ))}
-          </div>
+            <button className="secondary-button" type="submit">
+              <Check size={16} />
+              <span>{t.customization.saveCustom}</span>
+            </button>
+          </form>
         </Panel>
 
         <Panel title={t.customization.preview} icon={Sparkles}>
