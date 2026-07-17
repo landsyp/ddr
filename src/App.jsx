@@ -50,6 +50,7 @@ const copy = {
       accounts: "Accounts",
       receipts: "Receipts",
       reports: "Reports",
+      banking: "Banking",
       subscription: "Subscription",
       customization: "Customization",
     },
@@ -352,9 +353,22 @@ const copy = {
     banking: {
       title: "Banking connections",
       subtitle: "Connect bank or PayPal accounts so new donations can appear automatically for review.",
+      pageSubtitle: "Manage connected bank accounts and decide which SaaS accounts each connection can feed into.",
       bankAccount: "Bank account",
       paypal: "PayPal account",
       linked: "Linked",
+      linkedAccounts: "Linked accounts",
+      allAccounts: "All SaaS accounts",
+      accountScope: "Associated SaaS accounts",
+      addBank: "Link another bank account",
+      addBankHelp: "Connect a new bank source for incoming donations.",
+      institution: "Institution",
+      accountNumber: "Account number",
+      transitNumber: "Transit",
+      ibanNumber: "IBAN / routing",
+      scopeAll: "Use all accounts",
+      scopeSelected: "Select accounts",
+      connectBank: "Connect bank account",
       newDonations: "New donations",
       pendingNotification: "{count} pending new donations",
       newDonationHelp: "Incoming transactions are tagged as pending until you assign a donor and account.",
@@ -393,6 +407,7 @@ const copy = {
       accounts: "Comptes",
       receipts: "Reçus",
       reports: "Rapports",
+      banking: "Banque",
       subscription: "Abonnement",
       customization: "Personnalisation",
     },
@@ -695,9 +710,22 @@ const copy = {
     banking: {
       title: "Connexions bancaires",
       subtitle: "Connectez un compte bancaire ou PayPal pour faire apparaître automatiquement les nouveaux dons à réviser.",
+      pageSubtitle: "Gérez les comptes bancaires connectés et choisissez les comptes du SaaS admissibles pour chaque connexion.",
       bankAccount: "Compte bancaire",
       paypal: "Compte PayPal",
       linked: "Connecté",
+      linkedAccounts: "Comptes liés",
+      allAccounts: "Tous les comptes SaaS",
+      accountScope: "Comptes SaaS associés",
+      addBank: "Lier un autre compte bancaire",
+      addBankHelp: "Connectez une nouvelle source bancaire pour les dons entrants.",
+      institution: "Institution",
+      accountNumber: "Numéro de compte",
+      transitNumber: "Transit",
+      ibanNumber: "IBAN / routage",
+      scopeAll: "Utiliser tous les comptes",
+      scopeSelected: "Sélectionner des comptes",
+      connectBank: "Connecter le compte bancaire",
       newDonations: "Nouveaux dons",
       pendingNotification: "{count} nouveaux dons en attente",
       newDonationHelp: "Les transactions entrantes restent en attente jusqu'à l'attribution d'un donateur et d'un compte.",
@@ -735,6 +763,7 @@ const navItems = [
   { id: "accounts", icon: ClipboardList },
   { id: "receipts", icon: ReceiptText },
   { id: "reports", icon: BarChart3 },
+  { id: "banking", icon: Landmark },
   { id: "subscription", icon: Building2 },
   { id: "customization", icon: Palette },
 ];
@@ -1422,6 +1451,12 @@ function App() {
             onRunReport={handleRunReport}
           />
         )}
+        {!loading && activeView === "banking" && (
+          <BankingView
+            accounts={accounts}
+            t={t}
+          />
+        )}
         {!loading && activeView === "subscription" && (
           <Subscription
             member={member}
@@ -2021,6 +2056,160 @@ function BankingConnection({ icon: Icon, label, meta, t }) {
       <small>{meta}</small>
       <strong><CheckCircle2 size={15} /> {t.banking.linked}</strong>
     </article>
+  );
+}
+
+function BankingView({ accounts, t }) {
+  const defaultLinkedAccounts = [
+    {
+      id: "national-bank",
+      institution: "Banque Nationale",
+      accountNumber: "**** 4921",
+      transit: "006",
+      iban: "CA-006-4921",
+      scope: "all",
+      accountIds: [],
+    },
+    {
+      id: "paypal-giving",
+      institution: "PayPal Giving",
+      accountNumber: "finance@weserve.local",
+      transit: "PayPal",
+      iban: "PP-1842",
+      scope: "selected",
+      accountIds: accounts.slice(0, 2).map((account) => account.compteID),
+    },
+  ];
+  const [linkedAccounts, setLinkedAccounts] = useState(defaultLinkedAccounts);
+  const [addBankOpen, setAddBankOpen] = useState(false);
+  const [scopeMode, setScopeMode] = useState("all");
+
+  function accountNames(bankAccount) {
+    if (bankAccount.scope === "all") {
+      return t.banking.allAccounts;
+    }
+
+    const selectedAccounts = accounts.filter((account) => bankAccount.accountIds.includes(account.compteID));
+    return selectedAccounts.length
+      ? selectedAccounts.map((account) => `${account.noCompte} - ${account.nom}`).join(", ")
+      : t.common.unspecified;
+  }
+
+  function addLinkedBankAccount(event) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+    const selectedAccountIds = formData.getAll("accountIds").map(Number);
+
+    setLinkedAccounts((currentAccounts) => [
+      ...currentAccounts,
+      {
+        id: `bank-${Date.now()}`,
+        institution: data.institution,
+        accountNumber: data.accountNumber,
+        transit: data.transit,
+        iban: data.iban,
+        scope: data.scope,
+        accountIds: data.scope === "all" ? [] : selectedAccountIds,
+      },
+    ]);
+    event.currentTarget.reset();
+    setScopeMode("all");
+    setAddBankOpen(false);
+  }
+
+  return (
+    <section className="view-stack">
+      <ViewHeader
+        title={t.banking.title}
+        subtitle={t.banking.pageSubtitle}
+        icon={Landmark}
+      />
+
+      <div className="banking-tile-grid">
+        {linkedAccounts.map((bankAccount) => (
+          <article className="linked-bank-tile" key={bankAccount.id}>
+            <div className="linked-bank-topline">
+              <div className="payment-card-mark">
+                <Landmark size={20} />
+              </div>
+              <span className="status-pill issued"><CheckCircle2 size={14} /> {t.banking.linked}</span>
+            </div>
+            <div>
+              <span>{t.banking.bankAccount}</span>
+              <h2>{bankAccount.institution}</h2>
+              <p>{bankAccount.accountNumber}</p>
+            </div>
+            <dl className="banking-detail-list">
+              <div>
+                <dt>{t.banking.transitNumber}</dt>
+                <dd>{bankAccount.transit}</dd>
+              </div>
+              <div>
+                <dt>{t.banking.ibanNumber}</dt>
+                <dd>{bankAccount.iban}</dd>
+              </div>
+            </dl>
+            <div className="banking-scope-box">
+              <strong>{t.banking.accountScope}</strong>
+              <p>{accountNames(bankAccount)}</p>
+            </div>
+          </article>
+        ))}
+
+        <button className="linked-bank-tile add-bank-tile" type="button" onClick={() => setAddBankOpen((open) => !open)} aria-expanded={addBankOpen}>
+          <span><Plus size={28} /></span>
+          <strong>{t.banking.addBank}</strong>
+          <small>{t.banking.addBankHelp}</small>
+        </button>
+      </div>
+
+      {addBankOpen && (
+        <Panel title={t.banking.addBank} icon={Plus}>
+          <form className="form-grid banking-link-form" onSubmit={addLinkedBankAccount}>
+            <label>
+              {t.banking.institution}
+              <input name="institution" placeholder="Banque Nationale" required />
+            </label>
+            <label>
+              {t.banking.accountNumber}
+              <input name="accountNumber" placeholder="**** 1842" required />
+            </label>
+            <label>
+              {t.banking.transitNumber}
+              <input name="transit" placeholder="006" required />
+            </label>
+            <label>
+              {t.banking.ibanNumber}
+              <input name="iban" placeholder="CA-006-1842" required />
+            </label>
+            <label>
+              {t.banking.accountScope}
+              <select name="scope" value={scopeMode} onChange={(event) => setScopeMode(event.target.value)}>
+                <option value="all">{t.banking.scopeAll}</option>
+                <option value="selected">{t.banking.scopeSelected}</option>
+              </select>
+            </label>
+            {scopeMode === "selected" && (
+              <label className="full-field">
+                {t.banking.linkedAccounts}
+                <select name="accountIds" multiple required>
+                  {accounts.map((account) => (
+                    <option value={account.compteID} key={account.compteID}>
+                      {account.noCompte} - {account.nom}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <button className="primary-button form-submit" type="submit">
+              <Link2 size={17} />
+              <span>{t.banking.connectBank}</span>
+            </button>
+          </form>
+        </Panel>
+      )}
+    </section>
   );
 }
 
