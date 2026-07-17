@@ -1039,6 +1039,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const [activeTour, setActiveTour] = useState(null);
+  const [tourHintActive, setTourHintActive] = useState(false);
   const [authToken, setAuthToken] = useState(() => localStorage.getItem("ddr-token") || "");
   const [currentUser, setCurrentUser] = useState(() => {
     if (!localStorage.getItem("ddr-token")) {
@@ -1073,13 +1074,16 @@ function App() {
 
   useEffect(() => {
     if (!currentUser || loading || !pageTour) {
+      setTourHintActive(false);
       return;
     }
 
     const tourKey = `weserve-tour-${activeView}`;
     if (!localStorage.getItem(tourKey)) {
-      setActiveTour(pageTour);
+      setTourHintActive(true);
       localStorage.setItem(tourKey, "seen");
+    } else {
+      setTourHintActive(false);
     }
   }, [activeView, currentUser, loading, pageTour]);
 
@@ -1509,6 +1513,7 @@ function App() {
     setActiveView(view);
     setMobileOpen(false);
     setQuickActionsOpen(false);
+    setTourHintActive(false);
   }
 
   function handleNotificationSelect(notification) {
@@ -1517,10 +1522,16 @@ function App() {
 
   function launchPageTour() {
     setQuickActionsOpen(false);
+    setTourHintActive(false);
     if (pageTour) {
       setActiveTour(pageTour);
       localStorage.setItem(`weserve-tour-${activeView}`, "seen");
     }
+  }
+
+  function dismissTourHint() {
+    setTourHintActive(false);
+    localStorage.setItem(`weserve-tour-${activeView}`, "seen");
   }
 
   function handleSavePalette(customPalette) {
@@ -1743,6 +1754,7 @@ function App() {
       {!loading && (
         <QuickActionLauncher
           hasPageTour={Boolean(pageTour)}
+          isHintActive={tourHintActive}
           isOpen={quickActionsOpen}
           onHelp={launchPageTour}
           onToggle={() => setQuickActionsOpen((open) => !open)}
@@ -1750,6 +1762,7 @@ function App() {
           t={t}
         />
       )}
+      {tourHintActive && <button className="tour-hint-scrim" type="button" aria-label={t.common.cancel} onClick={dismissTourHint} />}
       {activeTour && (
         <PageTourOverlay
           steps={activeTour.steps}
@@ -2085,7 +2098,7 @@ function Overview({ accounts, dashboard, donations, t, onViewChange }) {
   );
 }
 
-function QuickActionLauncher({ hasPageTour, isOpen, onHelp, onToggle, onViewChange, t }) {
+function QuickActionLauncher({ hasPageTour, isHintActive, isOpen, onHelp, onToggle, onViewChange, t }) {
   const quickActions = [
     [Plus, t.actions[0], "donations"],
     [Users, t.actions[1], "donors"],
@@ -2110,7 +2123,7 @@ function QuickActionLauncher({ hasPageTour, isOpen, onHelp, onToggle, onViewChan
       <div className="quick-launcher-buttons">
         {hasPageTour && (
           <button
-            className="quick-launcher-help"
+            className={`quick-launcher-help ${isHintActive ? "is-hinting" : ""}`}
             type="button"
             aria-label={t.donorForm.tourReplay}
             title={t.donorForm.tourReplay}

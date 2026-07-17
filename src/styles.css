@@ -3162,7 +3162,7 @@ tr.donation-register-pending-row:hover td {
 .page-tour-overlay {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: 110;
   display: grid;
   place-items: center;
   padding: 20px;
@@ -3263,7 +3263,7 @@ tr.donation-register-pending-row:hover td {
   position: fixed;
   right: clamp(18px, 3vw, 34px);
   bottom: clamp(18px, 3vw, 34px);
-  z-index: 60;
+  z-index: 95;
   display: grid;
   justify-items: end;
   gap: 12px;
@@ -3367,6 +3367,47 @@ tr.donation-register-pending-row:hover td {
   box-shadow: 0 16px 34px rgba(22, 79, 72, 0.18);
 }
 
+.quick-launcher-help.is-hinting {
+  animation: tour-help-pulse 1.35s ease-in-out infinite;
+  box-shadow:
+    0 20px 44px rgba(29, 111, 95, 0.38),
+    0 0 0 10px rgba(29, 111, 95, 0.14),
+    0 0 0 18px rgba(29, 111, 95, 0.08);
+}
+
+.quick-launcher-help.is-hinting::before {
+  position: absolute;
+  top: -42px;
+  left: 50%;
+  width: 2px;
+  height: 30px;
+  background: #ffffff;
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.84);
+  content: "";
+  transform: translateX(-50%);
+}
+
+.quick-launcher-help.is-hinting::after {
+  position: absolute;
+  top: -19px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  content: "";
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.tour-hint-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 88;
+  border: 0;
+  background: rgba(15, 23, 24, 0.42);
+  cursor: default;
+}
+
 .quick-launcher-toggle:hover,
 .quick-launcher-toggle:focus-visible,
 .quick-launcher-help:hover,
@@ -3380,6 +3421,17 @@ tr.donation-register-pending-row:hover td {
 
 .quick-launcher.is-open .quick-launcher-toggle {
   transform: rotate(90deg);
+}
+
+@keyframes tour-help-pulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-3px) scale(1.04);
+  }
 }
 
 @keyframes quick-menu-in {
