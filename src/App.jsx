@@ -3026,6 +3026,7 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, on
         <ConfirmDialog
           body={t.donorForm.deactivateBody.replace("{name}", donorPendingDeactivate.fullName)}
           confirmLabel={t.common.deactivate}
+          icon={PauseCircle}
           onCancel={() => setDonorPendingDeactivate(null)}
           onConfirm={async () => {
             await onArchive(donorPendingDeactivate, false);
@@ -3374,12 +3375,12 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
   );
 }
 
-function ConfirmDialog({ body, confirmLabel, isDanger = false, onCancel, onConfirm, t, title }) {
+function ConfirmDialog({ body, confirmLabel, icon: Icon = Trash2, isDanger = false, onCancel, onConfirm, t, title }) {
   return (
     <div className="modal-backdrop" role="presentation" onClick={onCancel}>
       <section className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" onClick={(event) => event.stopPropagation()}>
-        <div className="confirm-dialog-icon">
-          <Trash2 size={20} />
+        <div className={`confirm-dialog-icon ${isDanger ? "is-danger" : ""}`}>
+          <Icon size={20} />
         </div>
         <div>
           <h2 id="confirm-dialog-title">{title}</h2>

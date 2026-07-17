@@ -3150,6 +3150,11 @@ tr.donation-register-pending-row:hover td {
   width: 42px;
   height: 42px;
   border-radius: 8px;
+  background: var(--green-soft);
+  color: var(--brand);
+}
+
+.confirm-dialog-icon.is-danger {
   background: var(--red-soft);
   color: var(--red);
 }
