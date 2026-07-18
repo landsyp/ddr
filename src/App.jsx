@@ -193,6 +193,7 @@ const copy = {
       descriptionPlaceholder: "Offering, campaign, batch note",
       add: "Add donation",
       success: "Donation added to the register.",
+      updated: "Donation updated.",
       accountMix: "Account mix",
       import: "Import donations",
       chooseFile: "Choose file",
@@ -210,6 +211,8 @@ const copy = {
       averageGift: "Average gift",
       deleted: "Donation deleted.",
       confirmDelete: "Delete donation {id} from {name}?",
+      deleteTitle: "Delete this donation?",
+      deleteBody: "Are you sure you want to delete donation {id} from {name}? This action cannot be undone.",
       detectedDonor: "Detected donor",
       donorNumber: "Donor number",
       chooseAccount: "Choose account",
@@ -615,6 +618,7 @@ const copy = {
       descriptionPlaceholder: "Offrande, campagne, note de lot",
       add: "Ajouter le don",
       success: "Le don a été ajouté au registre.",
+      updated: "Don modifié.",
       accountMix: "Répartition par compte",
       import: "Importer des dons",
       chooseFile: "Choisir un fichier",
@@ -632,6 +636,8 @@ const copy = {
       averageGift: "Don moyen",
       deleted: "Don supprimé.",
       confirmDelete: "Supprimer le don {id} de {name}?",
+      deleteTitle: "Supprimer ce don?",
+      deleteBody: "Voulez-vous vraiment supprimer le don {id} de {name}? Cette action ne peut pas être annulée.",
       detectedDonor: "Donateur détecté",
       donorNumber: "Numéro de donateur",
       chooseAccount: "Choisir le compte",
@@ -1390,6 +1396,20 @@ function App() {
     }
   }
 
+  async function handleUpdateDonation(donation, data) {
+    try {
+      await api(`/api/donations/${donation.donID}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+      await refresh(t.donationForm.updated);
+      return true;
+    } catch (saveError) {
+      showError(saveError.message);
+      return false;
+    }
+  }
+
   async function handleCategorizePendingDonation(pendingDonation, data) {
     try {
       await api("/api/donations", {
@@ -1413,15 +1433,13 @@ function App() {
   }
 
   async function deleteDonation(donation) {
-    if (!window.confirm(t.donationForm.confirmDelete.replace("{id}", donation.donID).replace("{name}", donation.donorName))) {
-      return;
-    }
-
     try {
       await api(`/api/donations/${donation.donID}`, { method: "DELETE" });
       await refresh(t.donationForm.deleted);
+      return true;
     } catch (saveError) {
       showError(saveError.message);
+      return false;
     }
   }
 
@@ -1725,6 +1743,7 @@ function App() {
             onCategorizePending={handleCategorizePendingDonation}
             onDelete={deleteDonation}
             onSubmit={handleAddDonation}
+            onUpdate={handleUpdateDonation}
           />
         )}
         {!loading && activeView === "donors" && (
@@ -2209,10 +2228,12 @@ function QuickActionLauncher({ hasPageTour, isHintActive, isOpen, onHelp, onTogg
   );
 }
 
-function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t, onCategorizePending, onDelete, onSubmit }) {
+function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t, onCategorizePending, onDelete, onSubmit, onUpdate }) {
   const [categorizingDonationId, setCategorizingDonationId] = useState(null);
   const [registerCategorizingDonationId, setRegisterCategorizingDonationId] = useState(null);
   const [activeDrawer, setActiveDrawer] = useState(null);
+  const [editingDonation, setEditingDonation] = useState(null);
+  const [donationPendingDelete, setDonationPendingDelete] = useState(null);
   const [showAllPending, setShowAllPending] = useState(false);
   const [donationSearch, setDonationSearch] = useState("");
   const linkedBankAccounts = savedBankingConnections(accounts);
@@ -2369,9 +2390,29 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
                 <span>{t.banking.categorize}</span>
               </button>
             ) : (
-              <button className="icon-button table-icon" type="button" onClick={() => onDelete(row.raw)} aria-label={t.common.delete} key={`delete-${row.id}`}>
-                <Trash2 size={15} />
-              </button>
+              <div className="account-actions" key={`actions-${row.id}`}>
+                <button
+                  className="icon-button table-icon"
+                  type="button"
+                  onClick={() => {
+                    setEditingDonation(row.raw);
+                    setActiveDrawer("edit");
+                  }}
+                  aria-label={`${t.common.edit} ${row.donor}`}
+                  title={t.common.edit}
+                >
+                  <Pencil size={15} />
+                </button>
+                <button
+                  className="icon-button table-icon danger"
+                  type="button"
+                  onClick={() => setDonationPendingDelete(row.raw)}
+                  aria-label={t.common.delete}
+                  title={t.common.delete}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
             ),
           ])}
           rowClassName={(row) => String(row[6]?.props?.className || "").includes("donation-pending") ? "donation-register-pending-row" : ""}
@@ -2402,7 +2443,10 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
       </Panel>
 
       <div className={`donor-edge-drawers donation-edge-drawers ${activeDrawer ? "has-open-drawer" : ""}`}>
-        <button className={`donor-edge-tab ${activeDrawer === "add" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "add" ? null : "add")} aria-label={t.donationForm.add} title={t.donationForm.add} aria-expanded={activeDrawer === "add"}>
+        <button className={`donor-edge-tab ${activeDrawer === "add" ? "active" : ""}`} type="button" onClick={() => {
+          setEditingDonation(null);
+          setActiveDrawer((drawer) => drawer === "add" ? null : "add");
+        }} aria-label={t.donationForm.add} title={t.donationForm.add} aria-expanded={activeDrawer === "add"}>
           <Plus size={18} />
         </button>
         <button className={`donor-edge-tab ${activeDrawer === "import" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "import" ? null : "import")} aria-label={t.donationForm.import} title={t.donationForm.import} aria-expanded={activeDrawer === "import"}>
@@ -2426,6 +2470,31 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
                 await onSubmit(event);
                 setActiveDrawer(null);
               }}
+              t={t}
+            />
+          </aside>
+        )}
+
+        {activeDrawer === "edit" && editingDonation && (
+          <aside className="donor-edge-panel app-edge-panel" id="donation-edit-drawer">
+            <EdgePanelHeader icon={Pencil} title={t.common.edit} subtitle={t.donationForm.register} onClose={() => {
+              setActiveDrawer(null);
+              setEditingDonation(null);
+            }} t={t} />
+            <DonationForm
+              accounts={accounts}
+              bootstrap={bootstrap}
+              donation={editingDonation}
+              donors={donors}
+              onSubmit={async (event) => {
+                event.preventDefault();
+                const saved = await onUpdate(editingDonation, formObject(event.currentTarget));
+                if (saved) {
+                  setActiveDrawer(null);
+                  setEditingDonation(null);
+                }
+              }}
+              submitLabel={t.common.save}
               t={t}
             />
           </aside>
@@ -2505,16 +2574,34 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
           </aside>
         )}
       </div>
+
+      {donationPendingDelete && (
+        <ConfirmDialog
+          body={t.donationForm.deleteBody.replace("{id}", donationPendingDelete.donID).replace("{name}", donationPendingDelete.donorName)}
+          confirmLabel={t.common.delete}
+          icon={Trash2}
+          isDanger
+          onCancel={() => setDonationPendingDelete(null)}
+          onConfirm={async () => {
+            const deleted = await onDelete(donationPendingDelete);
+            if (deleted) {
+              setDonationPendingDelete(null);
+            }
+          }}
+          t={t}
+          title={t.donationForm.deleteTitle}
+        />
+      )}
     </section>
   );
 }
 
-function DonationForm({ accounts, bootstrap, donors, onSubmit, t }) {
+function DonationForm({ accounts, bootstrap, donation, donors, onSubmit, submitLabel, t }) {
   return (
     <form className="form-grid donation-manual-form" onSubmit={onSubmit}>
       <label>
         {t.donationForm.donor}
-        <select name="donateurID" required>
+        <select name="donateurID" required defaultValue={donation?.donateurID || donors[0]?.donateurID || ""}>
           {donors.map((donor) => (
             <option value={donor.donateurID} key={donor.donateurID}>
               {donor.numero} - {donor.fullName}
@@ -2524,7 +2611,7 @@ function DonationForm({ accounts, bootstrap, donors, onSubmit, t }) {
       </label>
       <label>
         {t.donationForm.account}
-        <select name="compteID" required>
+        <select name="compteID" required defaultValue={donation?.compteID || accounts[0]?.compteID || ""}>
           {accounts.map((account) => (
             <option value={account.compteID} key={account.compteID}>
               {account.noCompte} - {account.nom}
@@ -2534,15 +2621,15 @@ function DonationForm({ accounts, bootstrap, donors, onSubmit, t }) {
       </label>
       <label>
         {t.donationForm.amount}
-        <input name="montant" required min="1" step="0.01" type="number" placeholder="125.00" />
+        <input name="montant" required min="1" step="0.01" type="number" placeholder="125.00" defaultValue={donation?.montant || ""} />
       </label>
       <label>
         {t.donationForm.date}
-        <input name="dateDon" required type="date" defaultValue="2026-07-06" />
+        <input name="dateDon" required type="date" defaultValue={donation?.dateDon || "2026-07-06"} />
       </label>
       <label>
         {t.donationForm.method}
-        <select name="methodeDonID" defaultValue={bootstrap?.methods?.[0]?.methodeDonID || ""}>
+        <select name="methodeDonID" defaultValue={donation?.methodeDonID || bootstrap?.methods?.[0]?.methodeDonID || ""}>
           {bootstrap?.methods?.map((method) => (
             <option value={method.methodeDonID} key={method.methodeDonID}>
               {method.methode_en}
@@ -2552,11 +2639,11 @@ function DonationForm({ accounts, bootstrap, donors, onSubmit, t }) {
       </label>
       <label>
         {t.donationForm.description}
-        <input name="description" placeholder={t.donationForm.descriptionPlaceholder} />
+        <input name="description" placeholder={t.donationForm.descriptionPlaceholder} defaultValue={donation?.description || ""} />
       </label>
       <button className="primary-button form-submit" type="submit">
-        <Plus size={17} />
-        <span>{t.donationForm.add}</span>
+        {donation ? <Check size={17} /> : <Plus size={17} />}
+        <span>{submitLabel || t.donationForm.add}</span>
       </button>
     </form>
   );
