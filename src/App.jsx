@@ -8,6 +8,8 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CircleDollarSign,
   ClipboardList,
   CreditCard,
@@ -130,6 +132,11 @@ const copy = {
       print: "Print",
       invalidEmail: "Invalid email",
       to: "to",
+      previous: "Previous",
+      next: "Next",
+      page: "Page",
+      showing: "Showing",
+      of: "of",
     },
     actions: ["Add donation", "Add donor", "Generate receipts", "Generate report"],
     metrics: ["Year-to-date donations", "Receipts", "Active donors", "Pending receipts"],
@@ -547,6 +554,11 @@ const copy = {
       print: "Imprimer",
       invalidEmail: "Courriel non valide",
       to: "au",
+      previous: "Précédent",
+      next: "Suivant",
+      page: "Page",
+      showing: "Affichage",
+      of: "sur",
     },
     actions: ["Ajouter un don", "Ajouter un donateur", "Générer les reçus", "Générer un rapport"],
     metrics: ["Dons depuis le début de l'année", "Reçus", "Donateurs actifs", "Reçus en attente"],
@@ -2337,6 +2349,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
         </div>
         <DataTable
           t={t}
+          paginate
           columns={["ID", t.donationForm.donor, t.donationForm.date, t.donationForm.account, t.donationForm.method, t.donationForm.amount, t.common.status, ""]}
           rows={filteredDonationRows.map((row) => [
             row.id,
@@ -2943,6 +2956,7 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, on
         </div>
         <DataTable
           t={t}
+          paginate
           columns={[t.common.status, "No.", t.donationForm.donor, t.common.email, t.donorForm.city, t.common.member, t.nav.receipts, t.donorForm.lifetime, t.donorForm.lastGift, ""]}
           rows={donors.map((donor) => [
             <span className={`status-pill donor-status-pill ${donor.actif ? "is-active" : "is-inactive"}`} key={`status-${donor.donateurID}`}>
@@ -4579,41 +4593,78 @@ function SettingsAccordionSection({ id, title, icon: Icon, isOpen, onToggle, chi
   );
 }
 
-function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowContent }) {
-  return (
-    <div className="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            {columns.map((column) => <th key={column}>{column}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <tr>
-              <td colSpan={columns.length}>{emptyMessage || t?.common?.noRecords || "No records found"}</td>
-            </tr>
-          ) : (
-            rows.map((row, rowIndex) => {
-              const expandedContent = expandedRowContent?.(row, rowIndex);
+function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowContent, paginate = false, pageSize = 10 }) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const shouldPaginate = paginate && rows.length > pageSize;
+  const totalPages = shouldPaginate ? Math.ceil(rows.length / pageSize) : 1;
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStart = shouldPaginate ? (safeCurrentPage - 1) * pageSize : 0;
+  const pageEnd = shouldPaginate ? Math.min(pageStart + pageSize, rows.length) : rows.length;
+  const visibleRows = shouldPaginate ? rows.slice(pageStart, pageEnd) : rows;
 
-              return (
-                <Fragment key={`${rowIndex}-${row[0]}-group`}>
-                  <tr className={rowClassName?.(row, rowIndex) || ""} key={`${rowIndex}-${row[0]}`}>
-                    {row.map((cell, cellIndex) => <td key={`${rowIndex}-${cellIndex}`}>{cell}</td>)}
-                  </tr>
-                  {expandedContent && (
-                    <tr className="table-expanded-row" key={`${rowIndex}-${row[0]}-expanded`}>
-                      <td colSpan={columns.length}>{expandedContent}</td>
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [rows.length, pageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  return (
+    <>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              {columns.map((column) => <th key={column}>{column}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length}>{emptyMessage || t?.common?.noRecords || "No records found"}</td>
+              </tr>
+            ) : (
+              visibleRows.map((row, rowIndex) => {
+                const absoluteRowIndex = pageStart + rowIndex;
+                const expandedContent = expandedRowContent?.(row, absoluteRowIndex);
+
+                return (
+                  <Fragment key={`${absoluteRowIndex}-${row[0]}-group`}>
+                    <tr className={rowClassName?.(row, absoluteRowIndex) || ""} key={`${absoluteRowIndex}-${row[0]}`}>
+                      {row.map((cell, cellIndex) => <td key={`${absoluteRowIndex}-${cellIndex}`}>{cell}</td>)}
                     </tr>
-                  )}
-                </Fragment>
-              );
-            })
-          )}
-        </tbody>
-      </table>
-    </div>
+                    {expandedContent && (
+                      <tr className="table-expanded-row" key={`${absoluteRowIndex}-${row[0]}-expanded`}>
+                        <td colSpan={columns.length}>{expandedContent}</td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+      {shouldPaginate && (
+        <div className="table-pagination">
+          <span>{t?.common?.showing || "Showing"} {pageStart + 1}-{pageEnd} {t?.common?.of || "of"} {rows.length}</span>
+          <div className="pagination-actions">
+            <button className="secondary-button compact" type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage === 1}>
+              <ChevronLeft size={15} />
+              <span>{t?.common?.previous || "Previous"}</span>
+            </button>
+            <span className="pagination-page">{t?.common?.page || "Page"} {safeCurrentPage} / {totalPages}</span>
+            <button className="secondary-button compact" type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage === totalPages}>
+              <span>{t?.common?.next || "Next"}</span>
+              <ChevronRight size={15} />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

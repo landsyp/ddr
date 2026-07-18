@@ -1181,6 +1181,43 @@ tr.donation-register-pending-row:hover td {
   color: var(--brand);
 }
 
+.table-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.pagination-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.pagination-page {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.table-pagination .secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .donor-status-pill.is-active {
   background: var(--green-soft);
   color: var(--brand);
@@ -3748,12 +3785,14 @@ tr.donation-register-pending-row:hover td {
   }
 
   .table-toolbar,
+  .table-pagination,
   .receipt-copy {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .export-actions {
+  .export-actions,
+  .pagination-actions {
     justify-content: flex-start;
   }
 
