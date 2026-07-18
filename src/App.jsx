@@ -2371,13 +2371,14 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
         <DataTable
           t={t}
           paginate
-          columns={["ID", t.donationForm.donor, t.donationForm.date, t.donationForm.account, t.donationForm.method, t.donationForm.amount, t.common.status, ""]}
+          columns={["ID", t.donationForm.donor, t.donationForm.date, t.donationForm.account, t.donationForm.method, t.donationForm.description, t.donationForm.amount, t.common.status, ""]}
           rows={filteredDonationRows.map((row) => [
             row.id,
             row.donor,
             row.date,
             row.account,
             row.method,
+            row.source || "-",
             currency(row.amount),
             row.status === "pending"
               ? <span className="status-pill pending donation-pending" key={`pending-${row.id}`}>{t.common.pending}</span>
@@ -2415,7 +2416,7 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
               </div>
             ),
           ])}
-          rowClassName={(row) => String(row[6]?.props?.className || "").includes("donation-pending") ? "donation-register-pending-row" : ""}
+          rowClassName={(row) => String(row[7]?.props?.className || "").includes("donation-pending") ? "donation-register-pending-row" : ""}
           expandedRowContent={(row) => {
             const pendingDonation = pendingDonations.find((donation) => donation.id === row[0]);
             if (!pendingDonation || registerCategorizingDonationId !== pendingDonation.id) {
