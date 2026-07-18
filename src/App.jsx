@@ -191,6 +191,9 @@ const copy = {
       importHelp: "Upload CSV, Excel, PayPal, or bank export files before categorizing them.",
       register: "Donation register",
       registered: "Registered",
+      summary: "Donation totals",
+      totalDonations: "Total donations",
+      totalAmount: "Total amount",
       searchRegister: "Search donations",
       showAllPending: "Show all pending",
       collapsePending: "Collapse pending",
@@ -603,6 +606,9 @@ const copy = {
       importHelp: "Téléversez des fichiers CSV, Excel, PayPal ou bancaires avant de les catégoriser.",
       register: "Registre des dons",
       registered: "Enregistrés",
+      summary: "Totaux des dons",
+      totalDonations: "Dons au total",
+      totalAmount: "Montant total",
       searchRegister: "Rechercher dans les dons",
       showAllPending: "Afficher tous les dons en attente",
       collapsePending: "Réduire les dons en attente",
@@ -2241,6 +2247,17 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
         secondaryIcon={Download}
         stacked
       />
+
+      <section className="donation-summary-strip" aria-label={t.donationForm.summary}>
+        <article className="donation-summary-card">
+          <span><FileText size={16} /> {t.donationForm.totalDonations}</span>
+          <strong>{donations.length}</strong>
+        </article>
+        <article className="donation-summary-card">
+          <span><CircleDollarSign size={16} /> {t.donationForm.totalAmount}</span>
+          <strong>{currency(donationTotal)}</strong>
+        </article>
+      </section>
 
       <section className={`pending-donations-band ${categorizingDonationId ? "has-categorizing" : ""}`}>
         <div>
