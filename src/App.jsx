@@ -4,6 +4,7 @@ import {
   Bell,
   BookOpenCheck,
   Building2,
+  CalendarDays,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -194,6 +195,8 @@ const copy = {
       summary: "Donation totals",
       totalDonations: "Total donations",
       totalAmount: "Total amount",
+      ytdAmount: "YTD amount",
+      ytdDonations: "YTD donations",
       searchRegister: "Search donations",
       showAllPending: "Show all pending",
       collapsePending: "Collapse pending",
@@ -609,6 +612,8 @@ const copy = {
       summary: "Totaux des dons",
       totalDonations: "Dons au total",
       totalAmount: "Montant total",
+      ytdAmount: "Montant YTD",
+      ytdDonations: "Dons YTD",
       searchRegister: "Rechercher dans les dons",
       showAllPending: "Afficher tous les dons en attente",
       collapsePending: "Réduire les dons en attente",
@@ -2232,6 +2237,9 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
   const filteredPendingCount = filteredDonationRows.filter((row) => row.status === "pending").length;
   const filteredRegisteredCount = filteredDonationRows.length - filteredPendingCount;
   const donationTotal = donations.reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
+  const currentYear = String(new Date().getFullYear());
+  const ytdDonations = donations.filter((donation) => String(donation.dateDon || "").startsWith(currentYear));
+  const ytdTotal = ytdDonations.reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
   const averageGift = donations.length ? donationTotal / donations.length : 0;
 
   return (
@@ -2256,6 +2264,11 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
         <article className="donation-summary-card">
           <span><CircleDollarSign size={16} /> {t.donationForm.totalAmount}</span>
           <strong>{currency(donationTotal)}</strong>
+        </article>
+        <article className="donation-summary-card">
+          <span><CalendarDays size={16} /> {t.donationForm.ytdAmount}</span>
+          <strong>{currency(ytdTotal)}</strong>
+          <small>{ytdDonations.length} {t.donationForm.ytdDonations}</small>
         </article>
       </section>
 
