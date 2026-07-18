@@ -2402,6 +2402,13 @@ tr.donation-register-pending-row:hover td {
   align-items: start;
 }
 
+.pending-donations-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+
 .donation-summary-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2925,6 +2932,10 @@ tr.donation-register-pending-row:hover td {
 
 .pending-toggle svg {
   transition: transform 160ms ease;
+}
+
+.pending-donations-band.is-open .pending-toggle svg {
+  transform: rotate(180deg);
 }
 
 .pending-toggle:hover {
@@ -3637,6 +3648,7 @@ tr.donation-register-pending-row:hover td {
   .view-header,
   .receipt-band,
   .donation-summary-strip,
+  .pending-donations-header,
   .pending-donations-band,
   .banking-subtle-layout,
   .categorize-donation-form,

@@ -2239,8 +2239,6 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
   const [showAllPending, setShowAllPending] = useState(false);
   const [donationSearch, setDonationSearch] = useState("");
   const linkedBankAccounts = savedBankingConnections(accounts);
-  const visiblePendingDonations = showAllPending ? pendingDonations : pendingDonations.slice(0, 2);
-  const hiddenPendingCount = Math.max(0, pendingDonations.length - visiblePendingDonations.length);
   const allDonationRows = [
     ...pendingDonations.map((donation) => ({
       id: donation.id,
@@ -2307,57 +2305,59 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
         </article>
       </section>
 
-      <section className={`pending-donations-band ${categorizingDonationId ? "has-categorizing" : ""}`}>
-        <div>
-          <span className="eyebrow"><Bell size={15} /> {t.common.pending}</span>
-          <h2>{t.banking.newDonations}</h2>
-          <p className="panel-copy">{t.banking.newDonationHelp}</p>
-        </div>
-        <div className="incoming-donation-list">
-          {pendingDonations.length ? visiblePendingDonations.map((donation) => {
-            const detectedDonor = donors.find((donor) => donor.numero === donation.donorNumber);
-            const isCategorizing = categorizingDonationId === donation.id;
-
-            return (
-            <article className={`incoming-donation ${isCategorizing ? "is-categorizing" : ""}`} key={donation.id}>
-              <div className="incoming-donation-summary">
-                <div>
-                  <span className="status-pill pending">{t.common.pending}</span>
-                  <strong>{currency(donation.amount)}</strong>
-                  <small>{donation.source} • {donation.date} • {donation.methodLabel}</small>
-                  <p>{donation.note}</p>
-                  <p className="detected-donor">
-                    {t.donationForm.detectedDonor}: {detectedDonor?.fullName || donation.donorNumber}
-                  </p>
-                </div>
-                <button className="categorize-chip-button" type="button" onClick={() => setCategorizingDonationId(isCategorizing ? null : donation.id)} aria-label={t.banking.categorize} title={t.banking.categorize}>
-                  <Link2 size={14} />
-                  <span>{t.banking.categorize}</span>
-                </button>
-              </div>
-              {isCategorizing && (
-                <CategorizeDonationForm
-                  accounts={accounts}
-                  detectedDonor={detectedDonor}
-                  donation={donation}
-                  donors={donors}
-                  onSubmit={(data) => onCategorizePending(donation, data)}
-                  t={t}
-                />
-              )}
-            </article>
-            );
-          }) : (
-            <div className="incoming-empty-state">{t.donationForm.noPendingDonations}</div>
-          )}
-          {pendingDonations.length > 2 && (
-            <button className="secondary-button compact pending-toggle" type="button" onClick={() => setShowAllPending((isOpen) => !isOpen)}>
+      {pendingDonations.length > 0 && (
+        <section className={`pending-donations-band ${showAllPending ? "is-open" : ""} ${categorizingDonationId ? "has-categorizing" : ""}`}>
+          <div className="pending-donations-header">
+            <div>
+              <span className="eyebrow"><Bell size={15} /> {t.common.pending}</span>
+              <h2>{t.banking.newDonations}</h2>
+              <p className="panel-copy">{t.banking.newDonationHelp}</p>
+            </div>
+            <button className="secondary-button compact pending-toggle" type="button" onClick={() => setShowAllPending((isOpen) => !isOpen)} aria-expanded={showAllPending}>
               <ChevronDown size={15} />
-              <span>{showAllPending ? t.donationForm.collapsePending : `${t.donationForm.showAllPending} (${hiddenPendingCount})`}</span>
+              <span>{showAllPending ? t.donationForm.collapsePending : `${t.donationForm.showAllPending} (${pendingDonations.length})`}</span>
             </button>
+          </div>
+          {showAllPending && (
+            <div className="incoming-donation-list">
+              {pendingDonations.map((donation) => {
+                const detectedDonor = donors.find((donor) => donor.numero === donation.donorNumber);
+                const isCategorizing = categorizingDonationId === donation.id;
+
+                return (
+                  <article className={`incoming-donation ${isCategorizing ? "is-categorizing" : ""}`} key={donation.id}>
+                    <div className="incoming-donation-summary">
+                      <div>
+                        <span className="status-pill pending">{t.common.pending}</span>
+                        <strong>{currency(donation.amount)}</strong>
+                        <small>{donation.source} • {donation.date} • {donation.methodLabel}</small>
+                        <p>{donation.note}</p>
+                        <p className="detected-donor">
+                          {t.donationForm.detectedDonor}: {detectedDonor?.fullName || donation.donorNumber}
+                        </p>
+                      </div>
+                      <button className="categorize-chip-button" type="button" onClick={() => setCategorizingDonationId(isCategorizing ? null : donation.id)} aria-label={t.banking.categorize} title={t.banking.categorize}>
+                        <Link2 size={14} />
+                        <span>{t.banking.categorize}</span>
+                      </button>
+                    </div>
+                    {isCategorizing && (
+                      <CategorizeDonationForm
+                        accounts={accounts}
+                        detectedDonor={detectedDonor}
+                        donation={donation}
+                        donors={donors}
+                        onSubmit={(data) => onCategorizePending(donation, data)}
+                        t={t}
+                      />
+                    )}
+                  </article>
+                );
+              })}
+            </div>
           )}
-        </div>
-      </section>
+        </section>
+      )}
 
       <Panel title={t.donationForm.register} icon={FileText}>
         <div className="table-toolbar">
