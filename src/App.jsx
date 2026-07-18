@@ -137,6 +137,7 @@ const copy = {
       page: "Page",
       showing: "Showing",
       of: "of",
+      perPage: "Entries per page",
     },
     actions: ["Add donation", "Add donor", "Generate receipts", "Generate report"],
     metrics: ["Year-to-date donations", "Receipts", "Active donors", "Pending receipts"],
@@ -562,6 +563,7 @@ const copy = {
       page: "Page",
       showing: "Affichage",
       of: "sur",
+      perPage: "Entrées par page",
     },
     actions: ["Ajouter un don", "Ajouter un donateur", "Générer les reçus", "Générer un rapport"],
     metrics: ["Dons depuis le début de l'année", "Reçus", "Donateurs actifs", "Reçus en attente"],
@@ -4683,16 +4685,19 @@ function SettingsAccordionSection({ id, title, icon: Icon, isOpen, onToggle, chi
 
 function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowContent, paginate = false, pageSize = 10 }) {
   const [currentPage, setCurrentPage] = useState(1);
-  const shouldPaginate = paginate && rows.length > pageSize;
-  const totalPages = shouldPaginate ? Math.ceil(rows.length / pageSize) : 1;
+  const [selectedPageSize, setSelectedPageSize] = useState(pageSize);
+  const paginationSizes = [10, 50, 100, 500];
+  const showPaginationControls = paginate && rows.length > paginationSizes[0];
+  const shouldPaginate = paginate && rows.length > selectedPageSize;
+  const totalPages = shouldPaginate ? Math.ceil(rows.length / selectedPageSize) : 1;
   const safeCurrentPage = Math.min(currentPage, totalPages);
-  const pageStart = shouldPaginate ? (safeCurrentPage - 1) * pageSize : 0;
-  const pageEnd = shouldPaginate ? Math.min(pageStart + pageSize, rows.length) : rows.length;
-  const visibleRows = shouldPaginate ? rows.slice(pageStart, pageEnd) : rows;
+  const pageStart = showPaginationControls ? (safeCurrentPage - 1) * selectedPageSize : 0;
+  const pageEnd = showPaginationControls ? Math.min(pageStart + selectedPageSize, rows.length) : rows.length;
+  const visibleRows = showPaginationControls ? rows.slice(pageStart, pageEnd) : rows;
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [rows.length, pageSize]);
+  }, [rows.length, selectedPageSize]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -4700,8 +4705,32 @@ function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowCo
     }
   }, [currentPage, totalPages]);
 
+  const paginationControls = showPaginationControls ? (
+    <div className="table-pagination">
+      <span>{t?.common?.showing || "Showing"} {pageStart + 1}-{pageEnd} {t?.common?.of || "of"} {rows.length}</span>
+      <div className="pagination-actions">
+        <label className="pagination-size">
+          <span>{t?.common?.perPage || "Entries per page"}</span>
+          <select value={selectedPageSize} onChange={(event) => setSelectedPageSize(Number(event.target.value))}>
+            {paginationSizes.map((size) => <option value={size} key={size}>{size}</option>)}
+          </select>
+        </label>
+        <button className="secondary-button compact" type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage === 1}>
+          <ChevronLeft size={15} />
+          <span>{t?.common?.previous || "Previous"}</span>
+        </button>
+        <span className="pagination-page">{t?.common?.page || "Page"} {safeCurrentPage} / {totalPages}</span>
+        <button className="secondary-button compact" type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage === totalPages}>
+          <span>{t?.common?.next || "Next"}</span>
+          <ChevronRight size={15} />
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <>
+      {paginationControls}
       <div className="table-wrap">
         <table>
           <thead>
@@ -4736,22 +4765,7 @@ function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowCo
           </tbody>
         </table>
       </div>
-      {shouldPaginate && (
-        <div className="table-pagination">
-          <span>{t?.common?.showing || "Showing"} {pageStart + 1}-{pageEnd} {t?.common?.of || "of"} {rows.length}</span>
-          <div className="pagination-actions">
-            <button className="secondary-button compact" type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage === 1}>
-              <ChevronLeft size={15} />
-              <span>{t?.common?.previous || "Previous"}</span>
-            </button>
-            <span className="pagination-page">{t?.common?.page || "Page"} {safeCurrentPage} / {totalPages}</span>
-            <button className="secondary-button compact" type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage === totalPages}>
-              <span>{t?.common?.next || "Next"}</span>
-              <ChevronRight size={15} />
-            </button>
-          </div>
-        </div>
-      )}
+      {paginationControls}
     </>
   );
 }

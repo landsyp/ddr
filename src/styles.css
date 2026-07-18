@@ -1201,6 +1201,27 @@ tr.donation-register-pending-row:hover td {
   justify-content: flex-end;
 }
 
+.pagination-size {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 34px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.pagination-size select {
+  min-width: 82px;
+  height: 34px;
+  padding: 0 34px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background-color: #ffffff;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+}
+
 .pagination-page {
   display: inline-flex;
   align-items: center;
