@@ -884,10 +884,30 @@ tr.is-clickable {
   cursor: pointer;
 }
 
+tr.donor-directory-row td {
+  position: relative;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
 tr.is-clickable:hover td,
 tr.is-clickable:focus-visible td,
 tr.donor-directory-row.is-open td {
-  background: color-mix(in srgb, var(--brand-soft) 54%, #ffffff 46%);
+  border-color: color-mix(in srgb, var(--brand) 16%, var(--line));
+  background: color-mix(in srgb, var(--brand-soft) 68%, #ffffff 32%);
+  box-shadow: 0 10px 22px rgba(25, 46, 49, 0.055);
+}
+
+tr.donor-directory-row.is-clickable:hover td:first-child::before,
+tr.donor-directory-row.is-clickable:focus-visible td:first-child::before,
+tr.donor-directory-row.is-open td:first-child::before {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
+  background: var(--brand);
+  content: "";
 }
 
 tr.is-clickable:focus-visible {
