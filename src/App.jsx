@@ -181,6 +181,10 @@ const copy = {
       deleteBody: "Are you sure you want to delete {name}? Donors with existing donations should be set inactive instead.",
       deactivateTitle: "Make this donor inactive?",
       deactivateBody: "Are you sure you want to make {name} inactive? They will remain in the directory with an inactive status.",
+      donationHistory: "Donation history",
+      donorProfile: "Donor profile",
+      noDonations: "No donations recorded for this donor yet.",
+      expandProfile: "Expand donor profile",
     },
     donationForm: {
       title: "Record a donation",
@@ -607,6 +611,10 @@ const copy = {
       deleteBody: "Voulez-vous vraiment supprimer {name}? Les donateurs avec des dons existants devraient plutôt être désactivés.",
       deactivateTitle: "Rendre ce donateur inactif?",
       deactivateBody: "Voulez-vous vraiment rendre {name} inactif? Il restera dans le répertoire avec le statut inactif.",
+      donationHistory: "Historique des dons",
+      donorProfile: "Profil du donateur",
+      noDonations: "Aucun don enregistré pour ce donateur.",
+      expandProfile: "Agrandir le profil du donateur",
     },
     donationForm: {
       title: "Enregistrer un don",
@@ -1751,6 +1759,7 @@ function App() {
         {!loading && activeView === "donors" && (
           <Donors
             bootstrap={bootstrap}
+            donations={donations}
             donors={donors}
             query={query}
             setQuery={setQuery}
@@ -2997,11 +3006,15 @@ function BankingView({ accounts, t }) {
   );
 }
 
-function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, onSearch, onSubmit, onUpdate }) {
+function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, onDelete, onSearch, onSubmit, onUpdate }) {
   const [activeDrawer, setActiveDrawer] = useState(null);
   const [editingDonor, setEditingDonor] = useState(null);
+  const [selectedDonorId, setSelectedDonorId] = useState(null);
+  const [expandedDonorId, setExpandedDonorId] = useState(null);
   const [donorPendingDeactivate, setDonorPendingDeactivate] = useState(null);
   const [donorPendingDelete, setDonorPendingDelete] = useState(null);
+  const selectedDonor = donors.find((donor) => donor.donateurID === selectedDonorId);
+  const expandedDonor = donors.find((donor) => donor.donateurID === expandedDonorId);
   const donorExportRows = donors.map((donor) => ({
     Number: donor.numero,
     Donor: donor.fullName,
@@ -3012,6 +3025,20 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, on
     Lifetime: donor.totalDonations || 0,
     LastGift: donor.lastGift || "",
   }));
+
+  useEffect(() => {
+    if (selectedDonorId && !donors.some((donor) => donor.donateurID === selectedDonorId)) {
+      setSelectedDonorId(null);
+    }
+
+    if (expandedDonorId && !donors.some((donor) => donor.donateurID === expandedDonorId)) {
+      setExpandedDonorId(null);
+    }
+  }, [donors, selectedDonorId, expandedDonorId]);
+
+  function donorDonations(donor) {
+    return donations.filter((donation) => donation.donateurID === donor.donateurID);
+  }
 
   return (
     <section className="view-stack donor-page">
@@ -3027,6 +3054,22 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, on
         stacked
       />
 
+      {expandedDonor ? (
+        <Panel title={`${expandedDonor.numero} - ${expandedDonor.fullName}`} icon={Maximize2}>
+          <div className="expanded-account-toolbar">
+            <button className="icon-button" type="button" onClick={() => setExpandedDonorId(null)} aria-label={t.common.cancel}>
+              <Minimize2 size={18} />
+            </button>
+          </div>
+          <DonorDetail
+            donor={expandedDonor}
+            donations={donorDonations(expandedDonor)}
+            isExpanded
+            onExpand={() => setExpandedDonorId(expandedDonor.donateurID)}
+            t={t}
+          />
+        </Panel>
+      ) : (
       <Panel title={t.donorForm.directory} icon={Search}>
         <div className="table-toolbar">
           <div className="search-box inline">
@@ -3047,6 +3090,12 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, on
         <DataTable
           t={t}
           paginate
+          onRowClick={(row) => {
+            const donor = donors.find((item) => item.numero === row[1]);
+            if (donor) {
+              setSelectedDonorId(selectedDonor?.donateurID === donor.donateurID ? null : donor.donateurID);
+            }
+          }}
           columns={[t.common.status, "No.", t.donationForm.donor, t.common.email, t.donorForm.city, t.common.member, t.nav.receipts, t.donorForm.lifetime, t.donorForm.lastGift, ""]}
           rows={donors.map((donor) => [
             <span className={`status-pill donor-status-pill ${donor.actif ? "is-active" : "is-inactive"}`} key={`status-${donor.donateurID}`}>
@@ -3060,7 +3109,7 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, on
             <BooleanIcon key={`receipt-${donor.donateurID}`} value={donor.recu} trueLabel={t.common.yes} falseLabel={t.common.no} />,
             currency(donor.totalDonations || 0),
             donor.lastGift || "-",
-            <div className="account-actions" key={`actions-${donor.donateurID}`}>
+            <div className="account-actions" key={`actions-${donor.donateurID}`} onClick={(event) => event.stopPropagation()}>
               <button
                 className="icon-button table-icon"
                 type="button"
@@ -3072,6 +3121,15 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, on
                 title={t.common.edit}
               >
                 <Pencil size={16} />
+              </button>
+              <button
+                className="icon-button table-icon"
+                type="button"
+                onClick={() => setExpandedDonorId(donor.donateurID)}
+                aria-label={`${t.donorForm.expandProfile} ${donor.fullName}`}
+                title={t.common.view}
+              >
+                <Maximize2 size={16} />
               </button>
               <button
                 className={`icon-button table-icon ${donor.actif ? "" : "success"}`}
@@ -3100,8 +3158,30 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, on
               </button>
             </div>,
           ])}
+          rowClassName={(row) => {
+            const donor = donors.find((item) => item.numero === row[1]);
+            return donor?.donateurID === selectedDonorId ? "donor-directory-row is-open" : "donor-directory-row";
+          }}
+          expandedRowContent={(row) => {
+            const donor = donors.find((item) => item.numero === row[1]);
+            if (!donor || donor.donateurID !== selectedDonorId) {
+              return null;
+            }
+
+            return (
+              <div className="donor-directory-accordion">
+                <DonorDetail
+                  donor={donor}
+                  donations={donorDonations(donor)}
+                  onExpand={() => setExpandedDonorId(donor.donateurID)}
+                  t={t}
+                />
+              </div>
+            );
+          }}
         />
       </Panel>
+      )}
 
       <div className={`donor-edge-drawers ${activeDrawer ? "has-open-drawer" : ""}`}>
         <button
@@ -3204,6 +3284,60 @@ function Donors({ bootstrap, donors, query, setQuery, t, onArchive, onDelete, on
       )}
 
     </section>
+  );
+}
+
+function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
+  const total = donations.reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
+  const visibleDonations = isExpanded ? donations : donations.slice(0, 5);
+
+  return (
+    <div className={`donor-detail ${isExpanded ? "is-expanded" : ""}`}>
+      <div className={`account-detail-grid donor-detail-grid ${isExpanded ? "is-expanded" : ""}`}>
+        <div>
+          <span>{t.common.email}</span>
+          <strong>{donor.courriel || "-"}</strong>
+        </div>
+        <div>
+          <span>{t.donorForm.city}</span>
+          <strong>{donor.ville || "-"}</strong>
+        </div>
+        <div>
+          <span>{t.common.member}</span>
+          <strong>{donor.membre ? t.common.yes : t.common.no}</strong>
+        </div>
+        <div>
+          <span>{t.nav.receipts}</span>
+          <strong>{donor.recu ? t.common.yes : t.common.no}</strong>
+        </div>
+        <div>
+          <span>{t.donorForm.lifetime}</span>
+          <strong>{currency(total)}</strong>
+        </div>
+      </div>
+
+      <div className="panel-subheader">
+        <h3>{t.donorForm.donationHistory}</h3>
+        {!isExpanded && (
+          <button className="icon-button table-icon" type="button" onClick={onExpand} aria-label={t.donorForm.expandProfile} title={t.common.view}>
+            <Maximize2 size={15} />
+          </button>
+        )}
+      </div>
+      <DataTable
+        t={t}
+        paginate={isExpanded}
+        columns={[t.donationForm.date, t.donationForm.account, t.donationForm.description, t.donationForm.amount, t.common.status]}
+        emptyMessage={t.donorForm.noDonations}
+        rows={visibleDonations.map((donation) => [
+          donation.dateDon,
+          `${donation.noCompte} - ${donation.libelleCompte}`,
+          donation.description || "-",
+          currency(donation.montant),
+          <StatusPill key={`donor-donation-status-${donation.donID}`} t={t} value={donation.receiptStatus} />,
+        ])}
+      />
+    </div>
   );
 }
 
@@ -4683,7 +4817,7 @@ function SettingsAccordionSection({ id, title, icon: Icon, isOpen, onToggle, chi
   );
 }
 
-function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowContent, paginate = false, pageSize = 10 }) {
+function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowContent, onRowClick, paginate = false, pageSize = 10 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPageSize, setSelectedPageSize] = useState(pageSize);
   const paginationSizes = [10, 50, 100, 500];
@@ -4750,7 +4884,18 @@ function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowCo
 
                 return (
                   <Fragment key={`${absoluteRowIndex}-${row[0]}-group`}>
-                    <tr className={rowClassName?.(row, absoluteRowIndex) || ""} key={`${absoluteRowIndex}-${row[0]}`}>
+                    <tr
+                      className={`${rowClassName?.(row, absoluteRowIndex) || ""} ${onRowClick ? "is-clickable" : ""}`.trim()}
+                      key={`${absoluteRowIndex}-${row[0]}`}
+                      onClick={onRowClick ? () => onRowClick(row, absoluteRowIndex) : undefined}
+                      onKeyDown={onRowClick ? (event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onRowClick(row, absoluteRowIndex);
+                        }
+                      } : undefined}
+                      tabIndex={onRowClick ? 0 : undefined}
+                    >
                       {row.map((cell, cellIndex) => <td key={`${absoluteRowIndex}-${cellIndex}`}>{cell}</td>)}
                     </tr>
                     {expandedContent && (

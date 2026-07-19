@@ -880,6 +880,21 @@ tr.donation-register-pending-row:hover td {
   background: rgba(255, 244, 221, 0.62);
 }
 
+tr.is-clickable {
+  cursor: pointer;
+}
+
+tr.is-clickable:hover td,
+tr.is-clickable:focus-visible td,
+tr.donor-directory-row.is-open td {
+  background: color-mix(in srgb, var(--brand-soft) 54%, #ffffff 46%);
+}
+
+tr.is-clickable:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 44%, transparent);
+  outline-offset: -2px;
+}
+
 .table-expanded-row td {
   padding: 0;
   background: rgba(255, 244, 221, 0.46);
@@ -896,6 +911,22 @@ tr.donation-register-pending-row:hover td {
     linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 244, 221, 0.48)),
     #ffffff;
   box-shadow: 0 10px 24px rgba(82, 58, 27, 0.08);
+}
+
+.donor-directory-accordion {
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--brand-soft) 48%, #ffffff 52%), #ffffff 92%);
+}
+
+.donor-detail {
+  display: grid;
+  gap: 16px;
+}
+
+.donor-detail.is-expanded {
+  padding-top: 4px;
 }
 
 .status-pill,
