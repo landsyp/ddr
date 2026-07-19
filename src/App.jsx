@@ -106,6 +106,7 @@ const copy = {
       yes: "Yes",
       no: "No",
       member: "Member",
+      members: "Members",
       nonMember: "Non-member",
       csv: "CSV",
       noRecords: "No records found",
@@ -541,6 +542,7 @@ const copy = {
       yes: "Oui",
       no: "Non",
       member: "Membre",
+      members: "Membres",
       nonMember: "Non-membre",
       csv: "CSV",
       noRecords: "Aucun dossier trouvé",
@@ -3031,6 +3033,7 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
     (!donorFilters.member || donor.membre) &&
     (!donorFilters.receipts || donor.recu)
   ));
+  const memberLabel = donors.filter((donor) => donor.membre).length > 1 ? t.common.members : t.common.member;
   const donorExportRows = filteredDonors.map((donor) => ({
     Number: donor.numero,
     Donor: donor.fullName,
@@ -3105,7 +3108,7 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
                   type="checkbox"
                 />
                 <Check size={14} />
-                <span>{t.common.member}</span>
+                <span>{memberLabel}</span>
               </label>
               <label className={`filter-check-pill ${donorFilters.receipts ? "is-active" : ""}`}>
                 <input
