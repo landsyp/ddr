@@ -900,6 +900,10 @@ tr.is-clickable:focus-visible {
   background: rgba(255, 244, 221, 0.46);
 }
 
+.table-expanded-row:has(.donor-directory-accordion) td {
+  background: color-mix(in srgb, var(--brand-soft) 36%, #ffffff 64%);
+}
+
 .donation-register-accordion {
   padding: 12px;
   border-bottom: 1px solid var(--line);
@@ -914,15 +918,15 @@ tr.is-clickable:focus-visible {
 }
 
 .donor-directory-accordion {
-  padding: 16px;
+  padding: 14px;
   border-bottom: 1px solid var(--line);
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--brand-soft) 48%, #ffffff 52%), #ffffff 92%);
+    linear-gradient(135deg, color-mix(in srgb, var(--brand-soft) 30%, #ffffff 70%), #ffffff 94%);
 }
 
 .donor-detail {
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .donor-detail.is-expanded {
@@ -931,32 +935,57 @@ tr.is-clickable:focus-visible {
 
 .donor-statement-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
 }
 
 .donor-statement-grid div {
   min-width: 0;
-  padding: 14px;
+  padding: 12px;
   border: 1px solid color-mix(in srgb, var(--brand) 14%, transparent);
   border-radius: 8px;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--brand-soft) 58%, #ffffff 42%), #ffffff 92%);
+    linear-gradient(135deg, color-mix(in srgb, var(--brand-soft) 38%, #ffffff 62%), #ffffff 94%);
   box-shadow: 0 10px 24px rgba(25, 46, 49, 0.055);
 }
 
 .donor-statement-grid span {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   color: var(--muted);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .donor-statement-grid strong {
   color: var(--ink);
-  font-size: 1.25rem;
+  font-size: 1.08rem;
+  line-height: 1.1;
+}
+
+.donor-history-card {
+  border: 1px solid color-mix(in srgb, var(--brand) 12%, transparent);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(25, 46, 49, 0.055);
+  overflow: hidden;
+}
+
+.donor-history-card .table-wrap {
+  border-radius: 0;
+}
+
+.donor-history-card table {
+  min-width: 560px;
+}
+
+.donor-history-card th {
+  background: color-mix(in srgb, var(--brand-soft) 24%, #ffffff 76%);
+}
+
+.donor-history-card tr:last-child td {
+  border-bottom: 0;
 }
 
 .status-pill,

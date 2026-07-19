@@ -3063,7 +3063,7 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
       />
 
       {expandedDonor ? (
-        <Panel title={`${expandedDonor.numero} - ${expandedDonor.fullName}`} icon={Maximize2}>
+        <Panel title={`${expandedDonor.numero} - ${expandedDonor.fullName}`} icon={Minimize2}>
           <div className="expanded-account-toolbar">
             <button className="icon-button" type="button" onClick={() => setExpandedDonorId(null)} aria-label={t.common.cancel}>
               <Minimize2 size={18} />
@@ -3373,19 +3373,21 @@ function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
           </button>
         )}
       </div>
-      <DataTable
-        t={t}
-        paginate={isExpanded}
-        columns={[t.donationForm.date, t.donationForm.account, t.donationForm.description, t.donationForm.amount, t.common.status]}
-        emptyMessage={t.donorForm.noDonations}
-        rows={visibleDonations.map((donation) => [
-          donation.dateDon,
-          `${donation.noCompte} - ${donation.libelleCompte}`,
-          donation.description || "-",
-          currency(donation.montant),
-          <StatusPill key={`donor-donation-status-${donation.donID}`} t={t} value={donation.receiptStatus} />,
-        ])}
-      />
+      <div className="donor-history-card">
+        <DataTable
+          t={t}
+          paginate={isExpanded}
+          columns={[t.donationForm.date, t.donationForm.account, t.donationForm.description, t.donationForm.amount, t.common.status]}
+          emptyMessage={t.donorForm.noDonations}
+          rows={visibleDonations.map((donation) => [
+            donation.dateDon,
+            `${donation.noCompte} - ${donation.libelleCompte}`,
+            donation.description || "-",
+            currency(donation.montant),
+            <StatusPill key={`donor-donation-status-${donation.donID}`} t={t} value={donation.receiptStatus} />,
+          ])}
+        />
+      </div>
     </div>
   );
 }
