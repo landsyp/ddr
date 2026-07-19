@@ -1323,8 +1323,9 @@ tr.is-clickable:focus-visible {
   display: none;
   gap: 0;
   justify-self: end;
-  width: 36px;
-  min-width: 36px;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
 }
 
@@ -3901,6 +3902,32 @@ tr.is-clickable:focus-visible {
   .two-column.secondary,
   .two-column.form-layout {
     grid-template-columns: 1fr;
+  }
+
+  .donor-directory-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .donor-directory-toolbar .search-box {
+    max-width: none;
+  }
+
+  .donor-tools-toggle {
+    display: inline-flex;
+  }
+
+  .donor-directory-tools {
+    display: none;
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    padding: 10px;
+    border: 1px solid color-mix(in srgb, var(--brand) 12%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--brand-soft) 24%, #ffffff 76%);
+  }
+
+  .donor-directory-tools.is-open {
+    display: flex;
   }
 }
 
