@@ -3135,6 +3135,7 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
         <DataTable
           t={t}
           paginate
+          alwaysShowPagination
           onRowClick={(row) => {
             const donor = filteredDonors.find((item) => item.numero === row[1]);
             if (donor) {
@@ -4953,7 +4954,7 @@ function cellToText(cell) {
   return "";
 }
 
-function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowContent, onRowClick, paginate = false, pageSize = 10 }) {
+function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowContent, onRowClick, alwaysShowPagination = false, paginate = false, pageSize = 10 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPageSize, setSelectedPageSize] = useState(pageSize);
   const [sortConfig, setSortConfig] = useState(null);
@@ -4978,7 +4979,7 @@ function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowCo
       return 0;
     });
   }, [rows, sortConfig]);
-  const showPaginationControls = paginate && sortedRows.length > paginationSizes[0];
+  const showPaginationControls = paginate && sortedRows.length > 0 && (alwaysShowPagination || sortedRows.length > paginationSizes[0]);
   const shouldPaginate = paginate && sortedRows.length > selectedPageSize;
   const totalPages = shouldPaginate ? Math.ceil(sortedRows.length / selectedPageSize) : 1;
   const safeCurrentPage = Math.min(currentPage, totalPages);
