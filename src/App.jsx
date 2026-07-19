@@ -190,6 +190,7 @@ const copy = {
       donationCount: "Donation count",
       averageDonation: "Average donation",
       readyReceipts: "Ready receipts",
+      totalDonors: "Donors",
     },
     donationForm: {
       title: "Record a donation",
@@ -624,6 +625,7 @@ const copy = {
       donationCount: "Nombre de dons",
       averageDonation: "Don moyen",
       readyReceipts: "Reçus prêts",
+      totalDonors: "Donateurs",
     },
     donationForm: {
       title: "Enregistrer un don",
@@ -3084,6 +3086,10 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
           <div className="search-box inline">
             <Search size={17} />
             <input value={query} onChange={(event) => { setQuery(event.target.value); onSearch(event); }} placeholder={t.donorForm.filter} />
+          </div>
+          <div className="register-counts">
+            <span className="status-pill issued">{donors.length} {t.donorForm.totalDonors}</span>
+            <span className="status-pill ready">{donors.filter((donor) => donor.actif).length} {t.common.active}</span>
           </div>
           <div className="export-actions">
             <button className="secondary-button compact" type="button" onClick={() => downloadCSV("donors.csv", donorExportRows)}>
