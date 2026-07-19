@@ -1287,6 +1287,26 @@ tr.is-clickable:focus-visible {
   margin-bottom: 14px;
 }
 
+.donor-directory-toolbar {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(0, auto);
+  gap: 12px;
+  align-items: start;
+}
+
+.donor-directory-toolbar .search-box {
+  max-width: 460px;
+}
+
+.donor-directory-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
 .register-counts {
   display: flex;
   flex-wrap: wrap;
@@ -3897,6 +3917,7 @@ tr.is-clickable:focus-visible {
 
   .intro-band,
   .view-header,
+  .donor-directory-toolbar,
   .receipt-band,
   .donation-summary-strip,
   .pending-donations-header,
@@ -3913,6 +3934,14 @@ tr.is-clickable:focus-visible {
   .subscription-plan.is-featured {
     min-height: 360px;
     transform: none;
+  }
+
+  .donor-directory-toolbar .search-box {
+    max-width: none;
+  }
+
+  .donor-directory-tools {
+    justify-content: flex-start;
   }
 
   .login-panel {
@@ -4076,8 +4105,10 @@ tr.is-clickable:focus-visible {
     flex-direction: column;
   }
 
+  .donor-directory-tools,
   .donor-filter-toggles,
   .export-actions,
+  .register-counts,
   .pagination-actions {
     justify-content: flex-start;
   }

@@ -3087,44 +3087,46 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
         </Panel>
       ) : (
       <Panel title={t.donorForm.directory} icon={Search}>
-        <div className="table-toolbar">
+        <div className="table-toolbar donor-directory-toolbar">
           <div className="search-box inline">
             <Search size={17} />
             <input value={query} onChange={(event) => { setQuery(event.target.value); onSearch(event); }} placeholder={t.donorForm.filter} />
           </div>
-          <div className="register-counts">
-            <span className="status-pill issued">{filteredDonors.length} {t.donorForm.totalDonors}</span>
-            <span className="status-pill ready">{filteredDonors.filter((donor) => donor.actif).length} {t.common.active}</span>
-          </div>
-          <div className="donor-filter-toggles">
-            <label className={`filter-check-pill ${donorFilters.member ? "is-active" : ""}`}>
-              <input
-                checked={donorFilters.member}
-                onChange={(event) => setDonorFilters((filters) => ({ ...filters, member: event.target.checked }))}
-                type="checkbox"
-              />
-              <Check size={14} />
-              <span>{t.common.member}</span>
-            </label>
-            <label className={`filter-check-pill ${donorFilters.receipts ? "is-active" : ""}`}>
-              <input
-                checked={donorFilters.receipts}
-                onChange={(event) => setDonorFilters((filters) => ({ ...filters, receipts: event.target.checked }))}
-                type="checkbox"
-              />
-              <ReceiptText size={14} />
-              <span>{t.nav.receipts}</span>
-            </label>
-          </div>
-          <div className="export-actions">
-            <button className="secondary-button compact" type="button" onClick={() => downloadCSV("donors.csv", donorExportRows)}>
-              <FileText size={16} />
-              <span>{t.common.csv}</span>
-            </button>
-            <button className="secondary-button compact" type="button" onClick={() => downloadExcel("donors.xls", donorExportRows)}>
-              <FileSpreadsheet size={16} />
-              <span>Excel</span>
-            </button>
+          <div className="donor-directory-tools">
+            <div className="register-counts">
+              <span className="status-pill issued">{filteredDonors.length} {t.donorForm.totalDonors}</span>
+              <span className="status-pill ready">{filteredDonors.filter((donor) => donor.actif).length} {t.common.active}</span>
+            </div>
+            <div className="donor-filter-toggles">
+              <label className={`filter-check-pill ${donorFilters.member ? "is-active" : ""}`}>
+                <input
+                  checked={donorFilters.member}
+                  onChange={(event) => setDonorFilters((filters) => ({ ...filters, member: event.target.checked }))}
+                  type="checkbox"
+                />
+                <Check size={14} />
+                <span>{t.common.member}</span>
+              </label>
+              <label className={`filter-check-pill ${donorFilters.receipts ? "is-active" : ""}`}>
+                <input
+                  checked={donorFilters.receipts}
+                  onChange={(event) => setDonorFilters((filters) => ({ ...filters, receipts: event.target.checked }))}
+                  type="checkbox"
+                />
+                <ReceiptText size={14} />
+                <span>{t.nav.receipts}</span>
+              </label>
+            </div>
+            <div className="export-actions">
+              <button className="secondary-button compact" type="button" onClick={() => downloadCSV("donors.csv", donorExportRows)}>
+                <FileText size={16} />
+                <span>{t.common.csv}</span>
+              </button>
+              <button className="secondary-button compact" type="button" onClick={() => downloadExcel("donors.xls", donorExportRows)}>
+                <FileSpreadsheet size={16} />
+                <span>Excel</span>
+              </button>
+            </div>
           </div>
         </div>
         <DataTable
