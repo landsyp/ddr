@@ -3420,19 +3420,21 @@ function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
           </button>
         )}
       </div>
-      <DataTable
-        t={t}
-        paginate={isExpanded}
-        columns={[t.donationForm.date, t.donationForm.account, t.donationForm.description, t.donationForm.amount, t.common.status]}
-        emptyMessage={t.donorForm.noDonations}
-        rows={visibleDonations.map((donation) => [
-          donation.dateDon,
-          `${donation.noCompte} - ${donation.libelleCompte}`,
-          donation.description || "-",
-          currency(donation.montant),
-          <StatusPill key={`donor-donation-status-${donation.donID}`} t={t} value={donation.receiptStatus} />,
-        ])}
-      />
+      <div className="donor-history-table">
+        <DataTable
+          t={t}
+          paginate={isExpanded}
+          columns={[t.donationForm.date, t.donationForm.account, t.donationForm.description, t.donationForm.amount, t.common.status]}
+          emptyMessage={t.donorForm.noDonations}
+          rows={visibleDonations.map((donation) => [
+            donation.dateDon,
+            `${donation.noCompte} - ${donation.libelleCompte}`,
+            donation.description || "-",
+            currency(donation.montant),
+            <StatusPill key={`donor-donation-status-${donation.donID}`} t={t} value={donation.receiptStatus} />,
+          ])}
+        />
+      </div>
     </div>
   );
 }

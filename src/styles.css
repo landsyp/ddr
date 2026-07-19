@@ -1252,22 +1252,32 @@ tr.is-clickable:focus-visible {
 
 .donor-directory-toolbar {
   display: grid;
-  grid-template-columns: minmax(260px, 0.95fr) minmax(0, 1.35fr);
+  grid-template-columns: minmax(260px, 1fr) auto;
   gap: 12px;
   align-items: start;
 }
 
 .donor-directory-toolbar .search-box {
-  max-width: 460px;
+  max-width: none;
+  order: 0;
 }
 
 .donor-directory-tools {
-  display: flex;
+  display: none;
   flex-wrap: wrap;
+  grid-column: 1 / -1;
   gap: 6px 10px;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   min-width: 0;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--brand) 12%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--brand-soft) 24%, #ffffff 76%);
+}
+
+.donor-directory-tools.is-open {
+  display: flex;
 }
 
 .donor-directory-tools .status-pill {
@@ -1283,7 +1293,7 @@ tr.is-clickable:focus-visible {
 }
 
 .donor-tools-toggle {
-  display: none;
+  display: inline-flex;
   flex: 0 0 44px;
   gap: 0;
   justify-self: end;
@@ -1292,6 +1302,24 @@ tr.is-clickable:focus-visible {
   min-width: 44px;
   min-height: 44px;
   padding: 0;
+}
+
+.donor-history-table .table-wrap {
+  border-radius: 8px;
+}
+
+.donor-history-table table {
+  min-width: 680px;
+}
+
+.donor-history-table th,
+.donor-history-table td {
+  padding: 16px 14px;
+}
+
+.donor-history-table td {
+  font-size: 0.94rem;
+  line-height: 1.35;
 }
 
 .register-counts {
