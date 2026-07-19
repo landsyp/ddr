@@ -2676,9 +2676,9 @@ tr.donation-register-pending-row:hover td {
   place-items: center;
   align-content: center;
   min-height: 180px;
-  border-style: dashed;
+  border: 2px dashed rgba(29, 111, 95, 0.28);
   background:
-    linear-gradient(135deg, rgba(233, 241, 251, 0.82), rgba(255, 255, 255, 0.96)),
+    linear-gradient(135deg, rgba(232, 244, 239, 0.78), rgba(255, 255, 255, 0.96)),
     #ffffff;
   cursor: pointer;
   text-align: center;
@@ -2691,8 +2691,8 @@ tr.donation-register-pending-row:hover td {
   width: 64px;
   height: 64px;
   border-radius: 999px;
-  background: var(--blue-soft);
-  color: var(--blue);
+  background: var(--green-soft);
+  color: var(--brand);
 }
 
 .add-payment-tile strong {
