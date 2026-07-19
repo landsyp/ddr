@@ -868,6 +868,35 @@ th {
   text-transform: uppercase;
 }
 
+.table-sort-button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.table-sort-button svg {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--muted) 74%, transparent);
+}
+
+.table-sort-button.is-active {
+  color: var(--brand);
+}
+
+.table-sort-button.is-active svg {
+  color: var(--brand);
+}
+
 td {
   font-size: 0.9rem;
 }
@@ -1289,6 +1318,7 @@ tr.is-clickable:focus-visible {
   width: 16px;
   height: 16px;
   margin: auto;
+  transform: translateY(0.5px);
 }
 
 .boolean-icon.is-true {
@@ -1836,10 +1866,16 @@ tr.is-clickable:focus-visible {
   display: flex;
   align-items: center;
   min-width: 0;
+  min-height: 28px;
   overflow-wrap: anywhere;
   white-space: normal;
   font-size: 1rem;
   line-height: 1.25;
+}
+
+.donor-detail-grid strong:has(.boolean-icon) {
+  align-items: center;
+  line-height: 1;
 }
 
 .donor-detail-grid .boolean-icon {
@@ -1851,7 +1887,6 @@ tr.is-clickable:focus-visible {
 
 .donor-detail-grid .boolean-icon svg {
   position: static;
-  transform: none;
 }
 
 .panel-subheader {

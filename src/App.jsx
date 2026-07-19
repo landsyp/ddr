@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronsUpDown,
   CircleDollarSign,
   ClipboardList,
   CreditCard,
@@ -4868,21 +4869,82 @@ function SettingsAccordionSection({ id, title, icon: Icon, isOpen, onToggle, chi
   );
 }
 
+function sortableCellValue(cell) {
+  const text = cellToText(cell).trim();
+  const numeric = Number(text.replace(/[^0-9.-]/g, ""));
+  const timestamp = Date.parse(text);
+
+  if (text && Number.isFinite(timestamp) && /\d{4}-\d{2}-\d{2}/.test(text)) {
+    return timestamp;
+  }
+
+  if (text && Number.isFinite(numeric) && /[0-9]/.test(text)) {
+    return numeric;
+  }
+
+  return text.toLowerCase();
+}
+
+function cellToText(cell) {
+  if (cell === null || cell === undefined) {
+    return "";
+  }
+
+  if (typeof cell === "string" || typeof cell === "number" || typeof cell === "boolean") {
+    return String(cell);
+  }
+
+  if (Array.isArray(cell)) {
+    return cell.map(cellToText).join(" ");
+  }
+
+  if (typeof cell === "object" && "props" in cell) {
+    if (cell.props["aria-label"] || cell.props.title) {
+      return String(cell.props["aria-label"] || cell.props.title);
+    }
+
+    return cellToText(cell.props.children);
+  }
+
+  return "";
+}
+
 function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowContent, onRowClick, paginate = false, pageSize = 10 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPageSize, setSelectedPageSize] = useState(pageSize);
+  const [sortConfig, setSortConfig] = useState(null);
   const paginationSizes = [10, 50, 100, 500];
-  const showPaginationControls = paginate && rows.length > paginationSizes[0];
-  const shouldPaginate = paginate && rows.length > selectedPageSize;
-  const totalPages = shouldPaginate ? Math.ceil(rows.length / selectedPageSize) : 1;
+  const sortedRows = useMemo(() => {
+    if (!sortConfig) {
+      return rows;
+    }
+
+    return [...rows].sort((left, right) => {
+      const leftValue = sortableCellValue(left[sortConfig.index]);
+      const rightValue = sortableCellValue(right[sortConfig.index]);
+
+      if (leftValue < rightValue) {
+        return sortConfig.direction === "asc" ? -1 : 1;
+      }
+
+      if (leftValue > rightValue) {
+        return sortConfig.direction === "asc" ? 1 : -1;
+      }
+
+      return 0;
+    });
+  }, [rows, sortConfig]);
+  const showPaginationControls = paginate && sortedRows.length > paginationSizes[0];
+  const shouldPaginate = paginate && sortedRows.length > selectedPageSize;
+  const totalPages = shouldPaginate ? Math.ceil(sortedRows.length / selectedPageSize) : 1;
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const pageStart = showPaginationControls ? (safeCurrentPage - 1) * selectedPageSize : 0;
-  const pageEnd = showPaginationControls ? Math.min(pageStart + selectedPageSize, rows.length) : rows.length;
-  const visibleRows = showPaginationControls ? rows.slice(pageStart, pageEnd) : rows;
+  const pageEnd = showPaginationControls ? Math.min(pageStart + selectedPageSize, sortedRows.length) : sortedRows.length;
+  const visibleRows = showPaginationControls ? sortedRows.slice(pageStart, pageEnd) : sortedRows;
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [rows.length, selectedPageSize]);
+  }, [rows.length, selectedPageSize, sortConfig]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -4890,9 +4952,22 @@ function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowCo
     }
   }, [currentPage, totalPages]);
 
+  function sortColumn(columnIndex) {
+    setSortConfig((currentSort) => {
+      if (currentSort?.index === columnIndex) {
+        return {
+          index: columnIndex,
+          direction: currentSort.direction === "asc" ? "desc" : "asc",
+        };
+      }
+
+      return { index: columnIndex, direction: "asc" };
+    });
+  }
+
   const paginationControls = showPaginationControls ? (
     <div className="table-pagination">
-      <span>{t?.common?.showing || "Showing"} {pageStart + 1}-{pageEnd} {t?.common?.of || "of"} {rows.length}</span>
+      <span>{t?.common?.showing || "Showing"} {pageStart + 1}-{pageEnd} {t?.common?.of || "of"} {sortedRows.length}</span>
       <div className="pagination-actions">
         <label className="pagination-size">
           <span>{t?.common?.perPage || "Entries per page"}</span>
@@ -4920,7 +4995,21 @@ function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowCo
         <table>
           <thead>
             <tr>
-              {columns.map((column) => <th key={column}>{column}</th>)}
+              {columns.map((column, columnIndex) => {
+                const isSortable = column !== "";
+                const isSorted = sortConfig?.index === columnIndex;
+
+                return (
+                  <th key={column || `column-${columnIndex}`} aria-sort={isSorted ? (sortConfig.direction === "asc" ? "ascending" : "descending") : undefined}>
+                    {isSortable ? (
+                      <button className={`table-sort-button ${isSorted ? "is-active" : ""}`} type="button" onClick={() => sortColumn(columnIndex)}>
+                        <span>{column}</span>
+                        <ChevronsUpDown size={14} />
+                      </button>
+                    ) : column}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
