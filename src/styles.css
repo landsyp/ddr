@@ -1273,9 +1273,10 @@ tr.is-clickable:focus-visible {
 }
 
 .boolean-icon {
-  display: inline-flex;
+  display: inline-grid;
   align-items: center;
   justify-content: center;
+  place-items: center;
   width: 28px;
   height: 28px;
   border-radius: 999px;
@@ -1285,6 +1286,9 @@ tr.is-clickable:focus-visible {
 .boolean-icon svg {
   display: block;
   flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: auto;
 }
 
 .boolean-icon.is-true {
@@ -1840,6 +1844,14 @@ tr.is-clickable:focus-visible {
 
 .donor-detail-grid .boolean-icon {
   flex: 0 0 auto;
+  align-self: center;
+  justify-self: start;
+  padding: 0;
+}
+
+.donor-detail-grid .boolean-icon svg {
+  position: static;
+  transform: none;
 }
 
 .panel-subheader {
