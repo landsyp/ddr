@@ -955,7 +955,7 @@ tr.is-clickable:focus-visible {
 
 .donor-statement-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
   gap: 10px;
 }
 
@@ -1809,6 +1809,31 @@ tr.is-clickable:focus-visible {
 
 .account-detail-grid strong {
   font-size: 1.15rem;
+}
+
+.donor-detail-grid,
+.donor-detail-grid.is-expanded {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.donor-detail-grid div {
+  min-height: 68px;
+  padding: 12px;
+}
+
+.donor-detail-grid strong {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.donor-detail-grid .boolean-icon {
+  flex: 0 0 auto;
 }
 
 .panel-subheader {
