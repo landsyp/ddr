@@ -1279,6 +1279,12 @@ tr.is-clickable:focus-visible {
   width: 28px;
   height: 28px;
   border-radius: 999px;
+  line-height: 1;
+}
+
+.boolean-icon svg {
+  display: block;
+  flex: 0 0 auto;
 }
 
 .boolean-icon.is-true {
