@@ -1319,6 +1319,11 @@ tr.is-clickable:focus-visible {
   box-shadow: none;
 }
 
+.donor-tools-toggle {
+  display: none;
+  justify-self: end;
+}
+
 .register-counts {
   display: flex;
   flex-wrap: wrap;
@@ -3952,8 +3957,22 @@ tr.is-clickable:focus-visible {
     max-width: none;
   }
 
+  .donor-tools-toggle {
+    display: inline-flex;
+    width: fit-content;
+  }
+
   .donor-directory-tools {
+    display: none;
     justify-content: flex-start;
+    padding: 10px;
+    border: 1px solid color-mix(in srgb, var(--brand) 12%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--brand-soft) 24%, #ffffff 76%);
+  }
+
+  .donor-directory-tools.is-open {
+    display: flex;
   }
 
   .login-panel {
@@ -4123,6 +4142,10 @@ tr.is-clickable:focus-visible {
   .register-counts,
   .pagination-actions {
     justify-content: flex-start;
+  }
+
+  .donor-tools-toggle {
+    justify-self: start;
   }
 
   .receipt-copy img {

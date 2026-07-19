@@ -3025,6 +3025,7 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
   const [selectedDonorId, setSelectedDonorId] = useState(null);
   const [expandedDonorId, setExpandedDonorId] = useState(null);
   const [donorFilters, setDonorFilters] = useState({ member: false, receipts: false });
+  const [donorToolsOpen, setDonorToolsOpen] = useState(false);
   const [donorPendingDeactivate, setDonorPendingDeactivate] = useState(null);
   const [donorPendingDelete, setDonorPendingDelete] = useState(null);
   const selectedDonor = donors.find((donor) => donor.donateurID === selectedDonorId);
@@ -3095,7 +3096,11 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
             <Search size={17} />
             <input value={query} onChange={(event) => { setQuery(event.target.value); onSearch(event); }} placeholder={t.donorForm.filter} />
           </div>
-          <div className="donor-directory-tools">
+          <button className="secondary-button compact donor-tools-toggle" type="button" onClick={() => setDonorToolsOpen((isOpen) => !isOpen)} aria-expanded={donorToolsOpen}>
+            <Menu size={16} />
+            <span>{t.common.manage}</span>
+          </button>
+          <div className={`donor-directory-tools ${donorToolsOpen ? "is-open" : ""}`}>
             <div className="register-counts">
               <span className="status-pill issued">{filteredDonors.length} {t.donorForm.totalDonors}</span>
               <span className="status-pill ready">{filteredDonors.filter((donor) => donor.actif).length} {t.common.active}</span>
