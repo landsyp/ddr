@@ -1013,43 +1013,6 @@ tr.is-clickable:focus-visible {
   line-height: 1.1;
 }
 
-.donor-history-card {
-  padding: 10px;
-  border: 1px solid color-mix(in srgb, var(--brand) 12%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--brand-soft) 18%, #ffffff 82%);
-  box-shadow: 0 10px 24px rgba(25, 46, 49, 0.055);
-}
-
-.donor-history-card .table-wrap {
-  border: 1px solid color-mix(in srgb, var(--brand) 10%, transparent);
-  border-radius: 8px;
-  background: #ffffff;
-  overflow: auto;
-}
-
-.donor-history-card table {
-  min-width: 560px;
-}
-
-.donor-history-card th {
-  background: color-mix(in srgb, var(--brand-soft) 24%, #ffffff 76%);
-}
-
-.donor-history-card th:first-child,
-.donor-history-card td:first-child {
-  padding-left: 16px;
-}
-
-.donor-history-card th:last-child,
-.donor-history-card td:last-child {
-  padding-right: 16px;
-}
-
-.donor-history-card tr:last-child td {
-  border-bottom: 0;
-}
-
 .status-pill,
 .segment {
   display: inline-flex;
