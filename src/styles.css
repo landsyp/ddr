@@ -1321,8 +1321,10 @@ tr.is-clickable:focus-visible {
 
 .donor-tools-toggle {
   display: none;
+  flex: 0 0 44px;
   gap: 0;
   justify-self: end;
+  height: 44px;
   width: 44px;
   min-width: 44px;
   min-height: 44px;
