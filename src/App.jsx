@@ -5010,16 +5010,18 @@ function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowCo
     });
   }
 
-  const paginationControls = showPaginationControls ? (
+  const renderPaginationControls = (position) => showPaginationControls ? (
     <div className="table-pagination">
       <span>{t?.common?.showing || "Showing"} {pageStart + 1}-{pageEnd} {t?.common?.of || "of"} {sortedRows.length}</span>
       <div className="pagination-actions">
-        <label className="pagination-size">
-          <span>{t?.common?.perPage || "Entries per page"}</span>
-          <select value={selectedPageSize} onChange={(event) => setSelectedPageSize(Number(event.target.value))}>
-            {paginationSizes.map((size) => <option value={size} key={size}>{size}</option>)}
-          </select>
-        </label>
+        {position === "top" && (
+          <label className="pagination-size">
+            <span>{t?.common?.perPage || "Entries per page"}</span>
+            <select value={selectedPageSize} onChange={(event) => setSelectedPageSize(Number(event.target.value))}>
+              {paginationSizes.map((size) => <option value={size} key={size}>{size}</option>)}
+            </select>
+          </label>
+        )}
         <button className="secondary-button compact" type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage === 1}>
           <ChevronLeft size={15} />
           <span>{t?.common?.previous || "Previous"}</span>
@@ -5035,7 +5037,7 @@ function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowCo
 
   return (
     <>
-      {paginationControls}
+      {renderPaginationControls("top")}
       <div className="table-wrap">
         <table>
           <thead>
@@ -5095,7 +5097,7 @@ function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowCo
           </tbody>
         </table>
       </div>
-      {paginationControls}
+      {renderPaginationControls("bottom")}
     </>
   );
 }
