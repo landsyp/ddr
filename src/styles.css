@@ -950,7 +950,7 @@ tr.is-clickable:focus-visible {
 }
 
 .table-expanded-row:has(.donor-directory-accordion) td {
-  background: color-mix(in srgb, var(--brand-soft) 36%, #ffffff 64%);
+  background: color-mix(in srgb, var(--brand-soft) 12%, #ffffff 88%);
 }
 
 .donation-register-accordion {
@@ -970,7 +970,7 @@ tr.is-clickable:focus-visible {
   padding: 14px;
   border-bottom: 1px solid var(--line);
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--brand-soft) 30%, #ffffff 70%), #ffffff 94%);
+    linear-gradient(135deg, color-mix(in srgb, var(--brand-soft) 10%, #ffffff 90%), #ffffff 96%);
 }
 
 .donor-detail {
