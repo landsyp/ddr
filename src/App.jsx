@@ -3353,11 +3353,11 @@ function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
         </div>
         <div>
           <span>{t.common.member}</span>
-          <strong>{donor.membre ? t.common.yes : t.common.no}</strong>
+          <strong><BooleanIcon value={donor.membre} trueLabel={t.common.yes} falseLabel={t.common.no} /></strong>
         </div>
         <div>
           <span>{t.nav.receipts}</span>
-          <strong>{donor.recu ? t.common.yes : t.common.no}</strong>
+          <strong><BooleanIcon value={donor.recu} trueLabel={t.common.yes} falseLabel={t.common.no} /></strong>
         </div>
         <div>
           <span>{t.donorForm.lifetime}</span>
