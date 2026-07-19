@@ -1321,10 +1321,10 @@ tr.is-clickable:focus-visible {
 
 .donor-tools-toggle {
   display: none;
-  gap: 4px;
+  gap: 0;
   justify-self: end;
-  width: 42px;
-  min-width: 42px;
+  width: 36px;
+  min-width: 36px;
   padding: 0;
 }
 
@@ -3961,6 +3961,10 @@ tr.is-clickable:focus-visible {
     max-width: none;
   }
 
+  .donor-directory-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
   .donor-tools-toggle {
     display: inline-flex;
   }
@@ -4145,10 +4149,6 @@ tr.is-clickable:focus-visible {
   .register-counts,
   .pagination-actions {
     justify-content: flex-start;
-  }
-
-  .donor-tools-toggle {
-    justify-self: start;
   }
 
   .receipt-copy img {
