@@ -4849,7 +4849,7 @@ function BooleanIcon({ value, trueLabel, falseLabel }) {
   const isTrue = Boolean(value);
 
   return (
-    <span className={`boolean-icon ${isTrue ? "is-true" : "is-false"}`} aria-label={isTrue ? trueLabel : falseLabel} title={isTrue ? trueLabel : falseLabel}>
+    <span className={`boolean-icon ${isTrue ? "is-true" : "is-false"}`} aria-label={isTrue ? trueLabel : falseLabel} data-sort-value={isTrue ? "0" : "1"} title={isTrue ? trueLabel : falseLabel}>
       {isTrue ? <Check size={16} /> : <X size={16} />}
     </span>
   );
@@ -4936,6 +4936,10 @@ function cellToText(cell) {
   }
 
   if (typeof cell === "object" && "props" in cell) {
+    if (cell.props["data-sort-value"] !== undefined) {
+      return String(cell.props["data-sort-value"]);
+    }
+
     if (cell.props["aria-label"] || cell.props.title) {
       return String(cell.props["aria-label"] || cell.props.title);
     }
