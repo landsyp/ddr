@@ -3022,11 +3022,16 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
   const [editingDonor, setEditingDonor] = useState(null);
   const [selectedDonorId, setSelectedDonorId] = useState(null);
   const [expandedDonorId, setExpandedDonorId] = useState(null);
+  const [donorFilters, setDonorFilters] = useState({ member: false, receipts: false });
   const [donorPendingDeactivate, setDonorPendingDeactivate] = useState(null);
   const [donorPendingDelete, setDonorPendingDelete] = useState(null);
   const selectedDonor = donors.find((donor) => donor.donateurID === selectedDonorId);
   const expandedDonor = donors.find((donor) => donor.donateurID === expandedDonorId);
-  const donorExportRows = donors.map((donor) => ({
+  const filteredDonors = donors.filter((donor) => (
+    (!donorFilters.member || donor.membre) &&
+    (!donorFilters.receipts || donor.recu)
+  ));
+  const donorExportRows = filteredDonors.map((donor) => ({
     Number: donor.numero,
     Donor: donor.fullName,
     Email: donor.courriel || "",
@@ -3088,8 +3093,28 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
             <input value={query} onChange={(event) => { setQuery(event.target.value); onSearch(event); }} placeholder={t.donorForm.filter} />
           </div>
           <div className="register-counts">
-            <span className="status-pill issued">{donors.length} {t.donorForm.totalDonors}</span>
-            <span className="status-pill ready">{donors.filter((donor) => donor.actif).length} {t.common.active}</span>
+            <span className="status-pill issued">{filteredDonors.length} {t.donorForm.totalDonors}</span>
+            <span className="status-pill ready">{filteredDonors.filter((donor) => donor.actif).length} {t.common.active}</span>
+          </div>
+          <div className="donor-filter-toggles">
+            <label className={`filter-check-pill ${donorFilters.member ? "is-active" : ""}`}>
+              <input
+                checked={donorFilters.member}
+                onChange={(event) => setDonorFilters((filters) => ({ ...filters, member: event.target.checked }))}
+                type="checkbox"
+              />
+              <Check size={14} />
+              <span>{t.common.member}</span>
+            </label>
+            <label className={`filter-check-pill ${donorFilters.receipts ? "is-active" : ""}`}>
+              <input
+                checked={donorFilters.receipts}
+                onChange={(event) => setDonorFilters((filters) => ({ ...filters, receipts: event.target.checked }))}
+                type="checkbox"
+              />
+              <ReceiptText size={14} />
+              <span>{t.nav.receipts}</span>
+            </label>
           </div>
           <div className="export-actions">
             <button className="secondary-button compact" type="button" onClick={() => downloadCSV("donors.csv", donorExportRows)}>
@@ -3106,13 +3131,13 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
           t={t}
           paginate
           onRowClick={(row) => {
-            const donor = donors.find((item) => item.numero === row[1]);
+            const donor = filteredDonors.find((item) => item.numero === row[1]);
             if (donor) {
               setSelectedDonorId(selectedDonor?.donateurID === donor.donateurID ? null : donor.donateurID);
             }
           }}
           columns={[t.common.status, "No.", t.donationForm.donor, t.common.email, t.donorForm.city, t.common.member, t.nav.receipts, t.donorForm.lifetime, t.donorForm.lastGift, ""]}
-          rows={donors.map((donor) => [
+          rows={filteredDonors.map((donor) => [
             <span className={`status-pill donor-status-pill ${donor.actif ? "is-active" : "is-inactive"}`} key={`status-${donor.donateurID}`}>
               {donor.actif ? t.common.active : t.common.inactive}
             </span>,
@@ -3174,11 +3199,11 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
             </div>,
           ])}
           rowClassName={(row) => {
-            const donor = donors.find((item) => item.numero === row[1]);
+            const donor = filteredDonors.find((item) => item.numero === row[1]);
             return donor?.donateurID === selectedDonorId ? "donor-directory-row is-open" : "donor-directory-row";
           }}
           expandedRowContent={(row) => {
-            const donor = donors.find((item) => item.numero === row[1]);
+            const donor = filteredDonors.find((item) => item.numero === row[1]);
             if (!donor || donor.donateurID !== selectedDonorId) {
               return null;
             }
@@ -3360,11 +3385,15 @@ function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
         </div>
         <div>
           <span>{t.common.member}</span>
-          <strong><BooleanIcon value={donor.membre} trueLabel={t.common.yes} falseLabel={t.common.no} /></strong>
+          <span className="donor-detail-boolean-value">
+            <BooleanIcon value={donor.membre} trueLabel={t.common.yes} falseLabel={t.common.no} />
+          </span>
         </div>
         <div>
           <span>{t.nav.receipts}</span>
-          <strong><BooleanIcon value={donor.recu} trueLabel={t.common.yes} falseLabel={t.common.no} /></strong>
+          <span className="donor-detail-boolean-value">
+            <BooleanIcon value={donor.recu} trueLabel={t.common.yes} falseLabel={t.common.no} />
+          </span>
         </div>
         <div>
           <span>{t.donorForm.lifetime}</span>
