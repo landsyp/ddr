@@ -183,8 +183,12 @@ const copy = {
       deactivateBody: "Are you sure you want to make {name} inactive? They will remain in the directory with an inactive status.",
       donationHistory: "Donation history",
       donorProfile: "Donor profile",
+      donorStatement: "Donor statement",
       noDonations: "No donations recorded for this donor yet.",
       expandProfile: "Expand donor profile",
+      donationCount: "Donation count",
+      averageDonation: "Average donation",
+      readyReceipts: "Ready receipts",
     },
     donationForm: {
       title: "Record a donation",
@@ -613,8 +617,12 @@ const copy = {
       deactivateBody: "Voulez-vous vraiment rendre {name} inactif? Il restera dans le répertoire avec le statut inactif.",
       donationHistory: "Historique des dons",
       donorProfile: "Profil du donateur",
+      donorStatement: "Compte-rendu du donateur",
       noDonations: "Aucun don enregistré pour ce donateur.",
       expandProfile: "Agrandir le profil du donateur",
+      donationCount: "Nombre de dons",
+      averageDonation: "Don moyen",
+      readyReceipts: "Reçus prêts",
     },
     donationForm: {
       title: "Enregistrer un don",
@@ -3289,10 +3297,51 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
 
 function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
   const total = donations.reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
+  const averageDonation = donations.length ? total / donations.length : 0;
+  const readyReceipts = donations.filter((donation) => donation.receiptStatus === "Ready").length;
   const visibleDonations = isExpanded ? donations : donations.slice(0, 5);
+  const statementRows = donations.map((donation) => ({
+    Date: donation.dateDon,
+    Account: `${donation.noCompte} - ${donation.libelleCompte}`,
+    Description: donation.description || "",
+    Amount: donation.montant,
+    Status: translateStatus(donation.receiptStatus, t),
+  }));
 
   return (
     <div className={`donor-detail ${isExpanded ? "is-expanded" : ""}`}>
+      <div className="panel-subheader">
+        <h3>{t.donorForm.donorStatement}</h3>
+        <div className="export-actions">
+          <button className="secondary-button compact" type="button" onClick={() => downloadCSV(`donor-${donor.numero}-statement.csv`, statementRows)}>
+            <FileText size={16} />
+            <span>{t.common.csv}</span>
+          </button>
+          <button className="secondary-button compact" type="button" onClick={() => downloadExcel(`donor-${donor.numero}-statement.xls`, statementRows)}>
+            <FileSpreadsheet size={16} />
+            <span>Excel</span>
+          </button>
+        </div>
+      </div>
+      <div className="donor-statement-grid">
+        <div>
+          <span>{t.donorForm.donationCount}</span>
+          <strong>{donations.length}</strong>
+        </div>
+        <div>
+          <span>{t.donorForm.lifetime}</span>
+          <strong>{currency(total)}</strong>
+        </div>
+        <div>
+          <span>{t.donorForm.averageDonation}</span>
+          <strong>{currency(averageDonation)}</strong>
+        </div>
+        <div>
+          <span>{t.donorForm.readyReceipts}</span>
+          <strong>{readyReceipts}</strong>
+        </div>
+      </div>
+
       <div className={`account-detail-grid donor-detail-grid ${isExpanded ? "is-expanded" : ""}`}>
         <div>
           <span>{t.common.email}</span>

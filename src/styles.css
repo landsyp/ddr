@@ -929,6 +929,36 @@ tr.is-clickable:focus-visible {
   padding-top: 4px;
 }
 
+.donor-statement-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.donor-statement-grid div {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--brand) 14%, transparent);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--brand-soft) 58%, #ffffff 42%), #ffffff 92%);
+  box-shadow: 0 10px 24px rgba(25, 46, 49, 0.055);
+}
+
+.donor-statement-grid span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.donor-statement-grid strong {
+  color: var(--ink);
+  font-size: 1.25rem;
+}
+
 .status-pill,
 .segment {
   display: inline-flex;
@@ -3751,6 +3781,7 @@ tr.is-clickable:focus-visible {
   .subscription-plan-grid,
   .account-detail-grid,
   .account-detail-grid.is-expanded,
+  .donor-statement-grid,
   .form-grid,
   .settings-profile-form,
   .action-grid {
