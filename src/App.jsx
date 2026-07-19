@@ -35,6 +35,7 @@ import {
   ReceiptText,
   Search,
   Settings,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
   UserPlus,
@@ -3096,9 +3097,9 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
             <Search size={17} />
             <input value={query} onChange={(event) => { setQuery(event.target.value); onSearch(event); }} placeholder={t.donorForm.filter} />
           </div>
-          <button className="secondary-button compact donor-tools-toggle" type="button" onClick={() => setDonorToolsOpen((isOpen) => !isOpen)} aria-expanded={donorToolsOpen}>
+          <button className="secondary-button compact donor-tools-toggle" type="button" onClick={() => setDonorToolsOpen((isOpen) => !isOpen)} aria-expanded={donorToolsOpen} aria-label={t.common.manage} title={t.common.manage}>
             <Menu size={16} />
-            <span>{t.common.manage}</span>
+            <SlidersHorizontal size={14} />
           </button>
           <div className={`donor-directory-tools ${donorToolsOpen ? "is-open" : ""}`}>
             <div className="register-counts">
