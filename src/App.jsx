@@ -1797,6 +1797,7 @@ function App() {
             pendingDonations={pendingDonations}
             receipts={receipts}
             t={t}
+            onCategorizePending={handleCategorizePendingDonation}
             onViewChange={openView}
           />
         )}
@@ -2158,7 +2159,8 @@ function Topbar({ language, notifications = [], onLanguageChange, onLogout, onMe
   );
 }
 
-function Overview({ accounts, donations, donors, pendingDonations, receipts, t, onViewChange }) {
+function Overview({ accounts, donations, donors, pendingDonations, receipts, t, onCategorizePending, onViewChange }) {
+  const [categorizingDonationId, setCategorizingDonationId] = useState(null);
   const currentYear = String(new Date().getFullYear());
   const ytdDonations = donations.filter((donation) => String(donation.dateDon || "").startsWith(currentYear));
   const ytdTotal = ytdDonations.reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
@@ -2265,7 +2267,7 @@ function Overview({ accounts, donations, donors, pendingDonations, receipts, t, 
         <Panel title={t.banking.newDonations} icon={Bell}>
           <DataTable
             t={t}
-            columns={["ID", t.donationForm.donor, t.donationForm.date, t.donationForm.method, t.donationForm.amount, t.common.status]}
+            columns={["ID", t.donationForm.donor, t.donationForm.date, t.donationForm.method, t.donationForm.amount, t.common.status, ""]}
             rows={pendingDonations.slice(0, 6).map((donation) => [
               donation.id,
               donors.find((donor) => donor.numero === donation.donorNumber)?.fullName || donation.donorNumber,
@@ -2273,7 +2275,41 @@ function Overview({ accounts, donations, donors, pendingDonations, receipts, t, 
               donation.source || donation.methodLabel || t.banking.imported,
               currency(donation.amount),
               <StatusPill key={`overview-pending-${donation.id}`} t={t} value="pending" />,
+              <button
+                className="categorize-chip-button"
+                type="button"
+                key={`overview-categorize-${donation.id}`}
+                aria-label={t.banking.categorize}
+                title={t.banking.categorize}
+                onClick={() => setCategorizingDonationId((currentId) => currentId === donation.id ? null : donation.id)}
+              >
+                <Link2 size={14} />
+                <span>{t.banking.categorize}</span>
+              </button>,
             ])}
+            expandedRowContent={(row) => {
+              const pendingDonation = pendingDonations.find((donation) => donation.id === row[0]);
+              if (!pendingDonation || categorizingDonationId !== pendingDonation.id) {
+                return null;
+              }
+
+              const detectedDonor = donors.find((donor) => donor.numero === pendingDonation.donorNumber);
+              return (
+                <div className="donation-register-accordion">
+                  <CategorizeDonationForm
+                    accounts={accounts}
+                    detectedDonor={detectedDonor}
+                    donation={pendingDonation}
+                    donors={donors}
+                    onSubmit={(data) => {
+                      onCategorizePending(pendingDonation, data);
+                      setCategorizingDonationId(null);
+                    }}
+                    t={t}
+                  />
+                </div>
+              );
+            }}
           />
         </Panel>
       )}
