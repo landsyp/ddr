@@ -1784,8 +1784,10 @@ function App() {
         {!loading && activeView === "overview" && (
           <Overview
             accounts={accounts}
-            dashboard={dashboard}
             donations={donations}
+            donors={donors}
+            pendingDonations={pendingDonations}
+            receipts={receipts}
             t={t}
             onViewChange={openView}
           />
@@ -2148,20 +2150,37 @@ function Topbar({ language, notifications = [], onLanguageChange, onLogout, onMe
   );
 }
 
-function Overview({ accounts, dashboard, donations, t, onViewChange }) {
-  const totals = dashboard?.totals || {};
-  const monthly = dashboard?.monthly || [];
+function Overview({ accounts, donations, donors, pendingDonations, receipts, t, onViewChange }) {
+  const currentYear = String(new Date().getFullYear());
+  const ytdDonations = donations.filter((donation) => String(donation.dateDon || "").startsWith(currentYear));
+  const ytdTotal = ytdDonations.reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
+  const receiptableAccountIds = new Set(accounts.filter((account) => account.recu).map((account) => account.compteID));
+  const receiptableTotal = donations
+    .filter((donation) => receiptableAccountIds.has(donation.compteID))
+    .reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
+  const pendingReceipts = donations.filter((donation) => donation.receiptStatus === "Ready").length;
+  const monthlyMap = ytdDonations.reduce((months, donation) => {
+    const month = String(donation.dateDon || "").slice(0, 7);
+    if (!month) {
+      return months;
+    }
+
+    months.set(month, (months.get(month) || 0) + Number(donation.montant || 0));
+    return months;
+  }, new Map());
+  const monthly = Array.from(monthlyMap, ([month, amount]) => ({ month, amount })).sort((left, right) => left.month.localeCompare(right.month));
   const currentMonthKey = new Date().toISOString().slice(0, 7);
   const currentMonthGiving = monthly.find((item) => item.month === currentMonthKey)?.amount || 0;
   const metrics = [
-    { label: t.metrics[0], value: currency(totals.ytdDonations || 0), trend: "SQLite", tone: "green" },
+    { label: t.metrics[0], value: currency(ytdTotal), trend: `${ytdDonations.length} ${t.donationForm.ytdDonations}`, tone: "green" },
     { label: t.overview.monthlyGivingSoFar, value: currency(currentMonthGiving), trend: t.overview.currentMonth, tone: "blue" },
-    { label: t.metrics[1], value: String(totals.receiptCount || 0), trend: currency(totals.receiptableTotal || 0), tone: "blue" },
-    { label: t.metrics[2], value: String(totals.activeDonors || 0), trend: t.common.active, tone: "amber" },
-    { label: t.metrics[3], value: String(totals.pendingReceipts || 0), trend: t.receipts.ready, tone: "red" },
+    { label: t.metrics[1], value: String(receipts.length), trend: currency(receiptableTotal), tone: "blue" },
+    { label: t.metrics[2], value: String(donors.filter((donor) => donor.actif).length), trend: t.common.active, tone: "amber" },
+    { label: t.metrics[3], value: String(pendingReceipts), trend: t.receipts.ready, tone: "red" },
+    { label: t.banking.newDonations, value: String(pendingDonations.length), trend: t.common.pending, tone: "amber" },
   ];
   const maxMonth = Math.max(...monthly.map((item) => item.amount), 1);
-  const readyPercent = totals.pendingReceipts ? Math.max(0, Math.round(((donations.length - totals.pendingReceipts) / donations.length) * 100)) : 100;
+  const readyPercent = pendingReceipts ? Math.max(0, Math.round(((donations.length - pendingReceipts) / donations.length) * 100)) : 100;
 
   return (
     <section className="view-stack">
@@ -2192,6 +2211,23 @@ function Overview({ accounts, dashboard, donations, t, onViewChange }) {
           </article>
         ))}
       </div>
+
+      {pendingDonations.length > 0 && (
+        <Panel title={t.banking.newDonations} icon={Bell}>
+          <DataTable
+            t={t}
+            columns={["ID", t.donationForm.donor, t.donationForm.date, t.donationForm.method, t.donationForm.amount, t.common.status]}
+            rows={pendingDonations.slice(0, 6).map((donation) => [
+              donation.id,
+              donors.find((donor) => donor.numero === donation.donorNumber)?.fullName || donation.donorNumber,
+              donation.date,
+              donation.source || donation.methodLabel || t.banking.imported,
+              currency(donation.amount),
+              <StatusPill key={`overview-pending-${donation.id}`} t={t} value="pending" />,
+            ])}
+          />
+        </Panel>
+      )}
 
       <div className="two-column">
         <Panel title={t.overview.recentDonations} icon={CircleDollarSign}>
@@ -2232,8 +2268,8 @@ function Overview({ accounts, dashboard, donations, t, onViewChange }) {
             <div className="progress"><span style={{ width: `${readyPercent}%` }} /></div>
             <ul>
               <li><Check size={15} /> {accounts.filter((account) => account.recu).length} {t.overview.receiptableAccounts}</li>
-              <li><ClipboardList size={15} /> {totals.pendingReceipts || 0} {t.overview.donationsReady}</li>
-              <li><BookOpenCheck size={15} /> {totals.receiptCount || 0} {t.overview.receiptsStored}</li>
+              <li><ClipboardList size={15} /> {pendingReceipts} {t.overview.donationsReady}</li>
+              <li><BookOpenCheck size={15} /> {receipts.length} {t.overview.receiptsStored}</li>
             </ul>
           </div>
         </Panel>
