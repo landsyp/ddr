@@ -2180,7 +2180,9 @@ function Overview({ accounts, donations, donors, pendingDonations, receipts, t, 
   const currentDay = today.getDate();
   const monthProgress = Math.min(100, Math.round((currentDay / daysInMonth) * 100));
   const annualMonthlyAverage = monthly.length ? ytdTotal / monthly.length : 0;
-  const monthlyAverageProgress = annualMonthlyAverage ? Math.min(100, Math.round((currentMonthGiving / annualMonthlyAverage) * 100)) : 0;
+  const monthlyAverageProgress = annualMonthlyAverage ? Math.round((currentMonthGiving / annualMonthlyAverage) * 100) : 0;
+  const monthlyAverageFill = Math.min(monthlyAverageProgress, 100);
+  const monthlyAverageOverTarget = monthlyAverageProgress > 100;
   const metrics = [
     { label: t.metrics[0], value: currency(ytdTotal), trend: `${ytdDonations.length} ${t.donationForm.ytdDonations}`, tone: "green" },
     { label: t.metrics[2], value: String(donors.filter((donor) => donor.actif).length), trend: t.common.active, tone: "blue" },
@@ -2210,10 +2212,12 @@ function Overview({ accounts, donations, donors, pendingDonations, receipts, t, 
       </div>
 
       <article className="monthly-giving-card">
-        <div className="monthly-giving-copy">
-          <span>{t.overview.monthlyGivingSoFar}</span>
-          <strong>{currency(currentMonthGiving)}</strong>
-          <small>{t.overview.currentMonth}</small>
+        <div className="monthly-giving-header">
+          <div className="monthly-giving-copy">
+            <span>{t.overview.monthlyGivingSoFar}</span>
+            <strong>{currency(currentMonthGiving)}</strong>
+            <small>{t.overview.currentMonth}</small>
+          </div>
           <button className="secondary-button monthly-giving-report" type="button" onClick={() => onViewChange("reports")}>
             <BarChart3 size={17} />
             <span>{t.actions[3]}</span>
@@ -2234,8 +2238,11 @@ function Overview({ accounts, donations, donors, pendingDonations, receipts, t, 
               <span>{monthlyAverageProgress}% {t.overview.annualAverageProgress}</span>
               <strong>{t.overview.monthlyAverage}: {currency(annualMonthlyAverage)}</strong>
             </div>
-            <div className="monthly-giving-track is-average" aria-label={`${monthlyAverageProgress}% ${t.overview.annualAverageProgress}`}>
-              <span style={{ width: `${monthlyAverageProgress}%` }} />
+            <div
+              className={`monthly-giving-track is-average ${monthlyAverageOverTarget ? "is-over-target" : ""}`}
+              aria-label={`${monthlyAverageProgress}% ${t.overview.annualAverageProgress}`}
+            >
+              <span style={{ width: `${monthlyAverageFill}%` }} />
             </div>
           </div>
         </div>
