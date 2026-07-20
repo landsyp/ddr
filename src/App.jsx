@@ -1318,7 +1318,7 @@ function App() {
           createdDonor,
         ].sort((left, right) => Number(left.numero) - Number(right.numero)));
       }
-      await refresh(t.donorForm.success);
+      showNotice(t.donorForm.success);
     } catch (saveError) {
       showError(saveError.message);
     }
@@ -1342,7 +1342,8 @@ function App() {
   async function deleteDonor(donor) {
     try {
       await api(`/api/donors/${donor.donateurID}`, { method: "DELETE" });
-      await refresh(t.donorForm.deleted);
+      setDonors((currentDonors) => currentDonors.filter((item) => item.donateurID !== donor.donateurID));
+      showNotice(t.donorForm.deleted);
     } catch (saveError) {
       showError(saveError.message);
     }
