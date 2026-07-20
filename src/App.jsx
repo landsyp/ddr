@@ -75,6 +75,8 @@ const copy = {
       currentMonth: "This month",
       dayProgress: "Day",
       monthElapsed: "of month elapsed",
+      monthlyAverage: "Monthly average",
+      annualAverageProgress: "of annual monthly average",
       receiptReadiness: "Receipt readiness",
       loginTitle: "Secure portal access",
       loginHelp: "Use your organization email to access the workspace.",
@@ -522,6 +524,8 @@ const copy = {
       currentMonth: "Ce mois-ci",
       dayProgress: "Jour",
       monthElapsed: "du mois écoulé",
+      monthlyAverage: "Moyenne mensuelle",
+      annualAverageProgress: "de la moyenne mensuelle annuelle",
       receiptReadiness: "Préparation des reçus",
       loginTitle: "Accès sécurisé",
       loginHelp: "Utilisez le courriel de votre organisme.",
@@ -2175,10 +2179,12 @@ function Overview({ accounts, donations, donors, pendingDonations, receipts, t, 
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   const currentDay = today.getDate();
   const monthProgress = Math.min(100, Math.round((currentDay / daysInMonth) * 100));
+  const annualMonthlyAverage = monthly.length ? ytdTotal / monthly.length : 0;
+  const monthlyAverageProgress = annualMonthlyAverage ? Math.min(100, Math.round((currentMonthGiving / annualMonthlyAverage) * 100)) : 0;
   const metrics = [
     { label: t.metrics[0], value: currency(ytdTotal), trend: `${ytdDonations.length} ${t.donationForm.ytdDonations}`, tone: "green" },
-    { label: t.metrics[2], value: String(donors.filter((donor) => donor.actif).length), trend: t.common.active, tone: "amber" },
-    { label: t.banking.newDonations, value: String(pendingDonations.length), trend: t.common.pending, tone: "amber" },
+    { label: t.metrics[2], value: String(donors.filter((donor) => donor.actif).length), trend: t.common.active, tone: "blue" },
+    { label: t.banking.newDonations, value: String(pendingDonations.length), trend: t.common.pending, tone: "amber", icon: Bell },
   ];
   const maxMonth = Math.max(...monthly.map((item) => item.amount), 1);
   const readyPercent = pendingReceipts ? Math.max(0, Math.round(((donations.length - pendingReceipts) / donations.length) * 100)) : 100;
@@ -2208,22 +2214,40 @@ function Overview({ accounts, donations, donors, pendingDonations, receipts, t, 
           <span>{t.overview.monthlyGivingSoFar}</span>
           <strong>{currency(currentMonthGiving)}</strong>
           <small>{t.overview.currentMonth}</small>
+          <button className="secondary-button monthly-giving-report" type="button" onClick={() => onViewChange("reports")}>
+            <BarChart3 size={17} />
+            <span>{t.actions[3]}</span>
+          </button>
         </div>
         <div className="monthly-giving-progress">
-          <div className="monthly-giving-progress-meta">
-            <span>{monthProgress}% {t.overview.monthElapsed}</span>
-            <strong>{t.overview.dayProgress} {currentDay} / {daysInMonth}</strong>
+          <div className="monthly-giving-progress-block">
+            <div className="monthly-giving-progress-meta">
+              <span>{monthProgress}% {t.overview.monthElapsed}</span>
+              <strong>{t.overview.dayProgress} {currentDay} / {daysInMonth}</strong>
+            </div>
+            <div className="monthly-giving-track" aria-label={`${monthProgress}% ${t.overview.monthElapsed}`}>
+              <span style={{ width: `${monthProgress}%` }} />
+            </div>
           </div>
-          <div className="monthly-giving-track" aria-label={`${monthProgress}% ${t.overview.monthElapsed}`}>
-            <span style={{ width: `${monthProgress}%` }} />
+          <div className="monthly-giving-progress-block">
+            <div className="monthly-giving-progress-meta">
+              <span>{monthlyAverageProgress}% {t.overview.annualAverageProgress}</span>
+              <strong>{t.overview.monthlyAverage}: {currency(annualMonthlyAverage)}</strong>
+            </div>
+            <div className="monthly-giving-track is-average" aria-label={`${monthlyAverageProgress}% ${t.overview.annualAverageProgress}`}>
+              <span style={{ width: `${monthlyAverageProgress}%` }} />
+            </div>
           </div>
         </div>
       </article>
 
-      <div className="metric-grid">
+      <div className="metric-grid overview-metric-grid">
         {metrics.map((metric) => (
           <article className={`metric-card tone-${metric.tone}`} key={metric.label}>
-            <span>{metric.label}</span>
+            <span className="metric-card-title">
+              {metric.icon && <metric.icon size={17} />}
+              <span>{metric.label}</span>
+            </span>
             <strong>{metric.value}</strong>
             <small>{metric.trend}</small>
           </article>
