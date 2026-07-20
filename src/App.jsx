@@ -2158,10 +2158,6 @@ function Overview({ accounts, donations, donors, pendingDonations, receipts, t, 
   const currentYear = String(new Date().getFullYear());
   const ytdDonations = donations.filter((donation) => String(donation.dateDon || "").startsWith(currentYear));
   const ytdTotal = ytdDonations.reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
-  const receiptableAccountIds = new Set(accounts.filter((account) => account.recu).map((account) => account.compteID));
-  const receiptableTotal = donations
-    .filter((donation) => receiptableAccountIds.has(donation.compteID))
-    .reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
   const pendingReceipts = donations.filter((donation) => donation.receiptStatus === "Ready").length;
   const monthlyMap = ytdDonations.reduce((months, donation) => {
     const month = String(donation.dateDon || "").slice(0, 7);
@@ -2181,9 +2177,7 @@ function Overview({ accounts, donations, donors, pendingDonations, receipts, t, 
   const monthProgress = Math.min(100, Math.round((currentDay / daysInMonth) * 100));
   const metrics = [
     { label: t.metrics[0], value: currency(ytdTotal), trend: `${ytdDonations.length} ${t.donationForm.ytdDonations}`, tone: "green" },
-    { label: t.metrics[1], value: String(receipts.length), trend: currency(receiptableTotal), tone: "blue" },
     { label: t.metrics[2], value: String(donors.filter((donor) => donor.actif).length), trend: t.common.active, tone: "amber" },
-    { label: t.metrics[3], value: String(pendingReceipts), trend: t.receipts.ready, tone: "red" },
     { label: t.banking.newDonations, value: String(pendingDonations.length), trend: t.common.pending, tone: "amber" },
   ];
   const maxMonth = Math.max(...monthly.map((item) => item.amount), 1);
