@@ -144,6 +144,7 @@ const copy = {
       to: "to",
       previous: "Previous",
       next: "Next",
+      seeAll: "See all",
       page: "Page",
       showing: "Showing",
       of: "of",
@@ -593,6 +594,7 @@ const copy = {
       to: "au",
       previous: "Précédent",
       next: "Suivant",
+      seeAll: "Voir tout",
       page: "Page",
       showing: "Affichage",
       of: "sur",
@@ -2330,7 +2332,16 @@ function Overview({ accounts, donations, donors, pendingDonations, receipts, t, 
       )}
 
       <div className="two-column">
-        <Panel title={t.overview.recentDonations} icon={CircleDollarSign}>
+        <Panel
+          title={t.overview.recentDonations}
+          icon={CircleDollarSign}
+          action={(
+            <button className="secondary-button compact" type="button" onClick={() => onViewChange("donations")}>
+              <span>{t.common.seeAll}</span>
+              <ChevronRight size={15} />
+            </button>
+          )}
+        >
           <DataTable
             t={t}
             columns={["ID", t.donationForm.donor, t.donationForm.account, t.donationForm.amount, "Status"]}
@@ -5144,7 +5155,7 @@ function EdgePanelHeader({ icon: Icon, title, subtitle, onClose, t }) {
   );
 }
 
-function Panel({ id, title, icon: Icon, children }) {
+function Panel({ id, title, icon: Icon, action, children }) {
   return (
     <section className="panel" id={id}>
       <div className="panel-header">
@@ -5152,6 +5163,7 @@ function Panel({ id, title, icon: Icon, children }) {
           <Icon size={18} />
           <h2>{title}</h2>
         </div>
+        {action}
       </div>
       {children}
     </section>
