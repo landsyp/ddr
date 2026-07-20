@@ -71,6 +71,8 @@ const copy = {
       quickActions: "Quick actions",
       recentDonations: "Recent donations",
       monthlyIncome: "Monthly income",
+      monthlyGivingSoFar: "Monthly giving so far",
+      currentMonth: "This month",
       receiptReadiness: "Receipt readiness",
       loginTitle: "Secure portal access",
       loginHelp: "Use your organization email to access the workspace.",
@@ -514,6 +516,8 @@ const copy = {
       quickActions: "Actions rapides",
       recentDonations: "Dons récents",
       monthlyIncome: "Revenus mensuels",
+      monthlyGivingSoFar: "Dons mensuels jusqu'ici",
+      currentMonth: "Ce mois-ci",
       receiptReadiness: "Préparation des reçus",
       loginTitle: "Accès sécurisé",
       loginHelp: "Utilisez le courriel de votre organisme.",
@@ -2146,13 +2150,16 @@ function Topbar({ language, notifications = [], onLanguageChange, onLogout, onMe
 
 function Overview({ accounts, dashboard, donations, t, onViewChange }) {
   const totals = dashboard?.totals || {};
+  const monthly = dashboard?.monthly || [];
+  const currentMonthKey = new Date().toISOString().slice(0, 7);
+  const currentMonthGiving = monthly.find((item) => item.month === currentMonthKey)?.amount || 0;
   const metrics = [
     { label: t.metrics[0], value: currency(totals.ytdDonations || 0), trend: "SQLite", tone: "green" },
+    { label: t.overview.monthlyGivingSoFar, value: currency(currentMonthGiving), trend: t.overview.currentMonth, tone: "blue" },
     { label: t.metrics[1], value: String(totals.receiptCount || 0), trend: currency(totals.receiptableTotal || 0), tone: "blue" },
     { label: t.metrics[2], value: String(totals.activeDonors || 0), trend: t.common.active, tone: "amber" },
     { label: t.metrics[3], value: String(totals.pendingReceipts || 0), trend: t.receipts.ready, tone: "red" },
   ];
-  const monthly = dashboard?.monthly || [];
   const maxMonth = Math.max(...monthly.map((item) => item.amount), 1);
   const readyPercent = totals.pendingReceipts ? Math.max(0, Math.round(((donations.length - totals.pendingReceipts) / donations.length) * 100)) : 100;
 
