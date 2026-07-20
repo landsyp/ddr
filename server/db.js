@@ -6,7 +6,7 @@ import { DatabaseSync } from "node:sqlite";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(__dirname, "..", "data");
-const databasePath = process.env.DDR_DATABASE_PATH || join(dataDir, "ddr.sqlite");
+const databasePath = process.env.WESERVE_DATABASE_PATH || process.env.DDR_DATABASE_PATH || join(dataDir, "weserve.sqlite");
 
 if (!existsSync(dataDir)) {
   mkdirSync(dataDir, { recursive: true });

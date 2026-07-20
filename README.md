@@ -79,13 +79,13 @@ npm run dev:client # Start Vite only
 The app creates and seeds a local SQLite database at:
 
 ```text
-data/ddr.sqlite
+data/weserve.sqlite
 ```
 
 This file is ignored by Git so each developer can keep local test data. Override the path with:
 
 ```bash
-DDR_DATABASE_PATH=/path/to/ddr.sqlite npm run dev
+WESERVE_DATABASE_PATH=/path/to/weserve.sqlite npm run dev
 ```
 
 ## API Overview
