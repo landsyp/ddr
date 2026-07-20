@@ -1300,9 +1300,10 @@ function App() {
 
   async function handleAddDonor(event) {
     event.preventDefault();
+    const form = event.currentTarget;
     try {
-      const data = formObject(event.currentTarget);
-      await api("/api/donors", {
+      const data = formObject(form);
+      const createdDonor = await api("/api/donors", {
         method: "POST",
         body: JSON.stringify({
           ...data,
@@ -1310,7 +1311,13 @@ function App() {
           recu: data.recu === "on",
         }),
       });
-      event.currentTarget.reset();
+      form.reset();
+      if (createdDonor?.donateurID) {
+        setDonors((currentDonors) => [
+          ...currentDonors.filter((donor) => donor.donateurID !== createdDonor.donateurID),
+          createdDonor,
+        ].sort((left, right) => Number(left.numero) - Number(right.numero)));
+      }
       await refresh(t.donorForm.success);
     } catch (saveError) {
       showError(saveError.message);
