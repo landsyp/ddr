@@ -18,6 +18,7 @@ import {
   FileCheck2,
   FileSpreadsheet,
   FileText,
+  Globe2,
   Maximize2,
   HelpCircle,
   Landmark,
@@ -56,7 +57,7 @@ const copy = {
       accounts: "Accounts",
       receipts: "Receipts",
       reports: "Reports",
-      banking: "Banking",
+      banking: "Connections",
       subscription: "Subscription",
       customization: "Customization",
     },
@@ -432,17 +433,20 @@ const copy = {
       customizationShortcut: "Customize interface",
     },
     banking: {
-      title: "Banking connections",
-      subtitle: "Connect bank or PayPal accounts so new donations can appear automatically for review.",
-      pageSubtitle: "Manage connected bank accounts and decide which SaaS accounts each connection can feed into.",
+      title: "Connections",
+      subtitle: "Connect banks, payment processors, and giving platforms so new donations can appear automatically for review.",
+      pageSubtitle: "Manage connected sources and decide which SaaS accounts each connection can feed into.",
       bankAccount: "Bank account",
+      paymentProcessor: "Payment processor",
+      givingPlatform: "Giving platform",
+      externalSource: "External source",
       paypal: "PayPal account",
       linked: "Linked",
       linkedAccounts: "Linked accounts",
       allAccounts: "All SaaS accounts",
       accountScope: "Associated SaaS accounts",
-      addBank: "Link another bank account",
-      addBankHelp: "Connect a new bank source for incoming donations.",
+      addConnection: "Link another connection",
+      addConnectionHelp: "Connect a bank, payment processor, or giving platform for incoming donations.",
       institution: "Institution",
       provider: "Provider",
       connectionType: "Connection type",
@@ -451,9 +455,13 @@ const copy = {
       stripeAccount: "Stripe account ID",
       transitNumber: "Transit",
       ibanNumber: "IBAN / routing",
+      identifier: "Identifier",
+      sourceEmail: "Source email",
+      sourceAccount: "Source account",
+      routingDetails: "Routing / source details",
       scopeAll: "Use all accounts",
       scopeSelected: "Select accounts",
-      connectBank: "Connect bank account",
+      connectSource: "Connect source",
       newDonations: "New donations",
       pendingNotification: "{count} pending new donations",
       newDonationHelp: "Incoming transactions are tagged as pending until you assign a donor and account.",
@@ -492,7 +500,7 @@ const copy = {
       accounts: "Comptes",
       receipts: "Reçus",
       reports: "Rapports",
-      banking: "Banque",
+      banking: "Connexions",
       subscription: "Abonnement",
       customization: "Personnalisation",
     },
@@ -868,17 +876,20 @@ const copy = {
       customizationShortcut: "Personnaliser l'interface",
     },
     banking: {
-      title: "Connexions bancaires",
-      subtitle: "Connectez un compte bancaire ou PayPal pour faire apparaître automatiquement les nouveaux dons à réviser.",
-      pageSubtitle: "Gérez les comptes bancaires connectés et choisissez les comptes du SaaS admissibles pour chaque connexion.",
+      title: "Connexions",
+      subtitle: "Connectez des banques, processeurs de paiement et plateformes de dons pour faire apparaître automatiquement les nouveaux dons à réviser.",
+      pageSubtitle: "Gérez les sources connectées et choisissez les comptes du SaaS admissibles pour chaque connexion.",
       bankAccount: "Compte bancaire",
+      paymentProcessor: "Processeur de paiement",
+      givingPlatform: "Plateforme de dons",
+      externalSource: "Source externe",
       paypal: "Compte PayPal",
       linked: "Connecté",
       linkedAccounts: "Comptes liés",
       allAccounts: "Tous les comptes SaaS",
       accountScope: "Comptes SaaS associés",
-      addBank: "Lier un autre compte bancaire",
-      addBankHelp: "Connectez une nouvelle source bancaire pour les dons entrants.",
+      addConnection: "Lier une autre connexion",
+      addConnectionHelp: "Connectez une banque, un processeur de paiement ou une plateforme de dons.",
       institution: "Institution",
       provider: "Fournisseur",
       connectionType: "Type de connexion",
@@ -887,9 +898,13 @@ const copy = {
       stripeAccount: "ID de compte Stripe",
       transitNumber: "Transit",
       ibanNumber: "IBAN / routage",
+      identifier: "Identifiant",
+      sourceEmail: "Courriel source",
+      sourceAccount: "Compte source",
+      routingDetails: "Routage / détails source",
       scopeAll: "Utiliser tous les comptes",
       scopeSelected: "Sélectionner des comptes",
-      connectBank: "Connecter le compte bancaire",
+      connectSource: "Connecter la source",
       newDonations: "Nouveaux dons",
       pendingNotification: "{count} nouveaux dons en attente",
       newDonationHelp: "Les transactions entrantes restent en attente jusqu'à l'attribution d'un donateur et d'un compte.",
@@ -1020,7 +1035,7 @@ function getPageTour(t, view) {
         { visual: "pending", title: fr ? "Dons en attente" : "Pending donations", body: fr ? "Les transactions bancaires ou PayPal arrivent ici avant d'être catégorisées." : "Bank or PayPal transactions land here before categorization." },
         { visual: "add", title: fr ? "Ajouter un don" : "Add donation", body: fr ? "L'onglet latéral ajoute un don manuel sans quitter la page." : "The side tab records a manual donation without leaving the page." },
         { visual: "import", title: fr ? "Importer des dons" : "Import donations", body: fr ? "L'onglet import permet de téléverser un CSV, Excel, export PayPal ou export bancaire." : "The import tab uploads CSV, Excel, PayPal, or bank export files." },
-        { visual: "banking", title: fr ? "Connexions bancaires" : "Banking connections", body: fr ? "L'onglet bancaire affiche les comptes connectés qui alimentent les nouveaux dons." : "The banking tab shows connected accounts feeding new donations." },
+        { visual: "banking", title: fr ? "Connexions" : "Connections", body: fr ? "L'onglet Connexions affiche les banques, processeurs et plateformes qui alimentent les nouveaux dons." : "The Connections tab shows banks, processors, and giving platforms feeding new donations." },
       ],
     },
     donors: {
@@ -2727,6 +2742,14 @@ function bankBrand(institution = "") {
     return { type: "card", color: "#635bff", soft: "#eeecff" };
   }
 
+  if (name.includes("zeffy")) {
+    return { type: "external", color: "#5636d6", soft: "#f0edff" };
+  }
+
+  if (name.includes("canada helps") || name.includes("canadahelps")) {
+    return { type: "external", color: "#e43d30", soft: "#fdecea" };
+  }
+
   if (name.includes("rbc") || name.includes("royal bank")) {
     return { type: "bank", color: "#0051a5", soft: "#e7f0fb" };
   }
@@ -2767,7 +2790,42 @@ function BankBrandIcon({ brand, size = 18 }) {
     return <CreditCard size={size} />;
   }
 
+  if (brand.type === "external") {
+    return <Globe2 size={size} />;
+  }
+
   return <Landmark size={size} />;
+}
+
+function connectionCategory(connection, selectedProvider) {
+  if (selectedProvider?.category) {
+    return selectedProvider.category;
+  }
+
+  if (connection?.category) {
+    return connection.category;
+  }
+
+  const brandType = bankBrand(`${connection?.institution || ""} ${connection?.accountNumber || ""}`).type;
+  if (brandType === "paypal" || brandType === "card") {
+    return "processor";
+  }
+  if (brandType === "external") {
+    return "giving";
+  }
+
+  return "bank";
+}
+
+function connectionCategoryLabel(category, t) {
+  if (category === "processor") {
+    return t.banking.paymentProcessor;
+  }
+  if (category === "giving") {
+    return t.banking.givingPlatform;
+  }
+
+  return t.banking.bankAccount;
 }
 
 function BankingConnectionRow({ bankAccount, t }) {
@@ -2805,6 +2863,7 @@ function defaultBankingConnections(accounts = []) {
   return [
     {
       id: "national-bank",
+      category: "bank",
       institution: "Banque Nationale",
       accountNumber: "**** 4921",
       transit: "006",
@@ -2814,6 +2873,7 @@ function defaultBankingConnections(accounts = []) {
     },
     {
       id: "paypal-giving",
+      category: "processor",
       institution: "PayPal Giving",
       accountNumber: "finance@weserve.local",
       transit: "PayPal",
@@ -2849,17 +2909,35 @@ function maskEmail(value = "") {
 }
 
 function BankingView({ accounts, t }) {
-  const bankingProviders = [
-    { value: "Banque Nationale", label: "Banque Nationale", type: "bank" },
-    { value: "Desjardins", label: "Desjardins", type: "bank" },
-    { value: "RBC", label: "RBC", type: "bank" },
-    { value: "TD Bank", label: "TD Bank", type: "bank" },
-    { value: "BMO", label: "BMO", type: "bank" },
-    { value: "CIBC", label: "CIBC", type: "bank" },
-    { value: "Scotiabank", label: "Scotiabank", type: "bank" },
-    { value: "PayPal", label: "PayPal", type: "paypal" },
-    { value: "Stripe", label: "Stripe", type: "card" },
+  const providerGroups = [
+    {
+      label: t.banking.bankAccount,
+      options: [
+        { value: "Banque Nationale", label: "Banque Nationale", type: "bank", category: "bank" },
+        { value: "Desjardins", label: "Desjardins", type: "bank", category: "bank" },
+        { value: "RBC", label: "RBC", type: "bank", category: "bank" },
+        { value: "TD Bank", label: "TD Bank", type: "bank", category: "bank" },
+        { value: "BMO", label: "BMO", type: "bank", category: "bank" },
+        { value: "CIBC", label: "CIBC", type: "bank", category: "bank" },
+        { value: "Scotiabank", label: "Scotiabank", type: "bank", category: "bank" },
+      ],
+    },
+    {
+      label: t.banking.paymentProcessor,
+      options: [
+        { value: "PayPal", label: "PayPal", type: "paypal", category: "processor" },
+        { value: "Stripe", label: "Stripe", type: "card", category: "processor" },
+      ],
+    },
+    {
+      label: t.banking.givingPlatform,
+      options: [
+        { value: "Zeffy", label: "Zeffy", type: "external", category: "giving" },
+        { value: "CanadaHelps", label: "CanadaHelps", type: "external", category: "giving" },
+      ],
+    },
   ];
+  const bankingProviders = providerGroups.flatMap((group) => group.options);
   const [linkedAccounts, setLinkedAccounts] = useState(() => savedBankingConnections(accounts));
   const [addBankOpen, setAddBankOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(bankingProviders[0]);
@@ -2878,15 +2956,16 @@ function BankingView({ accounts, t }) {
     setLinkedAccounts((currentAccounts) => [
       ...currentAccounts,
       {
-        id: `bank-${Date.now()}`,
+        id: `connection-${Date.now()}`,
+        category: selectedProvider.category,
         institution: data.provider,
-        accountNumber: selectedProvider.type === "paypal"
-          ? maskEmail(data.paypalEmail)
+        accountNumber: selectedProvider.type === "paypal" || selectedProvider.type === "external"
+          ? maskEmail(data.paypalEmail || data.sourceEmail)
           : maskSensitiveValue(data.accountNumber || data.stripeAccount),
         transit: selectedProvider.type === "bank" ? data.transit : selectedProvider.label,
-        iban: selectedProvider.type === "paypal"
-          ? maskEmail(data.paypalEmail)
-          : maskSensitiveValue(data.iban || data.stripeAccount),
+        iban: selectedProvider.type === "bank"
+          ? maskSensitiveValue(data.iban)
+          : maskSensitiveValue(data.stripeAccount || data.sourceAccount || data.paypalEmail),
         scope: data.scope,
         accountIds: data.scope === "all" ? [] : selectedAccountIds,
       },
@@ -2908,6 +2987,10 @@ function BankingView({ accounts, t }) {
       <div className="banking-tile-grid">
         {linkedAccounts.map((bankAccount) => {
           const brand = bankBrand(bankAccount.institution);
+          const category = connectionCategory(bankAccount);
+          const detailLabels = category === "bank"
+            ? [t.banking.transitNumber, t.banking.ibanNumber]
+            : [t.banking.provider, t.banking.identifier];
 
           return (
           <article className="linked-bank-tile" key={bankAccount.id} style={{ "--bank-color": brand.color, "--bank-soft": brand.soft }}>
@@ -2918,17 +3001,17 @@ function BankingView({ accounts, t }) {
               <span className="status-pill issued"><CheckCircle2 size={14} /> {t.banking.linked}</span>
             </div>
             <div>
-              <span>{t.banking.bankAccount}</span>
+              <span>{connectionCategoryLabel(category, t)}</span>
               <h2>{bankAccount.institution}</h2>
               <p>{bankAccount.accountNumber}</p>
             </div>
             <dl className="banking-detail-list">
               <div>
-                <dt>{t.banking.transitNumber}</dt>
+                <dt>{detailLabels[0]}</dt>
                 <dd>{bankAccount.transit}</dd>
               </div>
               <div>
-                <dt>{t.banking.ibanNumber}</dt>
+                <dt>{detailLabels[1]}</dt>
                 <dd>{bankAccount.iban}</dd>
               </div>
             </dl>
@@ -2942,25 +3025,34 @@ function BankingView({ accounts, t }) {
 
         <button className="linked-bank-tile add-bank-tile" type="button" onClick={() => setAddBankOpen((open) => !open)} aria-expanded={addBankOpen}>
           <span><Plus size={28} /></span>
-          <strong>{t.banking.addBank}</strong>
-          <small>{t.banking.addBankHelp}</small>
+          <strong>{t.banking.addConnection}</strong>
+          <small>{t.banking.addConnectionHelp}</small>
         </button>
       </div>
 
       {addBankOpen && (
-        <Panel title={t.banking.addBank} icon={Plus}>
+        <Panel title={t.banking.addConnection} icon={Plus}>
           <form className="form-grid banking-link-form" onSubmit={addLinkedBankAccount}>
             <label>
               {t.banking.provider}
               <select
+                aria-label={t.banking.provider}
                 name="provider"
                 value={selectedProvider.value}
                 onChange={(event) => setSelectedProvider(bankingProviders.find((provider) => provider.value === event.target.value) || bankingProviders[0])}
               >
-                {bankingProviders.map((provider) => (
-                  <option value={provider.value} key={provider.value}>{provider.label}</option>
+                {providerGroups.map((group) => (
+                  <optgroup label={group.label} key={group.label}>
+                    {group.options.map((provider) => (
+                      <option value={provider.value} key={provider.value}>{provider.label}</option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
+            </label>
+            <label>
+              {t.banking.connectionType}
+              <input value={connectionCategoryLabel(selectedProvider.category, t)} readOnly />
             </label>
             {selectedProvider.type === "bank" && (
               <>
@@ -2990,9 +3082,21 @@ function BankingView({ accounts, t }) {
                 <input name="stripeAccount" placeholder="acct_1234" required />
               </label>
             )}
+            {selectedProvider.type === "external" && (
+              <>
+                <label>
+                  {t.banking.sourceEmail}
+                  <input name="sourceEmail" placeholder="donations@organization.org" required type="email" />
+                </label>
+                <label>
+                  {t.banking.sourceAccount}
+                  <input name="sourceAccount" placeholder="external-source-1234" required />
+                </label>
+              </>
+            )}
             <label>
               {t.banking.accountScope}
-              <select name="scope" value={scopeMode} onChange={(event) => setScopeMode(event.target.value)}>
+              <select aria-label={t.banking.accountScope} name="scope" value={scopeMode} onChange={(event) => setScopeMode(event.target.value)}>
                 <option value="all">{t.banking.scopeAll}</option>
                 <option value="selected">{t.banking.scopeSelected}</option>
               </select>
@@ -3000,7 +3104,7 @@ function BankingView({ accounts, t }) {
             {scopeMode === "selected" && (
               <label className="full-field">
                 {t.banking.linkedAccounts}
-                <select name="accountIds" multiple required>
+                <select aria-label={t.banking.linkedAccounts} name="accountIds" multiple required>
                   {accounts.map((account) => (
                     <option value={account.compteID} key={account.compteID}>
                       {account.noCompte} - {account.nom}
@@ -3011,7 +3115,7 @@ function BankingView({ accounts, t }) {
             )}
             <button className="primary-button form-submit" type="submit">
               <Link2 size={17} />
-              <span>{t.banking.connectBank}</span>
+              <span>{t.banking.connectSource}</span>
             </button>
           </form>
         </Panel>
