@@ -2287,6 +2287,7 @@ function Overview({ accounts, donations, donors, pendingDonations, receipts, t, 
                 <span>{t.banking.categorize}</span>
               </button>,
             ])}
+            rowClassName={() => "donation-register-pending-row"}
             expandedRowContent={(row) => {
               const pendingDonation = pendingDonations.find((donation) => donation.id === row[0]);
               if (!pendingDonation || categorizingDonationId !== pendingDonation.id) {
