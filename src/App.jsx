@@ -1430,14 +1430,21 @@ function App() {
 
   async function handleAddDonation(event) {
     event.preventDefault();
+    const form = event.currentTarget;
     try {
-      const data = formObject(event.currentTarget);
-      await api("/api/donations", {
+      const data = formObject(form);
+      const createdDonation = await api("/api/donations", {
         method: "POST",
         body: JSON.stringify(data),
       });
-      event.currentTarget.reset();
-      await refresh(t.donationForm.success);
+      form.reset();
+      if (createdDonation?.donID) {
+        setDonations((currentDonations) => [
+          createdDonation,
+          ...currentDonations.filter((donation) => donation.donID !== createdDonation.donID),
+        ]);
+      }
+      showNotice(t.donationForm.success);
     } catch (saveError) {
       showError(saveError.message);
     }
