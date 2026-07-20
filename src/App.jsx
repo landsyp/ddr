@@ -226,6 +226,8 @@ const copy = {
       totalAmount: "Total amount",
       ytdAmount: "YTD amount",
       ytdDonations: "YTD donations",
+      donations: "donations",
+      monthlySoFar: "so far",
       searchRegister: "Search donations",
       showAllPending: "Show all pending",
       collapsePending: "Collapse pending",
@@ -676,6 +678,8 @@ const copy = {
       totalAmount: "Montant total",
       ytdAmount: "Montant YTD",
       ytdDonations: "Dons YTD",
+      donations: "dons",
+      monthlySoFar: "jusqu'ici",
       searchRegister: "Rechercher dans les dons",
       showAllPending: "Afficher tous les dons en attente",
       collapsePending: "Réduire les dons en attente",
@@ -1809,6 +1813,7 @@ function App() {
             bootstrap={bootstrap}
             donations={donations}
             donors={donors}
+            language={language}
             pendingDonations={pendingDonations}
             t={t}
             onCategorizePending={handleCategorizePendingDonation}
@@ -2437,7 +2442,7 @@ function QuickActionLauncher({ hasPageTour, isHintActive, isOpen, onHelp, onTogg
   );
 }
 
-function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t, onCategorizePending, onDelete, onSubmit, onUpdate }) {
+function Donations({ accounts, bootstrap, donations, donors, language, pendingDonations, t, onCategorizePending, onDelete, onSubmit, onUpdate }) {
   const [categorizingDonationId, setCategorizingDonationId] = useState(null);
   const [registerCategorizingDonationId, setRegisterCategorizingDonationId] = useState(null);
   const [activeDrawer, setActiveDrawer] = useState(null);
@@ -2477,9 +2482,15 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
   const filteredPendingCount = filteredDonationRows.filter((row) => row.status === "pending").length;
   const filteredRegisteredCount = filteredDonationRows.length - filteredPendingCount;
   const donationTotal = donations.reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
-  const currentYear = String(new Date().getFullYear());
+  const today = new Date();
+  const currentYear = String(today.getFullYear());
+  const currentMonthKey = today.toISOString().slice(0, 7);
   const ytdDonations = donations.filter((donation) => String(donation.dateDon || "").startsWith(currentYear));
   const ytdTotal = ytdDonations.reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
+  const monthlyDonations = donations.filter((donation) => String(donation.dateDon || "").startsWith(currentMonthKey));
+  const monthlyTotal = monthlyDonations.reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
+  const currentMonthName = new Intl.DateTimeFormat(language === "fr" ? "fr-CA" : "en-CA", { month: "long" }).format(today);
+  const currentMonthLabel = `${currentMonthName.charAt(0).toUpperCase()}${currentMonthName.slice(1)} ${t.donationForm.monthlySoFar}`;
   const averageGift = donations.length ? donationTotal / donations.length : 0;
 
   return (
@@ -2502,13 +2513,14 @@ function Donations({ accounts, bootstrap, donations, donors, pendingDonations, t
           <strong>{donations.length}</strong>
         </article>
         <article className="donation-summary-card">
-          <span><CircleDollarSign size={16} /> {t.donationForm.totalAmount}</span>
-          <strong>{currency(donationTotal)}</strong>
-        </article>
-        <article className="donation-summary-card">
           <span><CalendarDays size={16} /> {t.donationForm.ytdAmount}</span>
           <strong>{currency(ytdTotal)}</strong>
           <small>{ytdDonations.length} {t.donationForm.ytdDonations}</small>
+        </article>
+        <article className="donation-summary-card">
+          <span><CircleDollarSign size={16} /> {currentMonthLabel}</span>
+          <strong>{currency(monthlyTotal)}</strong>
+          <small>{monthlyDonations.length} {t.donationForm.donations}</small>
         </article>
       </section>
 
