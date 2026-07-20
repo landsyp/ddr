@@ -73,6 +73,8 @@ const copy = {
       monthlyIncome: "Monthly income",
       monthlyGivingSoFar: "Monthly giving so far",
       currentMonth: "This month",
+      dayProgress: "Day",
+      monthElapsed: "of month elapsed",
       receiptReadiness: "Receipt readiness",
       loginTitle: "Secure portal access",
       loginHelp: "Use your organization email to access the workspace.",
@@ -518,6 +520,8 @@ const copy = {
       monthlyIncome: "Revenus mensuels",
       monthlyGivingSoFar: "Dons mensuels jusqu'ici",
       currentMonth: "Ce mois-ci",
+      dayProgress: "Jour",
+      monthElapsed: "du mois écoulé",
       receiptReadiness: "Préparation des reçus",
       loginTitle: "Accès sécurisé",
       loginHelp: "Utilisez le courriel de votre organisme.",
@@ -2169,11 +2173,14 @@ function Overview({ accounts, donations, donors, pendingDonations, receipts, t, 
     return months;
   }, new Map());
   const monthly = Array.from(monthlyMap, ([month, amount]) => ({ month, amount })).sort((left, right) => left.month.localeCompare(right.month));
-  const currentMonthKey = new Date().toISOString().slice(0, 7);
+  const today = new Date();
+  const currentMonthKey = today.toISOString().slice(0, 7);
   const currentMonthGiving = monthly.find((item) => item.month === currentMonthKey)?.amount || 0;
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const currentDay = today.getDate();
+  const monthProgress = Math.min(100, Math.round((currentDay / daysInMonth) * 100));
   const metrics = [
     { label: t.metrics[0], value: currency(ytdTotal), trend: `${ytdDonations.length} ${t.donationForm.ytdDonations}`, tone: "green" },
-    { label: t.overview.monthlyGivingSoFar, value: currency(currentMonthGiving), trend: t.overview.currentMonth, tone: "blue" },
     { label: t.metrics[1], value: String(receipts.length), trend: currency(receiptableTotal), tone: "blue" },
     { label: t.metrics[2], value: String(donors.filter((donor) => donor.actif).length), trend: t.common.active, tone: "amber" },
     { label: t.metrics[3], value: String(pendingReceipts), trend: t.receipts.ready, tone: "red" },
@@ -2201,6 +2208,23 @@ function Overview({ accounts, donations, donors, pendingDonations, receipts, t, 
           </div>
         </div>
       </div>
+
+      <article className="monthly-giving-card">
+        <div className="monthly-giving-copy">
+          <span>{t.overview.monthlyGivingSoFar}</span>
+          <strong>{currency(currentMonthGiving)}</strong>
+          <small>{t.overview.currentMonth}</small>
+        </div>
+        <div className="monthly-giving-progress">
+          <div className="monthly-giving-progress-meta">
+            <span>{monthProgress}% {t.overview.monthElapsed}</span>
+            <strong>{t.overview.dayProgress} {currentDay} / {daysInMonth}</strong>
+          </div>
+          <div className="monthly-giving-track" aria-label={`${monthProgress}% ${t.overview.monthElapsed}`}>
+            <span style={{ width: `${monthProgress}%` }} />
+          </div>
+        </div>
+      </article>
 
       <div className="metric-grid">
         {metrics.map((metric) => (
