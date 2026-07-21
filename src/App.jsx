@@ -2274,53 +2274,51 @@ function Overview({ accounts, donations, donors, pendingDonations, receipts, t, 
             </button>
           </div>
           {showAllPending && (
-            <DataTable
-              t={t}
-              columns={["ID", t.donationForm.donor, t.donationForm.date, t.donationForm.method, t.donationForm.amount, t.common.status, ""]}
-              rows={pendingDonations.map((donation) => [
-                donation.id,
-                donors.find((donor) => donor.numero === donation.donorNumber)?.fullName || donation.donorNumber,
-                donation.date,
-                donation.source || donation.methodLabel || t.banking.imported,
-                currency(donation.amount),
-                <StatusPill key={`overview-pending-${donation.id}`} t={t} value="pending" />,
-                <button
-                  className="categorize-chip-button"
-                  type="button"
-                  key={`overview-categorize-${donation.id}`}
-                  aria-label={t.banking.categorize}
-                  title={t.banking.categorize}
-                  onClick={() => setCategorizingDonationId((currentId) => currentId === donation.id ? null : donation.id)}
-                >
-                  <Link2 size={14} />
-                  <span>{t.banking.categorize}</span>
-                </button>,
-              ])}
-              rowClassName={() => "donation-register-pending-row"}
-              expandedRowContent={(row) => {
-                const pendingDonation = pendingDonations.find((donation) => donation.id === row[0]);
-                if (!pendingDonation || categorizingDonationId !== pendingDonation.id) {
-                  return null;
-                }
+            <div className="incoming-donation-list">
+              {pendingDonations.map((donation) => {
+                const detectedDonor = donors.find((donor) => donor.numero === donation.donorNumber);
+                const isCategorizing = categorizingDonationId === donation.id;
 
-                const detectedDonor = donors.find((donor) => donor.numero === pendingDonation.donorNumber);
                 return (
-                  <div className="donation-register-accordion">
-                    <CategorizeDonationForm
-                      accounts={accounts}
-                      detectedDonor={detectedDonor}
-                      donation={pendingDonation}
-                      donors={donors}
-                      onSubmit={(data) => {
-                        onCategorizePending(pendingDonation, data);
-                        setCategorizingDonationId(null);
-                      }}
-                      t={t}
-                    />
-                  </div>
+                  <article className={`incoming-donation ${isCategorizing ? "is-categorizing" : ""}`} key={donation.id}>
+                    <div className="incoming-donation-summary">
+                      <div>
+                        <span className="status-pill pending">{t.common.pending}</span>
+                        <strong>{currency(donation.amount)}</strong>
+                        <small>{donation.source} • {donation.date} • {donation.methodLabel}</small>
+                        <p>{donation.note}</p>
+                        <p className="detected-donor">
+                          {t.donationForm.detectedDonor}: {detectedDonor?.fullName || donation.donorNumber}
+                        </p>
+                      </div>
+                      <button
+                        className="categorize-chip-button"
+                        type="button"
+                        onClick={() => setCategorizingDonationId(isCategorizing ? null : donation.id)}
+                        aria-label={t.banking.categorize}
+                        title={t.banking.categorize}
+                      >
+                        <Link2 size={14} />
+                        <span>{t.banking.categorize}</span>
+                      </button>
+                    </div>
+                    {isCategorizing && (
+                      <CategorizeDonationForm
+                        accounts={accounts}
+                        detectedDonor={detectedDonor}
+                        donation={donation}
+                        donors={donors}
+                        onSubmit={(data) => {
+                          onCategorizePending(donation, data);
+                          setCategorizingDonationId(null);
+                        }}
+                        t={t}
+                      />
+                    )}
+                  </article>
                 );
-              }}
-            />
+              })}
+            </div>
           )}
         </section>
       )}
