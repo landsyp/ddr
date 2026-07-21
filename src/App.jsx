@@ -2437,6 +2437,7 @@ function Donations({ accounts, bootstrap, donations, donors, language, pendingDo
   const [donationPendingDelete, setDonationPendingDelete] = useState(null);
   const [showAllPending, setShowAllPending] = useState(false);
   const [donationSearch, setDonationSearch] = useState("");
+  const [donationToolsOpen, setDonationToolsOpen] = useState(false);
   const linkedBankAccounts = savedBankingConnections(accounts);
   const allDonationRows = [
     ...pendingDonations.map((donation) => ({
@@ -2566,14 +2567,19 @@ function Donations({ accounts, bootstrap, donations, donors, language, pendingDo
       )}
 
       <Panel title={t.donationForm.register} icon={FileText}>
-        <div className="table-toolbar">
+        <div className="table-toolbar donor-directory-toolbar donation-register-toolbar">
           <div className="search-box inline">
             <Search size={17} />
             <input value={donationSearch} onChange={(event) => setDonationSearch(event.target.value)} placeholder={t.donationForm.searchRegister} />
           </div>
-          <div className="register-counts">
-            <span className="status-pill issued">{filteredRegisteredCount} {t.donationForm.registered}</span>
-            <span className="status-pill pending">{filteredPendingCount} {t.common.pending}</span>
+          <button className="secondary-button compact donor-tools-toggle" type="button" onClick={() => setDonationToolsOpen((isOpen) => !isOpen)} aria-expanded={donationToolsOpen} aria-label={t.common.manage} title={t.common.manage}>
+            <SlidersHorizontal size={16} />
+          </button>
+          <div className={`donor-directory-tools donation-register-tools ${donationToolsOpen ? "is-open" : ""}`}>
+            <div className="register-counts">
+              <span className="status-pill issued">{filteredRegisteredCount} {t.donationForm.registered}</span>
+              <span className="status-pill pending">{filteredPendingCount} {t.common.pending}</span>
+            </div>
           </div>
         </div>
         <DataTable

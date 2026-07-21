@@ -1413,6 +1413,10 @@ tr.is-clickable:focus-visible {
   box-shadow: none;
 }
 
+.donation-register-tools .register-counts {
+  justify-content: flex-start;
+}
+
 .donor-tools-toggle {
   display: inline-flex;
   flex: 0 0 44px;
