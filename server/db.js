@@ -137,6 +137,22 @@ function setupSchema() {
       verouille INTEGER NOT NULL DEFAULT 0
     );
 
+    CREATE TABLE IF NOT EXISTS incoming_transactions (
+      incomingTransactionID INTEGER PRIMARY KEY AUTOINCREMENT,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      externalID TEXT NOT NULL,
+      source TEXT NOT NULL,
+      dateTransaction TEXT NOT NULL,
+      amount REAL NOT NULL,
+      donorNumber TEXT,
+      methodeDonID INTEGER REFERENCES methodesDon(methodeDonID),
+      methodLabel TEXT,
+      note TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (organismeID, externalID)
+    );
+
     CREATE TABLE IF NOT EXISTS recus (
       recuID INTEGER PRIMARY KEY AUTOINCREMENT,
       dateCreation TEXT NOT NULL,
@@ -180,6 +196,7 @@ function setupSchema() {
 
     CREATE INDEX IF NOT EXISTS idx_dons_donateur ON dons(donateurID);
     CREATE INDEX IF NOT EXISTS idx_dons_date ON dons(dateDon);
+    CREATE INDEX IF NOT EXISTS idx_incoming_transactions_org_status ON incoming_transactions(organismeID, status);
     CREATE INDEX IF NOT EXISTS idx_recus_org_period ON recus(organismeID, dateDebut, dateFin);
     CREATE INDEX IF NOT EXISTS idx_envois_org_code ON envois(organismeID, envoiCode);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_utilisateurs_courriel_unique ON utilisateurs(courriel);
@@ -313,6 +330,40 @@ function seedDatabase() {
       );
     });
   }
+
+  const incomingCount = db.prepare("SELECT COUNT(*) AS count FROM incoming_transactions").get().count;
+  if (!incomingCount) {
+    const insertIncoming = db.prepare(`
+      INSERT INTO incoming_transactions (
+        organismeID, externalID, source, dateTransaction, amount, donorNumber, methodeDonID, methodLabel, note, status
+      )
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+    `);
+
+    [
+      ["bank-001", "Stripe payout", "2026-07-16", 250, "1", 4, "Card", "Grace Family - online gift"],
+      ["paypal-014", "PayPal", "2026-07-15", 75, "2", 4, "Card", "Monthly support"],
+      ["desjardins-221", "Desjardins", "2026-07-14", 420, "3", 2, "Bank transfer", "Summer campaign transfer"],
+      ["national-118", "Banque Nationale", "2026-07-13", 95, "4", 2, "Bank transfer", "Youth fund deposit"],
+      ["paypal-029", "PayPal", "2026-07-12", 180, "5", 4, "Card", "Community meal support"],
+      ["stripe-337", "Stripe payout", "2026-07-11", 60, "1", 4, "Card", "Weekly recurring gift"],
+    ].forEach((row) => insertIncoming.run(...row));
+  }
+
+  db.exec(`
+    DELETE FROM incoming_transactions
+    WHERE status = 'pending'
+      AND EXISTS (
+        SELECT 1
+        FROM dons AS d
+        INNER JOIN donateurs AS dt ON d.donateurID = dt.donateurID
+        WHERE dt.organismeID = incoming_transactions.organismeID
+          AND dt.numero = incoming_transactions.donorNumber
+          AND d.dateDon = incoming_transactions.dateTransaction
+          AND d.montant = incoming_transactions.amount
+          AND COALESCE(d.description, '') = COALESCE(incoming_transactions.note, '')
+      )
+  `);
 }
 
 setupSchema();
@@ -447,6 +498,25 @@ function normalizeDonation(row) {
     donateurRecu: Boolean(row.donateurRecu),
     donorName: `${row.prenom || ""} ${row.nom || ""}`.trim(),
     receiptStatus: row.recuID ? "Issued" : receiptable ? "Ready" : "No receipt",
+  };
+}
+
+function normalizeIncomingTransaction(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    id: row.externalID,
+    incomingTransactionID: row.incomingTransactionID,
+    source: row.source,
+    date: row.dateTransaction,
+    amount: row.amount,
+    donorNumber: row.donorNumber,
+    methodID: row.methodeDonID,
+    methodLabel: row.methodLabel,
+    note: row.note,
+    status: row.status,
   };
 }
 
@@ -1116,6 +1186,53 @@ function deleteDonation(id, context = {}) {
   return { deleted: true };
 }
 
+function listPendingDonations(context = {}) {
+  return all(
+    `SELECT *
+     FROM incoming_transactions
+     WHERE organismeID = ? AND status = 'pending'
+     ORDER BY dateTransaction DESC, incomingTransactionID DESC`,
+    [organizationID(context)],
+  ).map(normalizeIncomingTransaction);
+}
+
+function categorizePendingDonation(id, data, context = {}) {
+  const orgID = organizationID(context);
+
+  return transaction(() => {
+    const pendingDonation = get(
+      `SELECT *
+       FROM incoming_transactions
+       WHERE organismeID = ? AND externalID = ? AND status = 'pending'`,
+      [orgID, String(id)],
+    );
+
+    if (!pendingDonation) {
+      const error = new Error("Pending donation not found");
+      error.status = 404;
+      throw error;
+    }
+
+    const donation = createDonation({
+      donateurID: data.donateurID,
+      numero: data.numero || pendingDonation.donorNumber,
+      compteID: data.compteID,
+      montant: pendingDonation.amount,
+      dateDon: pendingDonation.dateTransaction,
+      methodeDonID: pendingDonation.methodeDonID,
+      description: pendingDonation.note,
+    }, context);
+
+    run(
+      `DELETE FROM incoming_transactions
+       WHERE organismeID = ? AND externalID = ?`,
+      [orgID, pendingDonation.externalID],
+    );
+
+    return { donation, pending: listPendingDonations(context) };
+  });
+}
+
 function generateReceipts({ dateDebut, dateFin, mode = "email" }, context = {}) {
   const orgID = organizationID(context);
   const code = currentTimestampCode();
@@ -1320,6 +1437,8 @@ export const store = {
   createDonation,
   updateDonation,
   deleteDonation,
+  listPendingDonations,
+  categorizePendingDonation,
   generateReceipts,
   listReceipts,
   listReceiptBatches,

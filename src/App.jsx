@@ -981,15 +981,6 @@ const defaultReceiptPeriod = {
   dateFin: "2026-12-31",
 };
 
-const incomingDonationQueue = [
-  { id: "bank-001", source: "Stripe payout", date: "2026-07-16", amount: 250, donorNumber: "1", methodID: 4, methodLabel: "Card", note: "Grace Family - online gift" },
-  { id: "paypal-014", source: "PayPal", date: "2026-07-15", amount: 75, donorNumber: "2", methodID: 4, methodLabel: "Card", note: "Monthly support" },
-  { id: "desjardins-221", source: "Desjardins", date: "2026-07-14", amount: 420, donorNumber: "3", methodID: 2, methodLabel: "Bank transfer", note: "Summer campaign transfer" },
-  { id: "national-118", source: "Banque Nationale", date: "2026-07-13", amount: 95, donorNumber: "4", methodID: 2, methodLabel: "Bank transfer", note: "Youth fund deposit" },
-  { id: "paypal-029", source: "PayPal", date: "2026-07-12", amount: 180, donorNumber: "5", methodID: 4, methodLabel: "Card", note: "Community meal support" },
-  { id: "stripe-337", source: "Stripe payout", date: "2026-07-11", amount: 60, donorNumber: "1", methodID: 4, methodLabel: "Card", note: "Weekly recurring gift" },
-];
-
 async function api(path, options = {}) {
   const token = localStorage.getItem("ddr-token");
   const response = await fetch(path, {
@@ -1166,7 +1157,7 @@ function App() {
   const [subscriptionAnswer, setSubscriptionAnswer] = useState("");
   const [palette, setPalette] = useState("Default");
   const [savedPalettes, setSavedPalettes] = useState([]);
-  const [pendingDonations, setPendingDonations] = useState(incomingDonationQueue);
+  const [pendingDonations, setPendingDonations] = useState([]);
   const t = copy[language];
   const notifications = pendingDonations.map((donation) => ({
     id: donation.id,
@@ -1200,13 +1191,14 @@ function App() {
 
   async function loadWorkspace(search = query) {
     setLoading(true);
-    const [bootstrapData, dashboardData, donorData, accountData, donationData, receiptData, batchData] =
+    const [bootstrapData, dashboardData, donorData, accountData, donationData, pendingDonationData, receiptData, batchData] =
       await Promise.all([
         api("/api/bootstrap"),
         api("/api/dashboard"),
         api(`/api/donors?active=all&search=${encodeURIComponent(search)}`),
         api("/api/accounts"),
         api("/api/donations?limit=500"),
+        api("/api/pending-donations"),
         api("/api/receipts"),
         api("/api/receipt-batches"),
       ]);
@@ -1216,6 +1208,7 @@ function App() {
     setDonors(donorData);
     setAccounts(accountData);
     setDonations(donationData);
+    setPendingDonations(pendingDonationData);
     setReceipts(receiptData);
     setReceiptBatches(batchData);
     setLoading(false);
@@ -1484,19 +1477,15 @@ function App() {
 
   async function handleCategorizePendingDonation(pendingDonation, data) {
     try {
-      await api("/api/donations", {
+      const result = await api(`/api/pending-donations/${encodeURIComponent(pendingDonation.id)}/categorize`, {
         method: "POST",
         body: JSON.stringify({
           donateurID: data.donateurID,
           numero: data.numero,
           compteID: data.compteID,
-          montant: pendingDonation.amount,
-          dateDon: pendingDonation.date,
-          methodeDonID: pendingDonation.methodID,
-          description: pendingDonation.note,
         }),
       });
-      setPendingDonations((currentDonations) => currentDonations.filter((donation) => donation.id !== pendingDonation.id));
+      setPendingDonations(result.pending);
       await loadWorkspace(query);
       showNotice(t.donationForm.categorizeSuccess);
     } catch (saveError) {

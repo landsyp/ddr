@@ -268,8 +268,19 @@ async function handleAPI(request, response, pathname) {
     return;
   }
 
+  if (method === "GET" && pathname === "/api/pending-donations") {
+    sendJSON(response, 200, store.listPendingDonations(auth));
+    return;
+  }
+
   if (method === "POST" && pathname === "/api/donations") {
     sendJSON(response, 201, store.createDonation(await readJSON(request), auth));
+    return;
+  }
+
+  params = route(method, pathname, "/api/pending-donations/:id/categorize");
+  if (params && method === "POST") {
+    sendJSON(response, 201, store.categorizePendingDonation(params.id, await readJSON(request), auth));
     return;
   }
 
