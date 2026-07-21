@@ -2196,6 +2196,32 @@ tr.is-clickable:focus-visible {
   border-bottom: 1px solid var(--line);
 }
 
+.user-edit-form {
+  margin: 0 0 18px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--brand-soft) 26%, #ffffff 74%), #ffffff 90%),
+    var(--surface);
+  box-shadow: var(--shadow-tile);
+}
+
+.user-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.table-action-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .user-access-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

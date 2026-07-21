@@ -461,10 +461,13 @@ const copy = {
       lastName: "Last name",
       adminAccess: "Admin access",
       addUser: "Add user",
+      editUser: "Edit user",
+      updateUser: "Update user",
+      cancelEdit: "Cancel edit",
       language: "Language",
       role: "Role",
       userAdded: "User added to this workspace.",
-      userUpdated: "User access updated.",
+      userUpdated: "User updated.",
       paymentMethods: "Payment methods",
       paymentSubtitle: "Manage the cards and billing methods used for your WeSERVE subscription.",
       defaultMethod: "Default",
@@ -951,10 +954,13 @@ const copy = {
       lastName: "Nom",
       adminAccess: "Accès administrateur",
       addUser: "Ajouter un utilisateur",
+      editUser: "Modifier l'utilisateur",
+      updateUser: "Mettre à jour l'utilisateur",
+      cancelEdit: "Annuler",
       language: "Langue",
       role: "Rôle",
       userAdded: "Utilisateur ajouté à cet espace.",
-      userUpdated: "Accès utilisateur mis à jour.",
+      userUpdated: "Utilisateur mis à jour.",
       paymentMethods: "Méthodes de paiement",
       paymentSubtitle: "Gérez les cartes et méthodes de facturation utilisées pour votre abonnement WeSERVE.",
       defaultMethod: "Par défaut",
@@ -1687,6 +1693,32 @@ function App() {
     }
   }
 
+  async function handleUpdateUser(userAccount, event) {
+    event.preventDefault();
+    try {
+      const data = formObject(event.currentTarget);
+      const updatedUser = await api(`/api/users/${userAccount.utilisateurID}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          ...data,
+          admin: data.admin === "on",
+        }),
+      });
+
+      if (updatedUser.utilisateurID === currentUser?.utilisateurID) {
+        const nextUser = { ...currentUser, ...updatedUser };
+        setCurrentUser(nextUser);
+        localStorage.setItem("weserve-user", JSON.stringify(nextUser));
+      }
+
+      await refresh(t.settings.userUpdated);
+      return true;
+    } catch (saveError) {
+      showError(saveError.message);
+      return false;
+    }
+  }
+
   async function toggleUser(userAccount) {
     try {
       await api(`/api/users/${userAccount.utilisateurID}/status`, {
@@ -1963,6 +1995,7 @@ function App() {
             user={displayUser}
             onCustomize={() => openView("customization")}
             onCreateUser={handleCreateUser}
+            onUpdateUser={handleUpdateUser}
             onSubmit={handleUpdateOrganization}
             onUserStatus={toggleUser}
           />
@@ -4883,7 +4916,7 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
   );
 }
 
-function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit, onUserStatus }) {
+function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onUpdateUser, onSubmit, onUserStatus }) {
   const organization = bootstrap?.organisme || {};
   const users = bootstrap?.users?.length ? bootstrap.users : [user].filter(Boolean);
   const isAdmin = Boolean(user?.admin);
@@ -4894,6 +4927,7 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
   const canAddUser = seatsRemaining > 0;
   const [addPaymentOpen, setAddPaymentOpen] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState(null);
+  const [editingUserId, setEditingUserId] = useState(null);
   const [openSettingsSections, setOpenSettingsSections] = useState({
     profile: true,
     users: false,
@@ -4909,6 +4943,7 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
     setOpenSettingsSections((openSections) => ({ ...openSections, profile: true }));
     window.setTimeout(() => focusTarget("organization-profile"), 0);
   };
+  const editingUser = users.find((account) => account.utilisateurID === editingUserId);
 
   return (
     <section className="view-stack settings-page">
@@ -5102,6 +5137,52 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
               <span>{canAddUser ? t.settings.addUser : t.settings.upgradeToAddUsers}</span>
             </button>
           </form>
+          {editingUser && (
+            <form
+              className="form-grid user-form user-edit-form"
+              onSubmit={async (event) => {
+                const didUpdate = await onUpdateUser(editingUser, event);
+                if (didUpdate) {
+                  setEditingUserId(null);
+                }
+              }}
+              key={`edit-user-${editingUser.utilisateurID}`}
+            >
+              <label>
+                {t.settings.firstName}
+                <input name="prenom" required maxLength="50" defaultValue={editingUser.prenom || ""} />
+              </label>
+              <label>
+                {t.settings.lastName}
+                <input name="nom" required maxLength="50" defaultValue={editingUser.nom || ""} />
+              </label>
+              <label>
+                {t.common.email}
+                <input name="email" required type="email" defaultValue={editingUser.courriel || ""} />
+              </label>
+              <label>
+                {t.settings.language}
+                <select name="langue" defaultValue={editingUser.langue || "en"}>
+                  <option value="en">EN</option>
+                  <option value="fr">FR</option>
+                </select>
+              </label>
+              <label className="checkbox-label">
+                <input name="admin" type="checkbox" defaultChecked={Boolean(editingUser.admin)} />
+                <span>{t.settings.adminAccess}</span>
+              </label>
+              <div className="form-submit user-edit-actions">
+                <button className="secondary-button" type="button" onClick={() => setEditingUserId(null)}>
+                  <X size={17} />
+                  <span>{t.settings.cancelEdit}</span>
+                </button>
+                <button className="primary-button" type="submit">
+                  <Pencil size={17} />
+                  <span>{t.settings.updateUser}</span>
+                </button>
+              </div>
+            </form>
+          )}
           <DataTable
             columns={[t.common.name, t.common.email, t.settings.language, t.settings.role, t.common.active, ""]}
             rows={users.map((account) => [
@@ -5110,10 +5191,17 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
               String(account.langue || "en").toUpperCase(),
               account.admin ? t.common.admin : t.common.user,
               account.actif === false ? t.common.no : t.common.yes,
-              account.utilisateurID === user?.utilisateurID ? "-" : (
-                <button className="secondary-button compact" type="button" onClick={() => onUserStatus(account)} key={`user-${account.utilisateurID}`}>
-                  {account.actif === false ? t.common.activate : t.common.deactivate}
-                </button>
+              (
+                <div className="table-action-group" key={`user-actions-${account.utilisateurID}`}>
+                  <button className="icon-button table-icon" type="button" onClick={() => setEditingUserId(account.utilisateurID)} aria-label={t.settings.editUser} title={t.settings.editUser}>
+                    <Pencil size={16} />
+                  </button>
+                  {account.utilisateurID === user?.utilisateurID ? null : (
+                    <button className="secondary-button compact" type="button" onClick={() => onUserStatus(account)}>
+                      {account.actif === false ? t.common.activate : t.common.deactivate}
+                    </button>
+                  )}
+                </div>
               ),
             ])}
           />

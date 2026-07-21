@@ -196,7 +196,14 @@ async function handleAPI(request, response, pathname) {
     return;
   }
 
-  let params = route(method, pathname, "/api/users/:id/status");
+  let params = route(method, pathname, "/api/users/:id");
+  if (params && method === "PATCH") {
+    requireAdmin(auth);
+    sendJSON(response, 200, store.updateUser(params.id, await readJSON(request), auth));
+    return;
+  }
+
+  params = route(method, pathname, "/api/users/:id/status");
   if (params && method === "PATCH") {
     requireAdmin(auth);
     sendJSON(response, 200, store.updateUserStatus(params.id, await readJSON(request), auth));

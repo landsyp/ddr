@@ -732,6 +732,50 @@ function createUser(data, context = {}) {
   return listUsers(context).find((user) => user.utilisateurID === result.lastInsertRowid);
 }
 
+function updateUser(id, data, context = {}) {
+  const email = String(data.courriel || data.email || "").trim().toLowerCase();
+  const userId = Number(id);
+
+  if (!email) {
+    const error = new Error("A valid email is required");
+    error.status = 400;
+    throw error;
+  }
+
+  const duplicate = get(
+    "SELECT utilisateurID FROM utilisateurs WHERE lower(courriel) = lower(?) AND utilisateurID <> ?",
+    [email, userId],
+  );
+  if (duplicate) {
+    const error = new Error("A user already exists for this email");
+    error.status = 409;
+    throw error;
+  }
+
+  run(
+    `UPDATE utilisateurs
+     SET admin = ?, courriel = ?, langue = ?, nom = ?, prenom = ?
+     WHERE utilisateurID = ? AND organismeID = ?`,
+    [
+      bool(data.admin),
+      email,
+      data.langue || "en",
+      String(data.nom || "").trim(),
+      String(data.prenom || "").trim(),
+      userId,
+      organizationID(context),
+    ],
+  );
+
+  const updatedUser = listUsers(context).find((user) => user.utilisateurID === userId);
+  if (!updatedUser) {
+    const error = new Error("User not found");
+    error.status = 404;
+    throw error;
+  }
+  return updatedUser;
+}
+
 function updateUserStatus(id, data, context = {}) {
   run(
     "UPDATE utilisateurs SET actif = ?, admin = ? WHERE utilisateurID = ? AND organismeID = ?",
@@ -1427,6 +1471,7 @@ export const store = {
   getDashboard,
   listUsers,
   createUser,
+  updateUser,
   updateUserStatus,
   listDonors,
   nextDonorNumber,
