@@ -2467,6 +2467,16 @@ function Donations({ accounts, bootstrap, donations, donors, language, pendingDo
   const filteredDonationRows = normalizedSearch
     ? allDonationRows.filter((row) => `${row.id} ${row.donor} ${row.date} ${row.account} ${row.method} ${row.source} ${row.status}`.toLowerCase().includes(normalizedSearch))
     : allDonationRows;
+  const donationExportRows = filteredDonationRows.map((row) => ({
+    ID: row.id,
+    Donor: row.donor,
+    Date: row.date,
+    Account: row.account,
+    Method: row.method,
+    Description: row.source || "",
+    Amount: row.amount,
+    Status: row.status,
+  }));
   const filteredPendingCount = filteredDonationRows.filter((row) => row.status === "pending").length;
   const filteredRegisteredCount = filteredDonationRows.length - filteredPendingCount;
   const donationTotal = donations.reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
@@ -2579,6 +2589,16 @@ function Donations({ accounts, bootstrap, donations, donors, language, pendingDo
             <div className="register-counts">
               <span className="status-pill issued">{filteredRegisteredCount} {t.donationForm.registered}</span>
               <span className="status-pill pending">{filteredPendingCount} {t.common.pending}</span>
+            </div>
+            <div className="export-actions">
+              <button className="secondary-button compact" type="button" onClick={() => downloadCSV("donations.csv", donationExportRows)}>
+                <FileText size={16} />
+                <span>{t.common.csv}</span>
+              </button>
+              <button className="secondary-button compact" type="button" onClick={() => downloadExcel("donations.xls", donationExportRows)}>
+                <FileSpreadsheet size={16} />
+                <span>Excel</span>
+              </button>
             </div>
           </div>
         </div>
