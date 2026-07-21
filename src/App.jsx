@@ -3918,8 +3918,8 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
                     <span className={`status-pill receipt-eligibility ${account.recu ? "is-receiptable" : "is-not-receiptable"}`}>
                       {account.recu ? t.accounts.receiptable : t.accounts.noReceipt}
                     </span>
-                    <span>{account.donationCount} {account.donationCount === 1 ? t.accounts.donationSingular : t.accounts.donationPlural}</span>
-                    <strong>{currency(account.total || 0)}</strong>
+                    <span className="account-summary-donations">{account.donationCount} {account.donationCount === 1 ? t.accounts.donationSingular : t.accounts.donationPlural}</span>
+                    <strong className="account-summary-total">{currency(account.total || 0)}</strong>
                   </button>
 
                   {isOpen && (

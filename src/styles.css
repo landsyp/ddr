@@ -1895,7 +1895,7 @@ tr.is-clickable:focus-visible {
 
 .account-accordion-summary {
   display: grid;
-  grid-template-columns: minmax(74px, 0.38fr) minmax(220px, 1fr) minmax(132px, 0.58fr) minmax(108px, 0.42fr) minmax(112px, 0.42fr);
+  grid-template-columns: minmax(76px, 0.42fr) minmax(180px, 1.45fr) auto minmax(108px, 0.48fr) minmax(112px, 0.48fr);
   gap: 14px;
   align-items: center;
   width: 100%;
@@ -1922,6 +1922,18 @@ tr.is-clickable:focus-visible {
   overflow: hidden;
   font-weight: 800;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-summary-donations {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.account-summary-total {
+  justify-self: end;
   white-space: nowrap;
 }
 
@@ -4149,12 +4161,36 @@ tr.is-clickable:focus-visible {
   }
 
   .account-accordion-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(74px, auto) minmax(0, 1fr) minmax(112px, auto);
+    grid-template-areas:
+      "number name total"
+      "receipt donations total";
+    align-items: center;
+    gap: 10px 14px;
   }
 
-  .account-accordion-summary .account-actions {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
+  .account-summary-number {
+    grid-area: number;
+  }
+
+  .account-summary-name {
+    grid-area: name;
+  }
+
+  .account-accordion-summary .receipt-eligibility {
+    grid-area: receipt;
+    justify-self: start;
+  }
+
+  .account-summary-donations {
+    grid-area: donations;
+  }
+
+  .account-summary-total {
+    grid-area: total;
+    align-self: stretch;
+    display: inline-flex;
+    align-items: center;
   }
 }
 
@@ -4276,16 +4312,30 @@ tr.is-clickable:focus-visible {
   }
 
   .account-accordion-summary {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "number total"
+      "name name"
+      "receipt donations";
+    gap: 9px 12px;
   }
 
-  .account-accordion-body > .account-actions {
-    justify-self: stretch;
+  .account-summary-name {
+    white-space: normal;
   }
 
-  .account-actions {
-    justify-content: flex-start;
+  .account-summary-total {
+    align-self: center;
+  }
+
+  .account-summary-donations {
+    justify-self: end;
+    text-align: right;
+  }
+
+  .account-accordion-summary .receipt-eligibility {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .confirm-dialog {
