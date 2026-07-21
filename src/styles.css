@@ -2556,9 +2556,62 @@ tr.is-clickable:focus-visible {
   line-height: 1.5;
 }
 
+.report-template-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.report-template-card {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  min-height: 138px;
+  padding: 15px;
+  border: 1px solid rgba(217, 227, 225, 0.9);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-tile);
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.report-template-card:hover {
+  border-color: color-mix(in srgb, var(--brand) 24%, var(--line));
+  box-shadow: var(--shadow-lift);
+  transform: translateY(-1px);
+}
+
+.report-template-card.is-selected {
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--line));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--brand-soft) 34%, #ffffff 66%), #ffffff 92%),
+    #ffffff;
+}
+
+.report-template-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.report-template-card > span {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.report-template-card small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .report-builder-fields {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -2600,6 +2653,38 @@ tr.is-clickable:focus-visible {
   flex-wrap: wrap;
   gap: 10px;
   justify-content: flex-end;
+}
+
+.report-result-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.report-result-strip article {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--brand-soft) 22%, #ffffff 78%), #ffffff),
+    var(--surface);
+  box-shadow: var(--shadow-tile);
+}
+
+.report-result-strip span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.report-result-strip strong {
+  color: var(--ink);
+  font-size: clamp(1.45rem, 3vw, 2.15rem);
+  line-height: 1;
 }
 
 .compact {
@@ -4119,6 +4204,7 @@ tr.is-clickable:focus-visible {
   .metric-grid,
   .report-grid,
   .subscription-plan-grid,
+  .report-template-grid,
   .report-builder-fields,
   .account-detail-grid,
   .account-detail-grid.is-expanded,
@@ -4455,6 +4541,14 @@ tr.is-clickable:focus-visible {
   }
 
   .report-builder-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .report-template-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-result-strip {
     grid-template-columns: 1fr;
   }
 

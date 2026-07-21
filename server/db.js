@@ -1364,13 +1364,18 @@ function report(type, params = {}, context = {}) {
   const grouped = new Map();
 
   for (const row of rows) {
-    const key = groupBy === "account"
-      ? `${row.noCompte} - ${row.libelleCompte}`
-      : groupBy === "donor"
-        ? row.donorName
-        : groupBy === "method"
-          ? row.methode_en || "Unspecified"
-          : row.dateDon;
+    let key = row.dateDon;
+    if (groupBy === "account") {
+      key = `${row.noCompte} - ${row.libelleCompte}`;
+    } else if (groupBy === "month") {
+      key = row.dateDon.slice(0, 7);
+    } else if (groupBy === "accountMonth") {
+      key = `${row.dateDon.slice(0, 7)} - ${row.noCompte} - ${row.libelleCompte}`;
+    } else if (groupBy === "donor") {
+      key = row.donorName;
+    } else if (groupBy === "method") {
+      key = row.methode_en || "Unspecified";
+    }
     const current = grouped.get(key) || { label: key, count: 0, total: 0 };
     current.count += 1;
     current.total += row.montant;

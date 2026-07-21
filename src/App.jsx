@@ -342,6 +342,14 @@ const copy = {
       group: "Group",
       rows: "Rows",
       refreshed: "Report refreshed.",
+      templates: [
+        { id: "donation-detail", title: "Detailed donations", description: "All donation rows with donor, account, method, date, and amount.", type: "donations", groupBy: "date" },
+        { id: "monthly-ytd", title: "Monthly YTD summary", description: "Totals by month for the selected year-to-date period.", type: "donations", groupBy: "month" },
+        { id: "account-month", title: "Accounts by month", description: "Monthly totals split by each SaaS account.", type: "donations", groupBy: "accountMonth" },
+        { id: "donor-totals", title: "Donor totals", description: "Total giving by donor over the selected period.", type: "donations", groupBy: "donor" },
+        { id: "account-totals", title: "Account totals", description: "Total giving by account over the selected period.", type: "donations", groupBy: "account" },
+        { id: "receipt-list", title: "Receipt list", description: "Receipt rows generated for the selected period.", type: "receipts", groupBy: "date" },
+      ],
     },
     subscription: {
       title: "Subscription information",
@@ -794,6 +802,14 @@ const copy = {
       group: "Groupe",
       rows: "Lignes",
       refreshed: "Rapport actualisé.",
+      templates: [
+        { id: "donation-detail", title: "Dons détaillés", description: "Toutes les lignes de dons avec donateur, compte, méthode, date et montant.", type: "donations", groupBy: "date" },
+        { id: "monthly-ytd", title: "Sommaire mensuel YTD", description: "Totaux par mois pour la période sélectionnée.", type: "donations", groupBy: "month" },
+        { id: "account-month", title: "Comptes par mois", description: "Totaux mensuels séparés par compte SaaS.", type: "donations", groupBy: "accountMonth" },
+        { id: "donor-totals", title: "Totaux par donateur", description: "Total des dons par donateur sur la période sélectionnée.", type: "donations", groupBy: "donor" },
+        { id: "account-totals", title: "Totaux par compte", description: "Total des dons par compte sur la période sélectionnée.", type: "donations", groupBy: "account" },
+        { id: "receipt-list", title: "Liste des reçus", description: "Lignes de reçus générées pour la période sélectionnée.", type: "receipts", groupBy: "date" },
+      ],
     },
     subscription: {
       title: "Informations d'abonnement",
@@ -4324,9 +4340,14 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
 }
 
 function Reports({ reportResult, t, onRunReport }) {
+  const [selectedTemplateId, setSelectedTemplateId] = useState(t.reports.templates[0]?.id || "donation-detail");
   const summary = reportResult?.summary || [];
   const rows = Array.isArray(reportResult) ? reportResult : reportResult?.rows || reportResult || [];
   const downloadableRows = Array.isArray(rows) ? rows : summary;
+  const selectedTemplate = t.reports.templates.find((template) => template.id === selectedTemplateId) || t.reports.templates[0];
+  const reportRowCount = Array.isArray(rows) ? rows.length : 0;
+  const reportGroupCount = summary.length;
+  const reportTotal = summary.reduce((sum, item) => sum + Number(item.total || 0), 0);
 
   return (
     <section className="view-stack">
@@ -4344,28 +4365,26 @@ function Reports({ reportResult, t, onRunReport }) {
             <span className="report-builder-icon"><BarChart3 size={20} /></span>
             <div>
               <strong>{t.reports.builder}</strong>
-              <p>{t.reports.subtitle}</p>
             </div>
           </div>
+          <div className="report-template-grid">
+            {t.reports.templates.map((template) => (
+              <label className={`report-template-card ${selectedTemplateId === template.id ? "is-selected" : ""}`} key={template.id}>
+                <input
+                  checked={selectedTemplateId === template.id}
+                  name="reportTemplate"
+                  onChange={() => setSelectedTemplateId(template.id)}
+                  type="radio"
+                  value={template.id}
+                />
+                <span><FileText size={16} /> {template.title}</span>
+                <small>{template.description}</small>
+              </label>
+            ))}
+          </div>
+          <input name="type" readOnly type="hidden" value={selectedTemplate.type} />
+          <input name="groupBy" readOnly type="hidden" value={selectedTemplate.groupBy} />
           <div className="report-builder-fields">
-            <label>
-              <span>{t.reports.report}</span>
-              <select name="type" defaultValue="donations">
-                <option value="donations">{t.reports.donations}</option>
-                <option value="donors">{t.reports.donors}</option>
-                <option value="accounts">{t.reports.accounts}</option>
-                <option value="receipts">{t.reports.receipts}</option>
-              </select>
-            </label>
-            <label>
-              <span>{t.reports.groupBy}</span>
-              <select name="groupBy" defaultValue="date">
-                <option value="date">{t.reports.date}</option>
-                <option value="account">{t.reports.account}</option>
-                <option value="donor">{t.reports.donor}</option>
-                <option value="method">{t.reports.method}</option>
-              </select>
-            </label>
             <label>
               <span>{t.reports.start}</span>
               <input name="dateDebut" type="date" defaultValue="2026-01-01" />
@@ -4387,6 +4406,23 @@ function Reports({ reportResult, t, onRunReport }) {
           </div>
         </form>
       </Panel>
+
+      {(reportGroupCount > 0 || reportRowCount > 0) && (
+        <section className="report-result-strip" aria-label={t.reports.summary}>
+          <article>
+            <span>{t.reports.group}</span>
+            <strong>{reportGroupCount}</strong>
+          </article>
+          <article>
+            <span>{t.reports.rows}</span>
+            <strong>{reportRowCount}</strong>
+          </article>
+          <article>
+            <span>{t.receipts.total}</span>
+            <strong>{currency(reportTotal)}</strong>
+          </article>
+        </section>
+      )}
 
       {summary.length > 0 && (
         <Panel title={t.reports.summary} icon={BarChart3}>
