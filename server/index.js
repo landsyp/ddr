@@ -68,10 +68,6 @@ function requireAdmin(user) {
 }
 
 function route(method, pathname, pattern) {
-  if (!pathname.startsWith(pattern.replace(/:\w+/g, ""))) {
-    return null;
-  }
-
   const routeParts = pattern.split("/").filter(Boolean);
   const pathParts = pathname.split("/").filter(Boolean);
 
