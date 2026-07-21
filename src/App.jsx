@@ -343,10 +343,34 @@ const copy = {
       group: "Group",
       rows: "Rows",
       details: "Details",
+      month: "Month",
+      accountsByMonth: "Accounts by month",
       generatedView: "Generated view",
       monthlySections: "Monthly sections",
       countLabel: "donations",
       noReport: "Run a report to preview the grouped result.",
+      customTemplate: "Create a custom template",
+      customTemplateDescription: "Save your own reusable report format.",
+      customTemplates: "Custom report templates",
+      templateName: "Template name",
+      templateDescription: "Description",
+      saveTemplate: "Save template",
+      reportType: "Report type",
+      schedule: "Automatic generation",
+      generateAutomatically: "Generate automatically",
+      frequency: "Frequency",
+      weekly: "Weekly",
+      monthly: "Monthly",
+      day: "Day",
+      monday: "Monday",
+      tuesday: "Tuesday",
+      wednesday: "Wednesday",
+      thursday: "Thursday",
+      friday: "Friday",
+      firstDay: "1st of the month",
+      fifteenthDay: "15th of the month",
+      lastDay: "Last day of the month",
+      templateSaved: "Custom template saved.",
       refreshed: "Report refreshed.",
       templates: [
         { id: "donation-detail", title: "Detailed donations", description: "All donation rows with donor, account, method, date, and amount.", type: "donations", groupBy: "date" },
@@ -809,10 +833,34 @@ const copy = {
       group: "Groupe",
       rows: "Lignes",
       details: "Détails",
+      month: "Mois",
+      accountsByMonth: "Comptes par mois",
       generatedView: "Vue générée",
       monthlySections: "Sections mensuelles",
       countLabel: "dons",
       noReport: "Lancez un rapport pour voir le résultat regroupé.",
+      customTemplate: "Créer un template personnalisé",
+      customTemplateDescription: "Enregistrez votre propre format de rapport réutilisable.",
+      customTemplates: "Templates de rapports personnalisés",
+      templateName: "Nom du template",
+      templateDescription: "Description",
+      saveTemplate: "Enregistrer le template",
+      reportType: "Type de rapport",
+      schedule: "Génération automatique",
+      generateAutomatically: "Générer automatiquement",
+      frequency: "Fréquence",
+      weekly: "Hebdomadaire",
+      monthly: "Mensuelle",
+      day: "Jour",
+      monday: "Lundi",
+      tuesday: "Mardi",
+      wednesday: "Mercredi",
+      thursday: "Jeudi",
+      friday: "Vendredi",
+      firstDay: "1er du mois",
+      fifteenthDay: "15 du mois",
+      lastDay: "Dernier jour du mois",
+      templateSaved: "Template personnalisé enregistré.",
       refreshed: "Rapport actualisé.",
       templates: [
         { id: "donation-detail", title: "Dons détaillés", description: "Toutes les lignes de dons avec donateur, compte, méthode, date et montant.", type: "donations", groupBy: "date" },
@@ -4353,13 +4401,72 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
 
 function Reports({ reportResult, t, onRunReport }) {
   const [selectedTemplateId, setSelectedTemplateId] = useState(t.reports.templates[0]?.id || "donation-detail");
+  const [showCustomTemplateForm, setShowCustomTemplateForm] = useState(false);
+  const [customTemplates, setCustomTemplates] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("weserve-report-templates") || "[]");
+    } catch {
+      return [];
+    }
+  });
+  const [customTemplateDraft, setCustomTemplateDraft] = useState({
+    title: "",
+    description: "",
+    type: "donations",
+    groupBy: "accountMonth",
+    automatic: false,
+    frequency: "weekly",
+    day: "monday",
+  });
   const summary = reportResult?.summary || [];
   const rows = Array.isArray(reportResult) ? reportResult : reportResult?.rows || reportResult || [];
   const downloadableRows = Array.isArray(rows) ? rows : summary;
-  const selectedTemplate = t.reports.templates.find((template) => template.id === selectedTemplateId) || t.reports.templates[0];
+  const reportTemplates = [...t.reports.templates, ...customTemplates];
+  const selectedTemplate = reportTemplates.find((template) => template.id === selectedTemplateId) || reportTemplates[0];
   const reportRowCount = Array.isArray(rows) ? rows.length : 0;
   const reportGroupCount = summary.length;
   const reportTotal = summary.reduce((sum, item) => sum + Number(item.total || 0), 0);
+
+  useEffect(() => {
+    localStorage.setItem("weserve-report-templates", JSON.stringify(customTemplates));
+  }, [customTemplates]);
+
+  function updateCustomTemplateDraft(field, value) {
+    setCustomTemplateDraft((draft) => ({ ...draft, [field]: value }));
+  }
+
+  function saveCustomTemplate() {
+    const title = customTemplateDraft.title.trim();
+
+    if (!title) {
+      return;
+    }
+
+    const template = {
+      id: `custom-${Date.now()}`,
+      title,
+      description: customTemplateDraft.description.trim() || t.reports.customTemplateDescription,
+      type: customTemplateDraft.type,
+      groupBy: customTemplateDraft.groupBy,
+      custom: true,
+      automatic: customTemplateDraft.automatic,
+      frequency: customTemplateDraft.frequency,
+      day: customTemplateDraft.day,
+    };
+
+    setCustomTemplates((templates) => [...templates, template]);
+    setSelectedTemplateId(template.id);
+    setShowCustomTemplateForm(false);
+    setCustomTemplateDraft({
+      title: "",
+      description: "",
+      type: "donations",
+      groupBy: "accountMonth",
+      automatic: false,
+      frequency: "weekly",
+      day: "monday",
+    });
+  }
 
   return (
     <section className="view-stack">
@@ -4380,7 +4487,7 @@ function Reports({ reportResult, t, onRunReport }) {
             </div>
           </div>
           <div className="report-template-grid">
-            {t.reports.templates.map((template) => (
+            {reportTemplates.map((template) => (
               <label className={`report-template-card ${selectedTemplateId === template.id ? "is-selected" : ""}`} key={template.id}>
                 <input
                   checked={selectedTemplateId === template.id}
@@ -4389,11 +4496,116 @@ function Reports({ reportResult, t, onRunReport }) {
                   type="radio"
                   value={template.id}
                 />
-                <span><FileText size={16} /> {template.title}</span>
+                <span>{template.custom ? <Sparkles size={16} /> : <FileText size={16} />} {template.title}</span>
                 <small>{template.description}</small>
+                {template.automatic && (
+                  <em><CalendarDays size={14} /> {formatTemplateSchedule(template, t)}</em>
+                )}
               </label>
             ))}
+            <button
+              className={`report-template-card report-template-create ${showCustomTemplateForm ? "is-selected" : ""}`}
+              onClick={() => setShowCustomTemplateForm((isOpen) => !isOpen)}
+              type="button"
+            >
+              <span><Plus size={17} /> {t.reports.customTemplate}</span>
+              <small>{t.reports.customTemplateDescription}</small>
+            </button>
           </div>
+          {showCustomTemplateForm && (
+            <div className="custom-report-template">
+              <div className="custom-report-template-header">
+                <span className="report-builder-icon"><Sparkles size={19} /></span>
+                <div>
+                  <strong>{t.reports.customTemplates}</strong>
+                  <small>{t.reports.customTemplateDescription}</small>
+                </div>
+              </div>
+              <div className="custom-report-template-fields">
+                <label className="is-wide">
+                  <span>{t.reports.templateName}</span>
+                  <input
+                    onChange={(event) => updateCustomTemplateDraft("title", event.target.value)}
+                    placeholder={t.reports.templateName}
+                    type="text"
+                    value={customTemplateDraft.title}
+                  />
+                </label>
+                <label className="is-wide">
+                  <span>{t.reports.templateDescription}</span>
+                  <input
+                    onChange={(event) => updateCustomTemplateDraft("description", event.target.value)}
+                    placeholder={t.reports.customTemplateDescription}
+                    type="text"
+                    value={customTemplateDraft.description}
+                  />
+                </label>
+                <label>
+                  <span>{t.reports.reportType}</span>
+                  <select value={customTemplateDraft.type} onChange={(event) => updateCustomTemplateDraft("type", event.target.value)}>
+                    <option value="donations">{t.reports.donations}</option>
+                    <option value="receipts">{t.reports.receipts}</option>
+                  </select>
+                </label>
+                <label>
+                  <span>{t.reports.groupBy}</span>
+                  <select value={customTemplateDraft.groupBy} onChange={(event) => updateCustomTemplateDraft("groupBy", event.target.value)}>
+                    <option value="date">{t.reports.date}</option>
+                    <option value="month">{t.reports.month}</option>
+                    <option value="accountMonth">{t.reports.accountsByMonth}</option>
+                    <option value="account">{t.reports.account}</option>
+                    <option value="donor">{t.reports.donor}</option>
+                    <option value="method">{t.reports.method}</option>
+                  </select>
+                </label>
+                <label className="custom-template-toggle is-wide">
+                  <input
+                    checked={customTemplateDraft.automatic}
+                    onChange={(event) => updateCustomTemplateDraft("automatic", event.target.checked)}
+                    type="checkbox"
+                  />
+                  <span>{t.reports.generateAutomatically}</span>
+                </label>
+                {customTemplateDraft.automatic && (
+                  <>
+                    <label>
+                      <span>{t.reports.frequency}</span>
+                      <select value={customTemplateDraft.frequency} onChange={(event) => updateCustomTemplateDraft("frequency", event.target.value)}>
+                        <option value="weekly">{t.reports.weekly}</option>
+                        <option value="monthly">{t.reports.monthly}</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>{t.reports.day}</span>
+                      <select value={customTemplateDraft.day} onChange={(event) => updateCustomTemplateDraft("day", event.target.value)}>
+                        {customTemplateDraft.frequency === "weekly" ? (
+                          <>
+                            <option value="monday">{t.reports.monday}</option>
+                            <option value="tuesday">{t.reports.tuesday}</option>
+                            <option value="wednesday">{t.reports.wednesday}</option>
+                            <option value="thursday">{t.reports.thursday}</option>
+                            <option value="friday">{t.reports.friday}</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="first">{t.reports.firstDay}</option>
+                            <option value="fifteenth">{t.reports.fifteenthDay}</option>
+                            <option value="last">{t.reports.lastDay}</option>
+                          </>
+                        )}
+                      </select>
+                    </label>
+                  </>
+                )}
+              </div>
+              <div className="report-builder-actions">
+                <button className="primary-button" disabled={!customTemplateDraft.title.trim()} onClick={saveCustomTemplate} type="button">
+                  <Plus size={17} />
+                  <span>{t.reports.saveTemplate}</span>
+                </button>
+              </div>
+            </div>
+          )}
           <input name="type" readOnly type="hidden" value={selectedTemplate.type} />
           <input name="groupBy" readOnly type="hidden" value={selectedTemplate.groupBy} />
           <div className="report-builder-fields">
@@ -4450,15 +4662,15 @@ function ReportResultView({ rows, selectedTemplate, summary, t }) {
     return <div className="empty-state">{t.reports.noReport}</div>;
   }
 
-  if (selectedTemplate.id === "account-month") {
+  if (selectedTemplate.groupBy === "accountMonth") {
     return <AccountsByMonthReport rows={rows} t={t} />;
   }
 
-  if (selectedTemplate.id === "monthly-ytd") {
+  if (selectedTemplate.groupBy === "month") {
     return <SummaryCardReport summary={summary} t={t} variant="month" />;
   }
 
-  if (selectedTemplate.id === "donor-totals" || selectedTemplate.id === "account-totals") {
+  if (selectedTemplate.groupBy === "donor" || selectedTemplate.groupBy === "account" || selectedTemplate.groupBy === "method") {
     return <SummaryCardReport summary={summary} t={t} />;
   }
 
@@ -4466,7 +4678,7 @@ function ReportResultView({ rows, selectedTemplate, summary, t }) {
     return <DonationDetailReport rows={rows} t={t} />;
   }
 
-  if (selectedTemplate.id === "receipt-list") {
+  if (selectedTemplate.type === "receipts") {
     return (
       <DataTable
         columns={Object.keys(rows[0] || {}).slice(0, 8)}
@@ -5686,6 +5898,22 @@ function formatReportLabel(label, t) {
   }
 
   return String(label);
+}
+
+function formatTemplateSchedule(template, t) {
+  const dayLabels = {
+    monday: t.reports.monday,
+    tuesday: t.reports.tuesday,
+    wednesday: t.reports.wednesday,
+    thursday: t.reports.thursday,
+    friday: t.reports.friday,
+    first: t.reports.firstDay,
+    fifteenth: t.reports.fifteenthDay,
+    last: t.reports.lastDay,
+  };
+
+  const frequency = template.frequency === "monthly" ? t.reports.monthly : t.reports.weekly;
+  return `${frequency} - ${dayLabels[template.day] || template.day}`;
 }
 
 function downloadCSV(filename, rows) {
