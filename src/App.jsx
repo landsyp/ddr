@@ -48,6 +48,7 @@ import receiptImage from "../images/recu.png";
 
 const copy = {
   en: {
+    locale: "en-CA",
     product: "WeSERVE",
     organization: "WeSERVE",
     nav: {
@@ -341,6 +342,11 @@ const copy = {
       summary: "Summary",
       group: "Group",
       rows: "Rows",
+      details: "Details",
+      generatedView: "Generated view",
+      monthlySections: "Monthly sections",
+      countLabel: "donations",
+      noReport: "Run a report to preview the grouped result.",
       refreshed: "Report refreshed.",
       templates: [
         { id: "donation-detail", title: "Detailed donations", description: "All donation rows with donor, account, method, date, and amount.", type: "donations", groupBy: "date" },
@@ -508,6 +514,7 @@ const copy = {
     footer: "Suite 106, 5425 Boulevard Laurier O, Saint-Hyacinthe, QC J2S 3V6",
   },
   fr: {
+    locale: "fr-CA",
     product: "WeSERVE",
     organization: "WeSERVE",
     nav: {
@@ -801,6 +808,11 @@ const copy = {
       summary: "Sommaire",
       group: "Groupe",
       rows: "Lignes",
+      details: "Détails",
+      generatedView: "Vue générée",
+      monthlySections: "Sections mensuelles",
+      countLabel: "dons",
+      noReport: "Lancez un rapport pour voir le résultat regroupé.",
       refreshed: "Rapport actualisé.",
       templates: [
         { id: "donation-detail", title: "Dons détaillés", description: "Toutes les lignes de dons avec donateur, compte, méthode, date et montant.", type: "donations", groupBy: "date" },
@@ -4424,24 +4436,140 @@ function Reports({ reportResult, t, onRunReport }) {
         </section>
       )}
 
-      {summary.length > 0 && (
-        <Panel title={t.reports.summary} icon={BarChart3}>
-          <DataTable
-            columns={[t.reports.group, t.receipts.count, t.receipts.total]}
-            rows={summary.map((item) => [item.label, item.count, currency(item.total)])}
-          />
-        </Panel>
-      )}
-
-      {Array.isArray(rows) && rows.length > 0 && (
-        <Panel title={t.reports.rows} icon={ClipboardList}>
-          <DataTable
-            columns={Object.keys(rows[0]).slice(0, 8)}
-            rows={rows.slice(0, 50).map((row) => Object.values(row).slice(0, 8).map(formatCell))}
-          />
+      {(summary.length > 0 || rows.length > 0) && (
+        <Panel title={t.reports.generatedView} icon={ClipboardList}>
+          <ReportResultView rows={rows} selectedTemplate={selectedTemplate} summary={summary} t={t} />
         </Panel>
       )}
     </section>
+  );
+}
+
+function ReportResultView({ rows, selectedTemplate, summary, t }) {
+  if (!summary.length && !rows.length) {
+    return <div className="empty-state">{t.reports.noReport}</div>;
+  }
+
+  if (selectedTemplate.id === "account-month") {
+    return <AccountsByMonthReport rows={rows} t={t} />;
+  }
+
+  if (selectedTemplate.id === "monthly-ytd") {
+    return <SummaryCardReport summary={summary} t={t} variant="month" />;
+  }
+
+  if (selectedTemplate.id === "donor-totals" || selectedTemplate.id === "account-totals") {
+    return <SummaryCardReport summary={summary} t={t} />;
+  }
+
+  if (selectedTemplate.id === "donation-detail") {
+    return <DonationDetailReport rows={rows} t={t} />;
+  }
+
+  if (selectedTemplate.id === "receipt-list") {
+    return (
+      <DataTable
+        columns={Object.keys(rows[0] || {}).slice(0, 8)}
+        rows={rows.slice(0, 50).map((row) => Object.values(row).slice(0, 8).map(formatCell))}
+        t={t}
+      />
+    );
+  }
+
+  return (
+    <DataTable
+      columns={[t.reports.group, t.receipts.count, t.receipts.total]}
+      rows={summary.map((item) => [formatReportLabel(item.label, t), item.count, currency(item.total)])}
+    />
+  );
+}
+
+function AccountsByMonthReport({ rows, t }) {
+  const sections = Array.from(rows.reduce((months, donation) => {
+    const monthKey = String(donation.dateDon || "").slice(0, 7) || "Unknown";
+    const month = months.get(monthKey) || new Map();
+    const accountKey = `${donation.noCompte || ""} - ${donation.libelleCompte || t.common.unspecified}`;
+    const account = month.get(accountKey) || {
+      label: accountKey,
+      count: 0,
+      total: 0,
+    };
+    account.count += 1;
+    account.total += Number(donation.montant || 0);
+    month.set(accountKey, account);
+    months.set(monthKey, month);
+    return months;
+  }, new Map()).entries())
+    .sort(([left], [right]) => right.localeCompare(left))
+    .map(([monthKey, accounts]) => {
+      const items = Array.from(accounts.values()).sort((left, right) => left.label.localeCompare(right.label));
+      return {
+        monthKey,
+        title: monthName(monthKey, t),
+        total: items.reduce((sum, item) => sum + item.total, 0),
+        count: items.reduce((sum, item) => sum + item.count, 0),
+        items,
+      };
+    });
+
+  return (
+    <div className="report-section-stack">
+      {sections.map((section) => (
+        <article className="report-section-card" key={section.monthKey}>
+          <div className="report-section-header">
+            <div>
+              <span>{t.reports.monthlySections}</span>
+              <h3>{section.title}</h3>
+            </div>
+            <strong>{currency(section.total)}</strong>
+          </div>
+          <div className="report-line-list">
+            {section.items.map((item) => (
+              <div className="report-line-item" key={item.label}>
+                <div>
+                  <strong>{item.label}</strong>
+                  <span>{item.count} {t.reports.countLabel}</span>
+                </div>
+                <b>{currency(item.total)}</b>
+              </div>
+            ))}
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function SummaryCardReport({ summary, t, variant }) {
+  const items = [...summary].sort((left, right) => String(right.label).localeCompare(String(left.label)));
+
+  return (
+    <div className="report-summary-grid">
+      {items.map((item) => (
+        <article className="report-summary-card" key={item.label}>
+          <span>{variant === "month" ? monthName(item.label, t) : formatReportLabel(item.label, t)}</span>
+          <strong>{currency(item.total)}</strong>
+          <small>{item.count} {t.reports.countLabel}</small>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function DonationDetailReport({ rows, t }) {
+  return (
+    <DataTable
+      columns={[t.reports.date, t.reports.donor, t.reports.account, t.reports.method, t.receipts.total]}
+      rows={rows.map((row) => [
+        formatCell(row.dateDon),
+        row.donorName || t.common.unspecified,
+        `${row.noCompte || ""} - ${row.libelleCompte || t.common.unspecified}`,
+        row.methode_en || t.common.unspecified,
+        currency(row.montant),
+      ])}
+      t={t}
+      paginate
+    />
   );
 }
 
@@ -5532,6 +5660,32 @@ function formatCell(value) {
     return value.toFixed(2);
   }
   return String(value);
+}
+
+function monthName(monthKey, t) {
+  const [year, month] = String(monthKey || "").split("-");
+  const date = new Date(Number(year), Number(month) - 1, 1);
+
+  if (Number.isNaN(date.getTime())) {
+    return formatReportLabel(monthKey, t);
+  }
+
+  return new Intl.DateTimeFormat(t.locale || "en-CA", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatReportLabel(label, t) {
+  if (!label) {
+    return t.common.unspecified;
+  }
+
+  if (/^\d{4}-\d{2}$/.test(String(label))) {
+    return monthName(label, t);
+  }
+
+  return String(label);
 }
 
 function downloadCSV(filename, rows) {
