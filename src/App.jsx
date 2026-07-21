@@ -1582,7 +1582,7 @@ function App() {
         body: JSON.stringify({
           ...data,
           actif: data.actif === "on",
-          membre: data.membre === "on",
+          membre: Boolean(bootstrap?.organisme?.membre),
         }),
       });
       await refresh(t.settings.saved);
@@ -4616,10 +4616,6 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onSubmit,
             <label>
               {t.settings.folio}
               <input name="folio" maxLength="30" defaultValue={organization.folio || ""} />
-            </label>
-            <label className="checkbox-label">
-              <input name="membre" type="checkbox" defaultChecked={Boolean(organization.membre)} />
-              <span>{t.common.member}</span>
             </label>
             <label className="checkbox-label">
               <input name="actif" type="checkbox" defaultChecked={organization.actif !== false} />
