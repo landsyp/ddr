@@ -2513,6 +2513,95 @@ tr.is-clickable:focus-visible {
   margin-top: auto;
 }
 
+.report-builder-form {
+  display: grid;
+  gap: 18px;
+}
+
+.report-builder-intro {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--brand) 14%, var(--line));
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--brand-soft) 42%, #ffffff 58%), #ffffff 82%),
+    var(--surface);
+}
+
+.report-builder-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(29, 111, 95, 0.22);
+}
+
+.report-builder-intro strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ink);
+  font-size: 1.08rem;
+}
+
+.report-builder-intro p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.report-builder-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.report-builder-fields label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(217, 227, 225, 0.78);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-tile);
+}
+
+.report-builder-fields label > span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.report-builder-fields input,
+.report-builder-fields select {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background-color: color-mix(in srgb, var(--surface-strong) 72%, #ffffff 28%);
+  color: var(--ink);
+  padding: 0 12px;
+  outline: 0;
+}
+
+.report-builder-fields select {
+  padding-right: 42px;
+}
+
+.report-builder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .compact {
   min-height: 38px;
 }
@@ -4030,6 +4119,7 @@ tr.is-clickable:focus-visible {
   .metric-grid,
   .report-grid,
   .subscription-plan-grid,
+  .report-builder-fields,
   .account-detail-grid,
   .account-detail-grid.is-expanded,
   .settings-profile-form {
@@ -4358,9 +4448,18 @@ tr.is-clickable:focus-visible {
 
   .table-toolbar,
   .table-pagination,
+  .report-builder-actions,
   .receipt-copy {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .report-builder-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .report-builder-intro {
+    grid-template-columns: 1fr;
   }
 
   .donor-directory-tools,

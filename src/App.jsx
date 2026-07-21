@@ -4338,56 +4338,67 @@ function Reports({ reportResult, t, onRunReport }) {
         icon={BarChart3}
       />
 
-      <Panel id="report-builder" title="Report builder" icon={FileText}>
-        <form className="form-grid report-form" onSubmit={onRunReport}>
-          <label>
-            Report
-            <select name="type" defaultValue="donations">
-              <option value="donations">Donations</option>
-              <option value="donors">Donors</option>
-              <option value="accounts">Accounts</option>
-              <option value="receipts">Receipts</option>
-            </select>
-          </label>
-          <label>
-            Group by
-            <select name="groupBy" defaultValue="date">
-              <option value="date">Date</option>
-              <option value="account">Account</option>
-              <option value="donor">Donor</option>
-              <option value="method">Method</option>
-            </select>
-          </label>
-          <label>
-            Start
-            <input name="dateDebut" type="date" defaultValue="2026-01-01" />
-          </label>
-          <label>
-            End
-            <input name="dateFin" type="date" defaultValue="2026-12-31" />
-          </label>
-          <button className="primary-button form-submit" type="submit">
-            <BarChart3 size={17} />
-            <span>{t.reports.run}</span>
-          </button>
-          <button className="secondary-button form-submit" type="button" disabled={!downloadableRows.length} onClick={() => downloadCSV("ddr-report.csv", downloadableRows)}>
-            <Download size={17} />
-            <span>{t.reports.export}</span>
-          </button>
+      <Panel id="report-builder" title={t.reports.builder} icon={FileText}>
+        <form className="report-builder-form" onSubmit={onRunReport}>
+          <div className="report-builder-intro">
+            <span className="report-builder-icon"><BarChart3 size={20} /></span>
+            <div>
+              <strong>{t.reports.builder}</strong>
+              <p>{t.reports.subtitle}</p>
+            </div>
+          </div>
+          <div className="report-builder-fields">
+            <label>
+              <span>{t.reports.report}</span>
+              <select name="type" defaultValue="donations">
+                <option value="donations">{t.reports.donations}</option>
+                <option value="donors">{t.reports.donors}</option>
+                <option value="accounts">{t.reports.accounts}</option>
+                <option value="receipts">{t.reports.receipts}</option>
+              </select>
+            </label>
+            <label>
+              <span>{t.reports.groupBy}</span>
+              <select name="groupBy" defaultValue="date">
+                <option value="date">{t.reports.date}</option>
+                <option value="account">{t.reports.account}</option>
+                <option value="donor">{t.reports.donor}</option>
+                <option value="method">{t.reports.method}</option>
+              </select>
+            </label>
+            <label>
+              <span>{t.reports.start}</span>
+              <input name="dateDebut" type="date" defaultValue="2026-01-01" />
+            </label>
+            <label>
+              <span>{t.reports.end}</span>
+              <input name="dateFin" type="date" defaultValue="2026-12-31" />
+            </label>
+          </div>
+          <div className="report-builder-actions">
+            <button className="primary-button" type="submit">
+              <BarChart3 size={17} />
+              <span>{t.reports.run}</span>
+            </button>
+            <button className="secondary-button" type="button" disabled={!downloadableRows.length} onClick={() => downloadCSV("weserve-report.csv", downloadableRows)}>
+              <Download size={17} />
+              <span>{t.reports.export}</span>
+            </button>
+          </div>
         </form>
       </Panel>
 
       {summary.length > 0 && (
-        <Panel title="Summary" icon={BarChart3}>
+        <Panel title={t.reports.summary} icon={BarChart3}>
           <DataTable
-            columns={["Group", "Count", "Total"]}
+            columns={[t.reports.group, t.receipts.count, t.receipts.total]}
             rows={summary.map((item) => [item.label, item.count, currency(item.total)])}
           />
         </Panel>
       )}
 
       {Array.isArray(rows) && rows.length > 0 && (
-        <Panel title="Rows" icon={ClipboardList}>
+        <Panel title={t.reports.rows} icon={ClipboardList}>
           <DataTable
             columns={Object.keys(rows[0]).slice(0, 8)}
             rows={rows.slice(0, 50).map((row) => Object.values(row).slice(0, 8).map(formatCell))}
