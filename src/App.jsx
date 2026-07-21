@@ -2500,14 +2500,14 @@ function Donations({ accounts, bootstrap, donations, donors, language, pendingDo
           <strong>{donations.length}</strong>
         </article>
         <article className="donation-summary-card">
-          <span><CalendarDays size={16} /> {t.donationForm.ytdAmount}</span>
-          <strong>{currency(ytdTotal)}</strong>
-          <small>{ytdDonations.length} {t.donationForm.ytdDonations}</small>
-        </article>
-        <article className="donation-summary-card">
           <span><CircleDollarSign size={16} /> {currentMonthLabel}</span>
           <strong>{currency(monthlyTotal)}</strong>
           <small>{monthlyDonations.length} {t.donationForm.donations}</small>
+        </article>
+        <article className="donation-summary-card">
+          <span><CalendarDays size={16} /> {t.donationForm.ytdAmount}</span>
+          <strong>{currency(ytdTotal)}</strong>
+          <small>{ytdDonations.length} {t.donationForm.ytdDonations}</small>
         </article>
       </section>
 
