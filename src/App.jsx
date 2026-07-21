@@ -1708,7 +1708,7 @@ function App() {
       if (updatedUser.utilisateurID === currentUser?.utilisateurID) {
         const nextUser = { ...currentUser, ...updatedUser };
         setCurrentUser(nextUser);
-        localStorage.setItem("weserve-user", JSON.stringify(nextUser));
+        localStorage.setItem("ddr-user", JSON.stringify(nextUser));
       }
 
       await refresh(t.settings.userUpdated);
