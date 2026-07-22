@@ -1156,7 +1156,7 @@ function getPageTour(t, view) {
       subtitle: fr ? "Construisez et exportez les rapports." : "Build and export reports.",
       steps: [
         { visual: "stats", title: fr ? "Type de rapport" : "Report type", body: fr ? "Choisissez le type, le groupement et la période." : "Choose the type, grouping, and period." },
-        { visual: "download", title: fr ? "Export" : "Export", body: fr ? "Exportez les résultats en CSV une fois le rapport généré." : "Export results as CSV once the report is generated." },
+        { visual: "download", title: fr ? "Export" : "Export", body: fr ? "Exportez les résultats en CSV ou Excel une fois le rapport généré." : "Export results as CSV or Excel once the report is generated." },
       ],
     },
     banking: {
@@ -3925,6 +3925,13 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
   const expandedAccount = accounts.find((account) => account.compteID === expandedAccountId);
   const receiptableAccountCount = accounts.filter((account) => account.recu).length;
   const receiptEligibilityPercent = accounts.length ? (receiptableAccountCount / accounts.length) * 100 : 0;
+  const accountExportRows = accounts.map((account) => ({
+    Number: account.noCompte,
+    Account: account.nom,
+    Receiptable: account.recu ? t.common.yes : t.common.no,
+    Donations: account.donationCount || 0,
+    Total: account.total || 0,
+  }));
 
   useEffect(() => {
     if (!accounts.length) {
@@ -4019,6 +4026,19 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
         </Panel>
       ) : (
         <Panel title={t.nav.accounts} icon={ClipboardList}>
+          <div className="panel-subheader">
+            <h3>{t.accounts.title}</h3>
+            <div className="export-actions">
+              <button className="secondary-button compact" type="button" onClick={() => downloadCSV("accounts.csv", accountExportRows)} disabled={!accountExportRows.length}>
+                <FileText size={16} />
+                <span>{t.common.csv}</span>
+              </button>
+              <button className="secondary-button compact" type="button" onClick={() => downloadExcel("accounts.xls", accountExportRows)} disabled={!accountExportRows.length}>
+                <FileSpreadsheet size={16} />
+                <span>Excel</span>
+              </button>
+            </div>
+          </div>
           <div className="account-accordion">
             {accounts.map((account) => {
               const isOpen = selectedAccount?.compteID === account.compteID;
@@ -4337,6 +4357,19 @@ function AccountDetail({ account, donations, isEditing, isExpanded = false, onCa
 function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMark }) {
   const readyRows = donations.filter((donation) => donation.receiptStatus === "Ready");
   const reviewRows = donations.filter((donation) => donation.receiptStatus === "No receipt");
+  const receiptExportRows = receipts.map((receipt) => ({
+    Number: receipt.noRecu || receipt.recuID,
+    Donor: `${receipt.prenom} ${receipt.nom}`,
+    Period: `${receipt.dateDebut} ${t.common.to} ${receipt.dateFin}`,
+    Amount: receipt.montant,
+    Status: humanStatus(receipt.statut, t),
+  }));
+  const batchExportRows = batches.map((batch) => ({
+    Created: new Date(batch.dateCreation).toLocaleString(),
+    Period: `${batch.dateDebut} ${t.common.to} ${batch.dateFin}`,
+    Count: batch.recusCount,
+    Total: batch.total,
+  }));
 
   return (
     <section className="view-stack">
@@ -4397,6 +4430,19 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
 
       <div className="two-column">
         <Panel title={t.nav.receipts} icon={Check}>
+          <div className="panel-subheader">
+            <h3>{t.nav.receipts}</h3>
+            <div className="export-actions">
+              <button className="secondary-button compact" type="button" onClick={() => downloadCSV("receipts.csv", receiptExportRows)} disabled={!receiptExportRows.length}>
+                <FileText size={16} />
+                <span>{t.common.csv}</span>
+              </button>
+              <button className="secondary-button compact" type="button" onClick={() => downloadExcel("receipts.xls", receiptExportRows)} disabled={!receiptExportRows.length}>
+                <FileSpreadsheet size={16} />
+                <span>Excel</span>
+              </button>
+            </div>
+          </div>
           <DataTable
             t={t}
             columns={["No.", t.donationForm.donor, t.receipts.period, t.donationForm.amount, t.common.status, ""]}
@@ -4416,6 +4462,19 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
         </Panel>
 
         <Panel title={t.receipts.batches} icon={Printer}>
+          <div className="panel-subheader">
+            <h3>{t.receipts.batches}</h3>
+            <div className="export-actions">
+              <button className="secondary-button compact" type="button" onClick={() => downloadCSV("receipt-batches.csv", batchExportRows)} disabled={!batchExportRows.length}>
+                <FileText size={16} />
+                <span>{t.common.csv}</span>
+              </button>
+              <button className="secondary-button compact" type="button" onClick={() => downloadExcel("receipt-batches.xls", batchExportRows)} disabled={!batchExportRows.length}>
+                <FileSpreadsheet size={16} />
+                <span>Excel</span>
+              </button>
+            </div>
+          </div>
           <DataTable
             t={t}
             columns={[t.receipts.created, t.receipts.period, t.receipts.count, t.receipts.total]}
@@ -4453,9 +4512,9 @@ function Reports({ reportResult, t, onRunReport }) {
   });
   const summary = reportResult?.summary || [];
   const rows = Array.isArray(reportResult) ? reportResult : reportResult?.rows || reportResult || [];
-  const downloadableRows = Array.isArray(rows) ? rows : summary;
   const reportTemplates = [...t.reports.templates, ...customTemplates];
   const selectedTemplate = reportTemplates.find((template) => template.id === selectedTemplateId) || reportTemplates[0];
+  const downloadableRows = reportExportRows(rows, summary, selectedTemplate, t);
   const reportRowCount = Array.isArray(rows) ? rows.length : 0;
   const reportGroupCount = summary.length;
   const reportTotal = summary.reduce((sum, item) => sum + Number(item.total || 0), 0);
@@ -4657,8 +4716,12 @@ function Reports({ reportResult, t, onRunReport }) {
               <span>{t.reports.run}</span>
             </button>
             <button className="secondary-button" type="button" disabled={!downloadableRows.length} onClick={() => downloadCSV("weserve-report.csv", downloadableRows)}>
-              <Download size={17} />
-              <span>{t.reports.export}</span>
+              <FileText size={17} />
+              <span>{t.common.csv}</span>
+            </button>
+            <button className="secondary-button" type="button" disabled={!downloadableRows.length} onClick={() => downloadExcel("weserve-report.xls", downloadableRows)}>
+              <FileSpreadsheet size={17} />
+              <span>Excel</span>
             </button>
           </div>
         </form>
@@ -4730,32 +4793,7 @@ function ReportResultView({ rows, selectedTemplate, summary, t }) {
 }
 
 function AccountsByMonthReport({ rows, t }) {
-  const sections = Array.from(rows.reduce((months, donation) => {
-    const monthKey = String(donation.dateDon || "").slice(0, 7) || "Unknown";
-    const month = months.get(monthKey) || new Map();
-    const accountKey = `${donation.noCompte || ""} - ${donation.libelleCompte || t.common.unspecified}`;
-    const account = month.get(accountKey) || {
-      label: accountKey,
-      count: 0,
-      total: 0,
-    };
-    account.count += 1;
-    account.total += Number(donation.montant || 0);
-    month.set(accountKey, account);
-    months.set(monthKey, month);
-    return months;
-  }, new Map()).entries())
-    .sort(([left], [right]) => right.localeCompare(left))
-    .map(([monthKey, accounts]) => {
-      const items = Array.from(accounts.values()).sort((left, right) => left.label.localeCompare(right.label));
-      return {
-        monthKey,
-        title: monthName(monthKey, t),
-        total: items.reduce((sum, item) => sum + item.total, 0),
-        count: items.reduce((sum, item) => sum + item.count, 0),
-        items,
-      };
-    });
+  const sections = accountMonthSummary(rows, t);
 
   return (
     <div className="report-section-stack">
@@ -4783,6 +4821,35 @@ function AccountsByMonthReport({ rows, t }) {
       ))}
     </div>
   );
+}
+
+function accountMonthSummary(rows, t) {
+  return Array.from(rows.reduce((months, donation) => {
+    const monthKey = String(donation.dateDon || "").slice(0, 7) || "Unknown";
+    const month = months.get(monthKey) || new Map();
+    const accountKey = `${donation.noCompte || ""} - ${donation.libelleCompte || t.common.unspecified}`;
+    const account = month.get(accountKey) || {
+      label: accountKey,
+      count: 0,
+      total: 0,
+    };
+    account.count += 1;
+    account.total += Number(donation.montant || 0);
+    month.set(accountKey, account);
+    months.set(monthKey, month);
+    return months;
+  }, new Map()).entries())
+    .sort(([left], [right]) => right.localeCompare(left))
+    .map(([monthKey, accounts]) => {
+      const items = Array.from(accounts.values()).sort((left, right) => left.label.localeCompare(right.label));
+      return {
+        monthKey,
+        title: monthName(monthKey, t),
+        total: items.reduce((sum, item) => sum + item.total, 0),
+        count: items.reduce((sum, item) => sum + item.count, 0),
+        items,
+      };
+    });
 }
 
 function SummaryCardReport({ summary, t, variant }) {
@@ -4816,6 +4883,46 @@ function DonationDetailReport({ rows, t }) {
       paginate
     />
   );
+}
+
+function reportExportRows(rows, summary, selectedTemplate, t) {
+  if (selectedTemplate?.groupBy === "accountMonth") {
+    return accountMonthSummary(rows, t).flatMap((section) => section.items.map((item) => ({
+      Month: section.title,
+      Account: item.label,
+      Donations: item.count,
+      Total: item.total,
+    })));
+  }
+
+  if (selectedTemplate?.groupBy === "month") {
+    return summary.map((item) => ({
+      Month: monthName(item.label, t),
+      Donations: item.count,
+      Total: item.total,
+    }));
+  }
+
+  if (["account", "donor", "method"].includes(selectedTemplate?.groupBy)) {
+    return summary.map((item) => ({
+      Group: formatReportLabel(item.label, t),
+      Donations: item.count,
+      Total: item.total,
+    }));
+  }
+
+  if (selectedTemplate?.type === "receipts") {
+    return rows.map((row) => ({ ...row }));
+  }
+
+  return rows.map((row) => ({
+    Date: row.dateDon,
+    Donor: row.donorName || t.common.unspecified,
+    Account: `${row.noCompte || ""} - ${row.libelleCompte || t.common.unspecified}`,
+    Method: row.methode_en || t.common.unspecified,
+    Amount: row.montant,
+    Status: translateStatus(row.receiptStatus, t),
+  }));
 }
 
 function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAnswer, t, onSubmit }) {
@@ -6005,30 +6112,26 @@ function formatTemplateSchedule(template, t) {
 }
 
 function downloadCSV(filename, rows) {
-  if (!rows?.length) {
+  const { headers, normalizedRows } = normalizeExportRows(rows);
+  if (!normalizedRows.length) {
     return;
   }
 
-  const headers = Object.keys(rows[0]);
   const csvRows = [
-    headers.join(","),
-    ...rows.map((row) => headers.map((header) => csvValue(row[header])).join(",")),
+    headers.map(csvValue).join(","),
+    ...normalizedRows.map((row) => headers.map((header) => csvValue(row[header])).join(",")),
   ];
-  const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
+  const blob = new Blob([`\uFEFF${csvRows.join("\r\n")}`], { type: "text/csv;charset=utf-8" });
+  downloadBlob(filename, blob);
 }
 
 function downloadExcel(filename, rows) {
-  if (!rows?.length) {
+  const { headers, normalizedRows } = normalizeExportRows(rows);
+  if (!normalizedRows.length) {
     return;
   }
 
-  const headers = Object.keys(rows[0]);
+  const safeFilename = filename.endsWith(".xls") ? filename : filename.replace(/\.[^.]+$/, "") + ".xls";
   const escapeHtml = (value) => formatCell(value)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -6036,20 +6139,44 @@ function downloadExcel(filename, rows) {
     .replace(/"/g, "&quot;");
   const tableRows = [
     `<tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr>`,
-    ...rows.map((row) => `<tr>${headers.map((header) => `<td>${escapeHtml(row[header])}</td>`).join("")}</tr>`),
+    ...normalizedRows.map((row) => `<tr>${headers.map((header) => `<td style="mso-number-format:'\\@';">${escapeHtml(row[header])}</td>`).join("")}</tr>`),
   ];
-  const worksheet = `
+  const worksheet = `<!doctype html>
     <html>
-      <head><meta charset="UTF-8" /></head>
+      <head>
+        <meta charset="UTF-8" />
+        <style>
+          table { border-collapse: collapse; }
+          th, td { border: 1px solid #d9e3e1; padding: 6px 8px; text-align: left; }
+          th { background: #e8f4ef; font-weight: 700; }
+        </style>
+      </head>
       <body><table>${tableRows.join("")}</table></body>
     </html>
   `;
   const blob = new Blob([worksheet], { type: "application/vnd.ms-excel;charset=utf-8" });
+  downloadBlob(safeFilename, blob);
+}
+
+function normalizeExportRows(rows) {
+  const normalizedRows = (rows || []).map((row) => (row && typeof row === "object" && !Array.isArray(row) ? row : { Value: row }));
+  const headers = Array.from(normalizedRows.reduce((set, row) => {
+    Object.keys(row).forEach((key) => set.add(key));
+    return set;
+  }, new Set()));
+
+  return { headers, normalizedRows };
+}
+
+function downloadBlob(filename, blob) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
   link.click();
+  link.remove();
   URL.revokeObjectURL(url);
 }
 
