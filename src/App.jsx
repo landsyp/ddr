@@ -512,6 +512,7 @@ const copy = {
       scopeAll: "Use all accounts",
       scopeSelected: "Select accounts",
       connectSource: "Connect source",
+      connected: "Connection saved.",
       newDonations: "New donations",
       pendingNotification: "{count} pending new donations",
       newDonationHelp: "Incoming transactions are tagged as pending until you assign a donor and account.",
@@ -1005,6 +1006,7 @@ const copy = {
       scopeAll: "Utiliser tous les comptes",
       scopeSelected: "Sélectionner des comptes",
       connectSource: "Connecter la source",
+      connected: "Connexion enregistrée.",
       newDonations: "Nouveaux dons",
       pendingNotification: "{count} nouveaux dons en attente",
       newDonationHelp: "Les transactions entrantes restent en attente jusqu'à l'attribution d'un donateur et d'un compte.",
@@ -1240,6 +1242,8 @@ function App() {
   const [palette, setPalette] = useState("Default");
   const [savedPalettes, setSavedPalettes] = useState([]);
   const [pendingDonations, setPendingDonations] = useState([]);
+  const [bankingConnections, setBankingConnections] = useState([]);
+  const [reportTemplates, setReportTemplates] = useState([]);
   const t = copy[language];
   const notifications = pendingDonations.map((donation) => ({
     id: donation.id,
@@ -1285,7 +1289,9 @@ function App() {
         api("/api/receipt-batches"),
       ]);
 
-    setBootstrap(bootstrapData);
+    const migratedBootstrapData = await migrateLocalFeatureStorage(bootstrapData);
+
+    setBootstrap(migratedBootstrapData);
     setDashboard(dashboardData);
     setDonors(donorData);
     setAccounts(accountData);
@@ -1293,7 +1299,78 @@ function App() {
     setPendingDonations(pendingDonationData);
     setReceipts(receiptData);
     setReceiptBatches(batchData);
+    setBankingConnections(migratedBootstrapData.bankingConnections || []);
+    setReportTemplates(migratedBootstrapData.reportTemplates || []);
     setLoading(false);
+  }
+
+  async function migrateLocalFeatureStorage(bootstrapData) {
+    if (!currentUser?.admin) {
+      return bootstrapData;
+    }
+
+    const migratedData = { ...bootstrapData };
+
+    const savedConnectionsRaw = localStorage.getItem("weserve-banking-connections");
+    if (savedConnectionsRaw) {
+      try {
+        const savedConnections = JSON.parse(savedConnectionsRaw || "[]");
+        if (Array.isArray(savedConnections) && savedConnections.length) {
+          const existingConnections = migratedData.bankingConnections || [];
+          const createdConnections = [];
+          for (const connection of savedConnections) {
+            const duplicate = existingConnections.some((item) => (
+              item.institution === connection.institution &&
+              item.accountNumber === connection.accountNumber
+            ));
+            if (!duplicate) {
+              createdConnections.push(await api("/api/banking-connections", {
+                method: "POST",
+                body: JSON.stringify(connection),
+              }));
+            }
+          }
+          migratedData.bankingConnections = [...existingConnections, ...createdConnections];
+        }
+        localStorage.removeItem("weserve-banking-connections");
+      } catch (migrationError) {
+        if (migrationError instanceof SyntaxError) {
+          localStorage.removeItem("weserve-banking-connections");
+        }
+      }
+    }
+
+    const savedTemplatesRaw = localStorage.getItem("weserve-report-templates");
+    if (savedTemplatesRaw) {
+      try {
+        const savedTemplates = JSON.parse(savedTemplatesRaw || "[]");
+        if (Array.isArray(savedTemplates) && savedTemplates.length) {
+          const existingTemplates = migratedData.reportTemplates || [];
+          const createdTemplates = [];
+          for (const template of savedTemplates) {
+            const duplicate = existingTemplates.some((item) => (
+              item.title === template.title &&
+              item.groupBy === template.groupBy &&
+              item.type === template.type
+            ));
+            if (!duplicate) {
+              createdTemplates.push(await api("/api/report-templates", {
+                method: "POST",
+                body: JSON.stringify(template),
+              }));
+            }
+          }
+          migratedData.reportTemplates = [...createdTemplates, ...existingTemplates];
+        }
+        localStorage.removeItem("weserve-report-templates");
+      } catch (migrationError) {
+        if (migrationError instanceof SyntaxError) {
+          localStorage.removeItem("weserve-report-templates");
+        }
+      }
+    }
+
+    return migratedData;
   }
 
   useEffect(() => {
@@ -1628,6 +1705,36 @@ function App() {
     }
   }
 
+  async function handleCreateBankingConnection(data) {
+    try {
+      const createdConnection = await api("/api/banking-connections", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      setBankingConnections((currentConnections) => [...currentConnections, createdConnection]);
+      await refresh(t.banking.connected);
+      return true;
+    } catch (saveError) {
+      showError(saveError.message);
+      return false;
+    }
+  }
+
+  async function handleCreateReportTemplate(data) {
+    try {
+      const createdTemplate = await api("/api/report-templates", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      setReportTemplates((currentTemplates) => [createdTemplate, ...currentTemplates]);
+      await refresh(t.reports.templateSaved);
+      return createdTemplate;
+    } catch (saveError) {
+      showError(saveError.message);
+      return null;
+    }
+  }
+
   async function handleSubscription(event) {
     event.preventDefault();
 
@@ -1907,6 +2014,7 @@ function App() {
         {!loading && activeView === "donations" && (
           <Donations
             accounts={accounts}
+            bankingConnections={bankingConnections}
             bootstrap={bootstrap}
             donations={donations}
             donors={donors}
@@ -1958,6 +2066,8 @@ function App() {
         )}
         {!loading && activeView === "reports" && (
           <Reports
+            customTemplates={reportTemplates}
+            onCreateTemplate={handleCreateReportTemplate}
             reportResult={reportResult}
             t={t}
             onRunReport={handleRunReport}
@@ -1966,6 +2076,8 @@ function App() {
         {!loading && activeView === "banking" && (
           <BankingView
             accounts={accounts}
+            linkedAccounts={bankingConnections}
+            onCreateConnection={handleCreateBankingConnection}
             t={t}
           />
         )}
@@ -2538,7 +2650,7 @@ function QuickActionLauncher({ hasPageTour, isHintActive, isOpen, onHelp, onTogg
   );
 }
 
-function Donations({ accounts, bootstrap, donations, donors, language, pendingDonations, t, onCategorizePending, onDelete, onSubmit, onUpdate }) {
+function Donations({ accounts, bankingConnections, bootstrap, donations, donors, language, pendingDonations, t, onCategorizePending, onDelete, onSubmit, onUpdate }) {
   const [categorizingDonationId, setCategorizingDonationId] = useState(null);
   const [registerCategorizingDonationId, setRegisterCategorizingDonationId] = useState(null);
   const [activeDrawer, setActiveDrawer] = useState(null);
@@ -2547,7 +2659,7 @@ function Donations({ accounts, bootstrap, donations, donors, language, pendingDo
   const [showAllPending, setShowAllPending] = useState(false);
   const [donationSearch, setDonationSearch] = useState("");
   const [donationToolsOpen, setDonationToolsOpen] = useState(false);
-  const linkedBankAccounts = savedBankingConnections(accounts);
+  const linkedBankAccounts = bankingConnections || [];
   const allDonationRows = [
     ...pendingDonations.map((donation) => ({
       id: donation.id,
@@ -3162,40 +3274,6 @@ function bankingAccountNames(bankAccount, accounts, t) {
     : t.common.unspecified;
 }
 
-function defaultBankingConnections(accounts = []) {
-  return [
-    {
-      id: "national-bank",
-      category: "bank",
-      institution: "Banque Nationale",
-      accountNumber: "**** 4921",
-      transit: "006",
-      iban: "CA-006-4921",
-      scope: "all",
-      accountIds: [],
-    },
-    {
-      id: "paypal-giving",
-      category: "processor",
-      institution: "PayPal Giving",
-      accountNumber: "finance@weserve.local",
-      transit: "PayPal",
-      iban: "PP-1842",
-      scope: "selected",
-      accountIds: accounts.slice(0, 2).map((account) => account.compteID),
-    },
-  ];
-}
-
-function savedBankingConnections(accounts) {
-  try {
-    const savedConnections = JSON.parse(localStorage.getItem("weserve-banking-connections") || "null");
-    return Array.isArray(savedConnections) && savedConnections.length ? savedConnections : defaultBankingConnections(accounts);
-  } catch {
-    return defaultBankingConnections(accounts);
-  }
-}
-
 function maskSensitiveValue(value = "", visibleCount = 4) {
   const cleanValue = String(value).trim();
   const visibleValue = cleanValue.replace(/\s/g, "").slice(-visibleCount);
@@ -3211,7 +3289,7 @@ function maskEmail(value = "") {
   return `${name.slice(0, 2)}***@${domain}`;
 }
 
-function BankingView({ accounts, t }) {
+function BankingView({ accounts, linkedAccounts = [], onCreateConnection, t }) {
   const providerGroups = [
     {
       label: t.banking.bankAccount,
@@ -3241,42 +3319,37 @@ function BankingView({ accounts, t }) {
     },
   ];
   const bankingProviders = providerGroups.flatMap((group) => group.options);
-  const [linkedAccounts, setLinkedAccounts] = useState(() => savedBankingConnections(accounts));
   const [addBankOpen, setAddBankOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(bankingProviders[0]);
   const [scopeMode, setScopeMode] = useState("all");
 
-  useEffect(() => {
-    localStorage.setItem("weserve-banking-connections", JSON.stringify(linkedAccounts));
-  }, [linkedAccounts]);
-
-  function addLinkedBankAccount(event) {
+  async function addLinkedBankAccount(event) {
     event.preventDefault();
+    const form = event.currentTarget;
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
     const selectedAccountIds = formData.getAll("accountIds").map(Number);
 
-    setLinkedAccounts((currentAccounts) => [
-      ...currentAccounts,
-      {
-        id: `connection-${Date.now()}`,
-        category: selectedProvider.category,
-        institution: data.provider,
-        accountNumber: selectedProvider.type === "paypal" || selectedProvider.type === "external"
-          ? maskEmail(data.paypalEmail || data.sourceEmail)
-          : maskSensitiveValue(data.accountNumber || data.stripeAccount),
-        transit: selectedProvider.type === "bank" ? data.transit : selectedProvider.label,
-        iban: selectedProvider.type === "bank"
-          ? maskSensitiveValue(data.iban)
-          : maskSensitiveValue(data.stripeAccount || data.sourceAccount || data.paypalEmail),
-        scope: data.scope,
-        accountIds: data.scope === "all" ? [] : selectedAccountIds,
-      },
-    ]);
-    event.currentTarget.reset();
-    setSelectedProvider(bankingProviders[0]);
-    setScopeMode("all");
-    setAddBankOpen(false);
+    const didCreate = await onCreateConnection({
+      category: selectedProvider.category,
+      institution: data.provider,
+      accountNumber: selectedProvider.type === "paypal" || selectedProvider.type === "external"
+        ? maskEmail(data.paypalEmail || data.sourceEmail)
+        : maskSensitiveValue(data.accountNumber || data.stripeAccount),
+      transit: selectedProvider.type === "bank" ? data.transit : selectedProvider.label,
+      iban: selectedProvider.type === "bank"
+        ? maskSensitiveValue(data.iban)
+        : maskSensitiveValue(data.stripeAccount || data.sourceAccount || data.paypalEmail),
+      scope: data.scope,
+      accountIds: data.scope === "all" ? [] : selectedAccountIds,
+    });
+
+    if (didCreate) {
+      form.reset();
+      setSelectedProvider(bankingProviders[0]);
+      setScopeMode("all");
+      setAddBankOpen(false);
+    }
   }
 
   return (
@@ -4491,16 +4564,9 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
   );
 }
 
-function Reports({ reportResult, t, onRunReport }) {
+function Reports({ customTemplates = [], reportResult, t, onCreateTemplate, onRunReport }) {
   const [selectedTemplateId, setSelectedTemplateId] = useState(t.reports.templates[0]?.id || "donation-detail");
   const [showCustomTemplateForm, setShowCustomTemplateForm] = useState(false);
-  const [customTemplates, setCustomTemplates] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("weserve-report-templates") || "[]");
-    } catch {
-      return [];
-    }
-  });
   const [customTemplateDraft, setCustomTemplateDraft] = useState({
     title: "",
     description: "",
@@ -4519,34 +4585,31 @@ function Reports({ reportResult, t, onRunReport }) {
   const reportGroupCount = summary.length;
   const reportTotal = summary.reduce((sum, item) => sum + Number(item.total || 0), 0);
 
-  useEffect(() => {
-    localStorage.setItem("weserve-report-templates", JSON.stringify(customTemplates));
-  }, [customTemplates]);
-
   function updateCustomTemplateDraft(field, value) {
     setCustomTemplateDraft((draft) => ({ ...draft, [field]: value }));
   }
 
-  function saveCustomTemplate() {
+  async function saveCustomTemplate() {
     const title = customTemplateDraft.title.trim();
 
     if (!title) {
       return;
     }
 
-    const template = {
-      id: `custom-${Date.now()}`,
+    const template = await onCreateTemplate({
       title,
       description: customTemplateDraft.description.trim() || t.reports.customTemplateDescription,
       type: customTemplateDraft.type,
       groupBy: customTemplateDraft.groupBy,
-      custom: true,
       automatic: customTemplateDraft.automatic,
       frequency: customTemplateDraft.frequency,
       day: customTemplateDraft.day,
-    };
+    });
 
-    setCustomTemplates((templates) => [...templates, template]);
+    if (!template) {
+      return;
+    }
+
     setSelectedTemplateId(template.id);
     setShowCustomTemplateForm(false);
     setCustomTemplateDraft({

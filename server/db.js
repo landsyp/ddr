@@ -153,6 +153,32 @@ function setupSchema() {
       UNIQUE (organismeID, externalID)
     );
 
+    CREATE TABLE IF NOT EXISTS banking_connections (
+      connectionID INTEGER PRIMARY KEY AUTOINCREMENT,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      category TEXT NOT NULL DEFAULT 'bank',
+      institution TEXT NOT NULL,
+      accountNumber TEXT NOT NULL,
+      transit TEXT,
+      iban TEXT,
+      scope TEXT NOT NULL DEFAULT 'all',
+      accountIds TEXT NOT NULL DEFAULT '[]',
+      createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS report_templates (
+      templateID INTEGER PRIMARY KEY AUTOINCREMENT,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      description TEXT,
+      reportType TEXT NOT NULL DEFAULT 'donations',
+      groupBy TEXT NOT NULL DEFAULT 'date',
+      automatic INTEGER NOT NULL DEFAULT 0,
+      frequency TEXT NOT NULL DEFAULT 'weekly',
+      day TEXT NOT NULL DEFAULT 'monday',
+      createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS recus (
       recuID INTEGER PRIMARY KEY AUTOINCREMENT,
       dateCreation TEXT NOT NULL,
@@ -197,6 +223,8 @@ function setupSchema() {
     CREATE INDEX IF NOT EXISTS idx_dons_donateur ON dons(donateurID);
     CREATE INDEX IF NOT EXISTS idx_dons_date ON dons(dateDon);
     CREATE INDEX IF NOT EXISTS idx_incoming_transactions_org_status ON incoming_transactions(organismeID, status);
+    CREATE INDEX IF NOT EXISTS idx_banking_connections_org ON banking_connections(organismeID);
+    CREATE INDEX IF NOT EXISTS idx_report_templates_org ON report_templates(organismeID);
     CREATE INDEX IF NOT EXISTS idx_recus_org_period ON recus(organismeID, dateDebut, dateFin);
     CREATE INDEX IF NOT EXISTS idx_envois_org_code ON envois(organismeID, envoiCode);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_utilisateurs_courriel_unique ON utilisateurs(courriel);
@@ -281,6 +309,21 @@ function seedDatabase() {
       [400, "Building fund", 1],
       [900, "Administration fees", 0],
     ].forEach((row) => insertAccount.run(...row));
+  }
+
+  const connectionCount = db.prepare("SELECT COUNT(*) AS count FROM banking_connections").get().count;
+  if (!connectionCount) {
+    const accountRows = db.prepare("SELECT compteID FROM comptes WHERE organismeID = 1 ORDER BY noCompte LIMIT 2").all();
+    const insertConnection = db.prepare(`
+      INSERT INTO banking_connections (
+        organismeID, category, institution, accountNumber, transit, iban, scope, accountIds
+      ) VALUES (1, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    [
+      ["bank", "Banque Nationale", "**** 4921", "006", "CA-006-4921", "all", "[]"],
+      ["processor", "PayPal Giving", "fi***@weserve.local", "PayPal", "**** 1842", "selected", JSON.stringify(accountRows.map((account) => account.compteID))],
+    ].forEach((row) => insertConnection.run(...row));
   }
 
   const donorCount = db.prepare("SELECT COUNT(*) AS count FROM donateurs").get().count;
@@ -814,6 +857,119 @@ function updateOrganization(data, context = {}) {
   return getOrganization(context);
 }
 
+function normalizeConnection(row) {
+  return {
+    id: `connection-${row.connectionID}`,
+    connectionID: row.connectionID,
+    category: row.category,
+    institution: row.institution,
+    accountNumber: row.accountNumber,
+    transit: row.transit || "",
+    iban: row.iban || "",
+    scope: row.scope || "all",
+    accountIds: JSON.parse(row.accountIds || "[]"),
+  };
+}
+
+function listBankingConnections(context = {}) {
+  return all(
+    `SELECT connectionID, category, institution, accountNumber, transit, iban, scope, accountIds
+     FROM banking_connections
+     WHERE organismeID = ?
+     ORDER BY connectionID`,
+    [organizationID(context)],
+  ).map(normalizeConnection);
+}
+
+function createBankingConnection(data, context = {}) {
+  const accountIds = Array.isArray(data.accountIds) ? data.accountIds.map(Number).filter(Boolean) : [];
+  const result = run(
+    `INSERT INTO banking_connections (
+      organismeID, category, institution, accountNumber, transit, iban, scope, accountIds
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      organizationID(context),
+      data.category || "bank",
+      String(data.institution || "").trim(),
+      String(data.accountNumber || "").trim(),
+      data.transit || "",
+      data.iban || "",
+      data.scope === "selected" ? "selected" : "all",
+      JSON.stringify(data.scope === "selected" ? accountIds : []),
+    ],
+  );
+
+  return listBankingConnections(context).find((connection) => connection.connectionID === result.lastInsertRowid);
+}
+
+function deleteBankingConnection(id, context = {}) {
+  run(
+    "DELETE FROM banking_connections WHERE connectionID = ? AND organismeID = ?",
+    [Number(id), organizationID(context)],
+  );
+  return { ok: true };
+}
+
+function normalizeReportTemplate(row) {
+  return {
+    id: `custom-${row.templateID}`,
+    templateID: row.templateID,
+    title: row.title,
+    description: row.description || "",
+    type: row.reportType,
+    groupBy: row.groupBy,
+    custom: true,
+    automatic: Boolean(row.automatic),
+    frequency: row.frequency || "weekly",
+    day: row.day || "monday",
+  };
+}
+
+function listReportTemplates(context = {}) {
+  return all(
+    `SELECT templateID, title, description, reportType, groupBy, automatic, frequency, day
+     FROM report_templates
+     WHERE organismeID = ?
+     ORDER BY templateID DESC`,
+    [organizationID(context)],
+  ).map(normalizeReportTemplate);
+}
+
+function createReportTemplate(data, context = {}) {
+  const title = String(data.title || "").trim();
+  if (!title) {
+    const error = new Error("Template name is required");
+    error.status = 400;
+    throw error;
+  }
+
+  const result = run(
+    `INSERT INTO report_templates (
+      organismeID, title, description, reportType, groupBy, automatic, frequency, day
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      organizationID(context),
+      title,
+      String(data.description || "").trim(),
+      data.type || data.reportType || "donations",
+      data.groupBy || "date",
+      bool(data.automatic),
+      data.frequency || "weekly",
+      data.day || "monday",
+    ],
+  );
+
+  return listReportTemplates(context).find((template) => template.templateID === result.lastInsertRowid);
+}
+
+function deleteReportTemplate(id, context = {}) {
+  run(
+    "DELETE FROM report_templates WHERE templateID = ? AND organismeID = ?",
+    [Number(id), organizationID(context)],
+  );
+  return { ok: true };
+}
+
 function getBootstrap(context = {}) {
   const organisme = getOrganization(context);
   const user = get("SELECT utilisateurID, admin, courriel, langue, nom, prenom, organismeID FROM utilisateurs WHERE organismeID = ? ORDER BY admin DESC LIMIT 1", [organizationID(context)]);
@@ -826,6 +982,8 @@ function getBootstrap(context = {}) {
     users: listUsers(context),
     provinces,
     methods,
+    bankingConnections: listBankingConnections(context),
+    reportTemplates: listReportTemplates(context),
   };
 }
 
@@ -1473,6 +1631,12 @@ export const store = {
   createUser,
   updateUser,
   updateUserStatus,
+  listBankingConnections,
+  createBankingConnection,
+  deleteBankingConnection,
+  listReportTemplates,
+  createReportTemplate,
+  deleteReportTemplate,
   listDonors,
   nextDonorNumber,
   createDonor,

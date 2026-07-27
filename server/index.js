@@ -184,6 +184,41 @@ async function handleAPI(request, response, pathname) {
     return;
   }
 
+  if (method === "GET" && pathname === "/api/banking-connections") {
+    sendJSON(response, 200, store.listBankingConnections(auth));
+    return;
+  }
+
+  if (method === "POST" && pathname === "/api/banking-connections") {
+    requireAdmin(auth);
+    sendJSON(response, 201, store.createBankingConnection(await readJSON(request), auth));
+    return;
+  }
+
+  let params = route(method, pathname, "/api/banking-connections/:id");
+  if (params && method === "DELETE") {
+    requireAdmin(auth);
+    sendJSON(response, 200, store.deleteBankingConnection(params.id, auth));
+    return;
+  }
+
+  if (method === "GET" && pathname === "/api/report-templates") {
+    sendJSON(response, 200, store.listReportTemplates(auth));
+    return;
+  }
+
+  if (method === "POST" && pathname === "/api/report-templates") {
+    sendJSON(response, 201, store.createReportTemplate(await readJSON(request), auth));
+    return;
+  }
+
+  params = route(method, pathname, "/api/report-templates/:id");
+  if (params && method === "DELETE") {
+    requireAdmin(auth);
+    sendJSON(response, 200, store.deleteReportTemplate(params.id, auth));
+    return;
+  }
+
   if (method === "GET" && pathname === "/api/users") {
     requireAdmin(auth);
     sendJSON(response, 200, store.listUsers(auth));
@@ -196,7 +231,7 @@ async function handleAPI(request, response, pathname) {
     return;
   }
 
-  let params = route(method, pathname, "/api/users/:id");
+  params = route(method, pathname, "/api/users/:id");
   if (params && method === "PATCH") {
     requireAdmin(auth);
     sendJSON(response, 200, store.updateUser(params.id, await readJSON(request), auth));
