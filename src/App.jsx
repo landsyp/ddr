@@ -59,6 +59,7 @@ const copy = {
       receipts: "Receipts",
       reports: "Reports",
       banking: "Connections",
+      integrations: "Integrations",
       subscription: "Subscription",
       customization: "Customization",
     },
@@ -566,6 +567,7 @@ const copy = {
       receipts: "Reçus",
       reports: "Rapports",
       banking: "Connexions",
+      integrations: "Intégrations",
       subscription: "Abonnement",
       customization: "Personnalisation",
     },
@@ -1071,6 +1073,7 @@ const navItems = [
   { id: "receipts", icon: ReceiptText },
   { id: "reports", icon: BarChart3 },
   { id: "banking", icon: Landmark },
+  { id: "integrations", icon: BookOpenCheck },
   { id: "subscription", icon: Building2 },
   { id: "customization", icon: Palette },
 ];
@@ -1193,6 +1196,14 @@ function getPageTour(t, view) {
       steps: [
         { visual: "banking", title: fr ? "Comptes connectés" : "Linked accounts", body: fr ? "Chaque tile représente une banque, PayPal ou Stripe connecté." : "Each tile represents a connected bank, PayPal, or Stripe source." },
         { visual: "add", title: fr ? "Ajouter une connexion" : "Add connection", body: fr ? "Le tile pointillé sert à connecter une nouvelle source." : "The dashed tile connects a new source." },
+      ],
+    },
+    integrations: {
+      title: fr ? "Tutoriel des intégrations" : "Integrations tour",
+      subtitle: fr ? "Synchronisez les données de dons avec les outils comptables." : "Sync donation data with accounting tools.",
+      steps: [
+        { visual: "integration", title: fr ? "QuickBooks et Xero" : "QuickBooks and Xero", body: fr ? "Ajoutez les intégrations comptables utilisées par l'organisme." : "Add the accounting integrations your organization uses." },
+        { visual: "download", title: fr ? "Sync comptable" : "Accounting sync", body: fr ? "Préparez les dons suivis dans WeSERVE pour l'export comptable." : "Prepare the donations tracked in WeSERVE for accounting export." },
       ],
     },
     subscription: {
@@ -2132,11 +2143,16 @@ function App() {
         )}
         {!loading && activeView === "banking" && (
           <BankingView
-            accountingIntegrations={accountingIntegrations}
             accounts={accounts}
             linkedAccounts={bankingConnections}
-            onCreateAccountingIntegration={handleCreateAccountingIntegration}
             onCreateConnection={handleCreateBankingConnection}
+            t={t}
+          />
+        )}
+        {!loading && activeView === "integrations" && (
+          <IntegrationsView
+            accountingIntegrations={accountingIntegrations}
+            onCreateAccountingIntegration={handleCreateAccountingIntegration}
             onSyncAccountingIntegration={handleSyncAccountingIntegration}
             t={t}
           />
@@ -3350,12 +3366,9 @@ function maskEmail(value = "") {
 }
 
 function BankingView({
-  accountingIntegrations = [],
   accounts,
   linkedAccounts = [],
-  onCreateAccountingIntegration,
   onCreateConnection,
-  onSyncAccountingIntegration,
   t,
 }) {
   const providerGroups = [
@@ -3387,31 +3400,9 @@ function BankingView({
     },
   ];
   const bankingProviders = providerGroups.flatMap((group) => group.options);
-  const accountingProviders = [
-    {
-      id: "quickbooks",
-      name: t.banking.quickbooks,
-      color: "#2ca01c",
-      scopes: ["com.intuit.quickbooks.accounting"],
-    },
-    {
-      id: "xero",
-      name: t.banking.xero,
-      color: "#13b5ea",
-      scopes: ["offline_access", "accounting.invoices", "accounting.payments", "accounting.banktransactions", "accounting.manualjournals"],
-    },
-  ];
   const [addBankOpen, setAddBankOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(bankingProviders[0]);
   const [scopeMode, setScopeMode] = useState("all");
-
-  function providerLabel(provider) {
-    return accountingProviders.find((item) => item.id === provider)?.name || provider;
-  }
-
-  function providerColor(provider) {
-    return accountingProviders.find((item) => item.id === provider)?.color || "var(--brand)";
-  }
 
   async function addLinkedBankAccount(event) {
     event.preventDefault();
@@ -3587,69 +3578,96 @@ function BankingView({
         </Panel>
       )}
 
-      <Panel title={t.banking.accountingTitle} icon={BookOpenCheck}>
-        <div className="section-heading compact">
-          <div>
-            <h3>{t.banking.accountingTitle}</h3>
-            <p>{t.banking.accountingSubtitle}</p>
-          </div>
-        </div>
+    </section>
+  );
+}
 
-        <div className="accounting-integration-grid">
-          {accountingIntegrations.map((integration) => (
-            <article
-              className="accounting-integration-card"
-              key={integration.id}
-              style={{ "--accounting-color": providerColor(integration.provider) }}
-            >
-              <div className="accounting-integration-topline">
-                <div className="accounting-provider-mark">
-                  <BookOpenCheck size={22} />
-                </div>
-                <span className={`status-pill ${integration.status === "synced" ? "issued" : "ready"}`}>
-                  <CheckCircle2 size={14} />
-                  {integration.status === "synced" ? t.banking.synced : t.banking.apiReady}
-                </span>
-              </div>
-              <div>
-                <span>{providerLabel(integration.provider)}</span>
-                <h2>{integration.displayName}</h2>
-                <p>{integration.lastSyncAt ? `${t.banking.lastSync}: ${new Date(integration.lastSyncAt).toLocaleString()}` : t.banking.noSync}</p>
-              </div>
-              <div className="accounting-scope-list" aria-label={t.banking.scopes}>
-                {(integration.scopes || []).map((scope) => (
-                  <span key={scope}>{scope}</span>
-                ))}
-              </div>
-              <button className="secondary-button compact" type="button" onClick={() => onSyncAccountingIntegration(integration)}>
-                <FileSpreadsheet size={16} />
-                <span>{t.banking.syncDonations}</span>
-              </button>
-            </article>
-          ))}
+function IntegrationsView({ accountingIntegrations = [], onCreateAccountingIntegration, onSyncAccountingIntegration, t }) {
+  const accountingProviders = [
+    {
+      id: "quickbooks",
+      name: t.banking.quickbooks,
+      color: "#2ca01c",
+      scopes: ["com.intuit.quickbooks.accounting"],
+    },
+    {
+      id: "xero",
+      name: t.banking.xero,
+      color: "#13b5ea",
+      scopes: ["offline_access", "accounting.invoices", "accounting.payments", "accounting.banktransactions", "accounting.manualjournals"],
+    },
+  ];
 
-          {accountingProviders.map((provider) => (
-            <button
-              className="accounting-integration-card accounting-provider-card"
-              key={provider.id}
-              style={{ "--accounting-color": provider.color }}
-              type="button"
-              onClick={() => onCreateAccountingIntegration({
-                provider: provider.id,
-                displayName: provider.name,
-                scopes: provider.scopes,
-                syncMode: "donations",
-              })}
-            >
+  function providerLabel(provider) {
+    return accountingProviders.find((item) => item.id === provider)?.name || provider;
+  }
+
+  function providerColor(provider) {
+    return accountingProviders.find((item) => item.id === provider)?.color || "var(--brand)";
+  }
+
+  return (
+    <section className="view-stack">
+      <ViewHeader
+        title={t.banking.accountingTitle}
+        subtitle={t.banking.accountingSubtitle}
+        icon={BookOpenCheck}
+      />
+
+      <div className="accounting-integration-grid">
+        {accountingIntegrations.map((integration) => (
+          <article
+            className="accounting-integration-card"
+            key={integration.id}
+            style={{ "--accounting-color": providerColor(integration.provider) }}
+          >
+            <div className="accounting-integration-topline">
               <div className="accounting-provider-mark">
-                <Plus size={22} />
+                <BookOpenCheck size={22} />
               </div>
-              <strong>{t.banking.addAccounting}</strong>
-              <span>{provider.name}</span>
+              <span className={`status-pill ${integration.status === "synced" ? "issued" : "ready"}`}>
+                <CheckCircle2 size={14} />
+                {integration.status === "synced" ? t.banking.synced : t.banking.apiReady}
+              </span>
+            </div>
+            <div>
+              <span>{providerLabel(integration.provider)}</span>
+              <h2>{integration.displayName}</h2>
+              <p>{integration.lastSyncAt ? `${t.banking.lastSync}: ${new Date(integration.lastSyncAt).toLocaleString()}` : t.banking.noSync}</p>
+            </div>
+            <div className="accounting-scope-list" aria-label={t.banking.scopes}>
+              {(integration.scopes || []).map((scope) => (
+                <span key={scope}>{scope}</span>
+              ))}
+            </div>
+            <button className="secondary-button compact" type="button" onClick={() => onSyncAccountingIntegration(integration)}>
+              <FileSpreadsheet size={16} />
+              <span>{t.banking.syncDonations}</span>
             </button>
-          ))}
-        </div>
-      </Panel>
+          </article>
+        ))}
+
+        {accountingProviders.map((provider) => (
+          <button
+            className="accounting-integration-card accounting-provider-card"
+            key={provider.id}
+            style={{ "--accounting-color": provider.color }}
+            type="button"
+            onClick={() => onCreateAccountingIntegration({
+              provider: provider.id,
+              displayName: provider.name,
+              scopes: provider.scopes,
+              syncMode: "donations",
+            })}
+          >
+            <div className="accounting-provider-mark">
+              <Plus size={22} />
+            </div>
+            <strong>{t.banking.addAccounting}</strong>
+            <span>{provider.name}</span>
+          </button>
+        ))}
+      </div>
     </section>
   );
 }
@@ -4482,6 +4500,7 @@ function PageTourVisual({ visual }) {
     edit: Pencil,
     help: HelpCircle,
     import: Download,
+    integration: BookOpenCheck,
     mail: Mail,
     palette: Palette,
     pending: Bell,
