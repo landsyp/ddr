@@ -3653,6 +3653,104 @@ tr.is-clickable:focus-visible {
   background-image: none;
 }
 
+.accounting-integration-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.accounting-integration-card {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  min-height: 230px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accounting-color, var(--brand)) 10%, #ffffff), #ffffff 62%),
+    #ffffff;
+  box-shadow: var(--shadow-tile);
+  overflow: hidden;
+  text-align: left;
+}
+
+.accounting-integration-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: var(--accounting-color, var(--brand));
+  content: "";
+}
+
+.accounting-integration-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.accounting-provider-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accounting-color, var(--brand)) 14%, #ffffff);
+  color: var(--accounting-color, var(--brand));
+}
+
+.accounting-integration-card h2 {
+  margin: 6px 0 4px;
+  font-size: 1.25rem;
+}
+
+.accounting-integration-card span,
+.accounting-integration-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.accounting-scope-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.accounting-scope-list span {
+  max-width: 100%;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.accounting-provider-card {
+  align-content: center;
+  min-height: 200px;
+  border: 2px dashed color-mix(in srgb, var(--accounting-color, var(--brand)) 35%, transparent);
+  cursor: pointer;
+  text-align: center;
+}
+
+.accounting-provider-card::before {
+  display: none;
+}
+
+.accounting-provider-card .accounting-provider-mark {
+  justify-self: center;
+}
+
+.accounting-provider-card strong {
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+
 .incoming-donation {
   display: grid;
   gap: 8px;
@@ -4553,7 +4651,8 @@ tr.is-clickable:focus-visible {
   .user-access-card,
   .settings-page .payment-tile-grid,
   .payment-tile-grid,
-  .banking-tile-grid {
+  .banking-tile-grid,
+  .accounting-integration-grid {
     grid-template-columns: 1fr;
   }
 

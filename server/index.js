@@ -202,6 +202,31 @@ async function handleAPI(request, response, pathname) {
     return;
   }
 
+  if (method === "GET" && pathname === "/api/accounting-integrations") {
+    sendJSON(response, 200, store.listAccountingIntegrations(auth));
+    return;
+  }
+
+  if (method === "POST" && pathname === "/api/accounting-integrations") {
+    requireAdmin(auth);
+    sendJSON(response, 201, store.createAccountingIntegration(await readJSON(request), auth));
+    return;
+  }
+
+  params = route(method, pathname, "/api/accounting-integrations/:id/sync");
+  if (params && method === "POST") {
+    requireAdmin(auth);
+    sendJSON(response, 200, store.syncAccountingIntegration(params.id, auth));
+    return;
+  }
+
+  params = route(method, pathname, "/api/accounting-integrations/:id");
+  if (params && method === "DELETE") {
+    requireAdmin(auth);
+    sendJSON(response, 200, store.deleteAccountingIntegration(params.id, auth));
+    return;
+  }
+
   if (method === "GET" && pathname === "/api/report-templates") {
     sendJSON(response, 200, store.listReportTemplates(auth));
     return;

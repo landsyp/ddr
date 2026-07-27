@@ -179,6 +179,19 @@ function setupSchema() {
       createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS accounting_integrations (
+      integrationID INTEGER PRIMARY KEY AUTOINCREMENT,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      provider TEXT NOT NULL,
+      displayName TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'ready',
+      scopes TEXT NOT NULL DEFAULT '[]',
+      realmOrTenantId TEXT,
+      syncMode TEXT NOT NULL DEFAULT 'donations',
+      lastSyncAt TEXT,
+      createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS recus (
       recuID INTEGER PRIMARY KEY AUTOINCREMENT,
       dateCreation TEXT NOT NULL,
@@ -225,6 +238,7 @@ function setupSchema() {
     CREATE INDEX IF NOT EXISTS idx_incoming_transactions_org_status ON incoming_transactions(organismeID, status);
     CREATE INDEX IF NOT EXISTS idx_banking_connections_org ON banking_connections(organismeID);
     CREATE INDEX IF NOT EXISTS idx_report_templates_org ON report_templates(organismeID);
+    CREATE INDEX IF NOT EXISTS idx_accounting_integrations_org ON accounting_integrations(organismeID);
     CREATE INDEX IF NOT EXISTS idx_recus_org_period ON recus(organismeID, dateDebut, dateFin);
     CREATE INDEX IF NOT EXISTS idx_envois_org_code ON envois(organismeID, envoiCode);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_utilisateurs_courriel_unique ON utilisateurs(courriel);
@@ -324,6 +338,34 @@ function seedDatabase() {
       ["bank", "Banque Nationale", "**** 4921", "006", "CA-006-4921", "all", "[]"],
       ["processor", "PayPal Giving", "fi***@weserve.local", "PayPal", "**** 1842", "selected", JSON.stringify(accountRows.map((account) => account.compteID))],
     ].forEach((row) => insertConnection.run(...row));
+  }
+
+  const accountingIntegrationCount = db.prepare("SELECT COUNT(*) AS count FROM accounting_integrations").get().count;
+  if (!accountingIntegrationCount) {
+    const insertAccountingIntegration = db.prepare(`
+      INSERT INTO accounting_integrations (
+        organismeID, provider, displayName, status, scopes, realmOrTenantId, syncMode
+      ) VALUES (1, ?, ?, ?, ?, ?, ?)
+    `);
+
+    [
+      [
+        "quickbooks",
+        "QuickBooks Online",
+        "ready",
+        JSON.stringify(["com.intuit.quickbooks.accounting"]),
+        "",
+        "donations",
+      ],
+      [
+        "xero",
+        "Xero Accounting",
+        "ready",
+        JSON.stringify(["offline_access", "accounting.invoices", "accounting.payments", "accounting.banktransactions", "accounting.manualjournals"]),
+        "",
+        "donations",
+      ],
+    ].forEach((row) => insertAccountingIntegration.run(...row));
   }
 
   const donorCount = db.prepare("SELECT COUNT(*) AS count FROM donateurs").get().count;
@@ -910,6 +952,117 @@ function deleteBankingConnection(id, context = {}) {
   return { ok: true };
 }
 
+const accountingProviderDefaults = {
+  quickbooks: {
+    displayName: "QuickBooks Online",
+    scopes: ["com.intuit.quickbooks.accounting"],
+  },
+  xero: {
+    displayName: "Xero Accounting",
+    scopes: ["offline_access", "accounting.invoices", "accounting.payments", "accounting.banktransactions", "accounting.manualjournals"],
+  },
+};
+
+function normalizeAccountingIntegration(row) {
+  return {
+    id: `accounting-${row.integrationID}`,
+    integrationID: row.integrationID,
+    provider: row.provider,
+    displayName: row.displayName,
+    status: row.status || "ready",
+    scopes: JSON.parse(row.scopes || "[]"),
+    realmOrTenantId: row.realmOrTenantId || "",
+    syncMode: row.syncMode || "donations",
+    lastSyncAt: row.lastSyncAt || "",
+  };
+}
+
+function listAccountingIntegrations(context = {}) {
+  return all(
+    `SELECT integrationID, provider, displayName, status, scopes, realmOrTenantId, syncMode, lastSyncAt
+     FROM accounting_integrations
+     WHERE organismeID = ?
+     ORDER BY integrationID`,
+    [organizationID(context)],
+  ).map(normalizeAccountingIntegration);
+}
+
+function createAccountingIntegration(data, context = {}) {
+  const provider = String(data.provider || "").trim().toLowerCase();
+  const defaults = accountingProviderDefaults[provider];
+  if (!defaults) {
+    const error = new Error("Unsupported accounting provider");
+    error.status = 400;
+    throw error;
+  }
+
+  const scopes = Array.isArray(data.scopes) && data.scopes.length ? data.scopes : defaults.scopes;
+  const result = run(
+    `INSERT INTO accounting_integrations (
+      organismeID, provider, displayName, status, scopes, realmOrTenantId, syncMode
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      organizationID(context),
+      provider,
+      String(data.displayName || defaults.displayName).trim(),
+      data.status || "ready",
+      JSON.stringify(scopes),
+      data.realmOrTenantId || "",
+      data.syncMode || "donations",
+    ],
+  );
+
+  return listAccountingIntegrations(context).find((integration) => integration.integrationID === result.lastInsertRowid);
+}
+
+function deleteAccountingIntegration(id, context = {}) {
+  run(
+    "DELETE FROM accounting_integrations WHERE integrationID = ? AND organismeID = ?",
+    [Number(id), organizationID(context)],
+  );
+  return { ok: true };
+}
+
+function syncAccountingIntegration(id, context = {}) {
+  const integration = get(
+    `SELECT integrationID, provider, displayName, status, scopes, realmOrTenantId, syncMode, lastSyncAt
+     FROM accounting_integrations
+     WHERE integrationID = ? AND organismeID = ?`,
+    [Number(id), organizationID(context)],
+  );
+
+  if (!integration) {
+    const error = new Error("Accounting integration not found");
+    error.status = 404;
+    throw error;
+  }
+
+  const donations = listDonations({ limit: 1000 }, context);
+  const payload = donations.map((donation) => ({
+    donationID: donation.donID,
+    date: donation.dateDon,
+    donor: donation.donorName,
+    account: `${donation.noCompte} - ${donation.libelleCompte}`,
+    amount: donation.montant,
+    description: donation.description || "",
+    method: donation.methode_en || donation.methode_fr || "",
+  }));
+  const lastSyncAt = new Date().toISOString();
+
+  run(
+    "UPDATE accounting_integrations SET status = 'synced', lastSyncAt = ? WHERE integrationID = ? AND organismeID = ?",
+    [lastSyncAt, Number(id), organizationID(context)],
+  );
+
+  return {
+    integration: normalizeAccountingIntegration({ ...integration, status: "synced", lastSyncAt }),
+    syncedCount: payload.length,
+    total: payload.reduce((sum, donation) => sum + Number(donation.amount || 0), 0),
+    payloadType: integration.provider === "quickbooks" ? "quickbooks-donation-export" : "xero-donation-export",
+    payload,
+  };
+}
+
 function normalizeReportTemplate(row) {
   return {
     id: `custom-${row.templateID}`,
@@ -983,6 +1136,7 @@ function getBootstrap(context = {}) {
     provinces,
     methods,
     bankingConnections: listBankingConnections(context),
+    accountingIntegrations: listAccountingIntegrations(context),
     reportTemplates: listReportTemplates(context),
   };
 }
@@ -1634,6 +1788,10 @@ export const store = {
   listBankingConnections,
   createBankingConnection,
   deleteBankingConnection,
+  listAccountingIntegrations,
+  createAccountingIntegration,
+  deleteAccountingIntegration,
+  syncAccountingIntegration,
   listReportTemplates,
   createReportTemplate,
   deleteReportTemplate,
