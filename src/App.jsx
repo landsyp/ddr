@@ -284,7 +284,7 @@ const copy = {
       accentColor: "Accent",
       highlightColor: "Highlight",
       options: [
-        ["Default", "The blue WeSERVE interface palette"],
+        ["Default", "The original WeSERVE interface palette"],
         ["Evergreen", "Calm green for finance and operations"],
         ["Harbor", "Blue accent with a crisp SaaS feel"],
         ["Plum", "Warmer accent for a more branded workspace"],
@@ -777,7 +777,7 @@ const copy = {
       accentColor: "Accent",
       highlightColor: "Mise en valeur",
       options: [
-        ["Default", "La palette bleue de l'interface WeSERVE"],
+        ["Default", "La palette originale de l'interface WeSERVE"],
         ["Evergreen", "Vert calme pour la finance et les opérations"],
         ["Harbor", "Accent bleu avec une allure SaaS nette"],
         ["Plum", "Accent plus chaleureux pour une image personnalisée"],
@@ -5502,10 +5502,10 @@ function PaymentMethodCard({ brand, details, expiry, isDefault = false, t }) {
 
 function CustomizationView({ onSavePalette, palette, savedPalettes, setPalette, t }) {
   const [customName, setCustomName] = useState(t.customization.custom);
-  const [customColors, setCustomColors] = useState(["#2563eb", "#0ea5e9", "#c98219"]);
+  const [customColors, setCustomColors] = useState(["#1d6f5f", "#2f6fbb", "#b7791f"]);
   const [customPaletteOpen, setCustomPaletteOpen] = useState(false);
   const palettes = [
-    { name: "Default", colors: ["#2563eb", "#0ea5e9", "#c98219"] },
+    { name: "Default", colors: ["#1d6f5f", "#2f6fbb", "#b7791f"] },
     { name: "Evergreen", colors: ["#1d6f5f", "#2f6fbb", "#b7791f"] },
     { name: "Harbor", colors: ["#2563eb", "#0f766e", "#64748b"] },
     { name: "Plum", colors: ["#7c3aed", "#db2777", "#334155"] },
