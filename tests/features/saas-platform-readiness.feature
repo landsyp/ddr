@@ -83,5 +83,6 @@ Feature: SaaS platform readiness
     Given I am signed in as a SaaS admin
     When I open the Tenants page
     Then I should see all tenant organizations
-    And I should see tenant plan, status, users, donors, donations, and renewal amount
+    And I should see each tenant subscription model as Base
+    And I should see tenant status, users, donors, donations, and renewal amount
     And tenant admins should not see the Tenants page

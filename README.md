@@ -86,6 +86,11 @@ Role model:
 - **Auditor** has read-only access for reports, receipts, billing history, and audit review.
 - **Viewer** has read-only workspace access.
 
+Current subscription model:
+
+- Every tenant is assigned the **Base** subscription model by default.
+- Additional plan declinations can be added later without changing the tenant administration flow.
+
 New organizations can also be created from the login screen with **Create organization workspace**. Each new organization receives its own isolated accounts, users, donors, donations, receipts, and reports.
 
 ## Scripts

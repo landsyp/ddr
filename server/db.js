@@ -18,9 +18,9 @@ db.exec("PRAGMA journal_mode = WAL");
 
 const planCatalog = [
   {
-    planID: "basic",
-    name: "Basic",
-    description: "For small organizations that need core donor, donation, receipt, and export tools.",
+    planID: "base",
+    name: "Base",
+    description: "Current default SaaS model for every tenant while future plan declinations are prepared.",
     monthlyPrice: 29,
     annualPrice: 290,
     includedSeats: 2,
@@ -35,7 +35,7 @@ const planCatalog = [
   {
     planID: "gold",
     name: "Gold",
-    description: "For growing teams that need automation, more seats, bank connections, and priority help.",
+    description: "Future declination for growing teams that need automation, more seats, bank connections, and priority help.",
     monthlyPrice: 59,
     annualPrice: 590,
     includedSeats: 5,
@@ -43,14 +43,14 @@ const planCatalog = [
     donationLimit: 15000,
     receiptLimit: 6000,
     supportLevel: "Priority support",
-    features: ["Everything in Basic", "Bank and payment connections", "Receipt batches", "Report templates", "Audit log"],
+    features: ["Everything in Base", "Bank and payment connections", "Receipt batches", "Report templates", "Audit log"],
     recommended: true,
     sortOrder: 2,
   },
   {
     planID: "premium",
     name: "Premium",
-    description: "For advanced organizations with integrations, API access, webhooks, and custom workflows.",
+    description: "Future declination for advanced organizations with integrations, API access, webhooks, and custom workflows.",
     monthlyPrice: 99,
     annualPrice: 990,
     includedSeats: 15,
@@ -1025,6 +1025,8 @@ function seedPlanCatalog() {
       plan.sortOrder,
     );
   }
+
+  run("UPDATE subscriptions SET planID = 'base', status = 'active', renewalAmount = 29 WHERE planID = 'basic' OR (planID = 'base' AND status = 'trialing') OR (planID = 'gold' AND status = 'trialing')");
 }
 
 function periodEndISO(billingCycle = "monthly") {
@@ -1045,15 +1047,15 @@ function ensureSaasDefaults(orgID) {
   const numericOrgID = Number(orgID);
   seedPlanCatalog();
 
-  const goldPlan = normalizePlan(get("SELECT * FROM saas_plans WHERE planID = 'gold'"));
+  const basePlan = normalizePlan(get("SELECT * FROM saas_plans WHERE planID = 'base'"));
   const subscriptionExists = get("SELECT subscriptionID FROM subscriptions WHERE organismeID = ?", [numericOrgID]);
   if (!subscriptionExists) {
     run(
       `INSERT INTO subscriptions (
         organismeID, planID, status, billingCycle, trialEndsAt, currentPeriodStart,
         currentPeriodEnd, renewalAmount
-      ) VALUES (?, 'gold', 'trialing', 'monthly', ?, ?, ?, ?)`,
-      [numericOrgID, futureDateISO(14), todayISO(), periodEndISO("monthly"), planRenewalAmount(goldPlan, "monthly")],
+      ) VALUES (?, 'base', 'active', 'monthly', ?, ?, ?, ?)`,
+      [numericOrgID, futureDateISO(14), todayISO(), periodEndISO("monthly"), planRenewalAmount(basePlan, "monthly")],
     );
   }
 

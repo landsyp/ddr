@@ -408,16 +408,16 @@ const copy = {
       choose: "Choose plan",
       plansList: [
         {
-          name: "Basic",
+          name: "Base",
           price: "$29/mo",
-          description: "For small teams getting started.",
+          description: "Current default model for every tenant while future declinations are prepared.",
           features: ["Donor and donation tracking", "Manual receipts", "CSV exports"],
         },
         {
           name: "Gold",
           price: "$59/mo",
           description: "For growing organizations that need automation.",
-          features: ["Everything in Basic", "Receipt batches", "Bank notifications", "Priority support"],
+          features: ["Everything in Base", "Receipt batches", "Bank notifications", "Priority support"],
         },
         {
           name: "Premium",
@@ -490,6 +490,7 @@ const copy = {
       tenants: "Tenants",
       activeTenants: "Active tenants",
       tenantCount: "Tenant count",
+      subscriptionModel: "Subscription model",
     },
     settings: {
       title: "Organization settings",
@@ -989,16 +990,16 @@ const copy = {
       choose: "Choisir le forfait",
       plansList: [
         {
-          name: "Basic",
+          name: "Base",
           price: "29 $/mois",
-          description: "Pour les petites équipes qui démarrent.",
+          description: "Modèle actuel par défaut pour tous les locataires.",
           features: ["Suivi des donateurs et des dons", "Reçus manuels", "Exports CSV"],
         },
         {
           name: "Gold",
           price: "59 $/mois",
           description: "Pour les organismes en croissance.",
-          features: ["Tout dans Basic", "Lots de reçus", "Notifications bancaires", "Support prioritaire"],
+          features: ["Tout dans Base", "Lots de reçus", "Notifications bancaires", "Support prioritaire"],
         },
         {
           name: "Premium",
@@ -1071,6 +1072,7 @@ const copy = {
       tenants: "Locataires",
       activeTenants: "Locataires actifs",
       tenantCount: "Nombre de locataires",
+      subscriptionModel: "Modèle d'abonnement",
     },
     settings: {
       title: "Paramètres de l'organisme",
@@ -1228,7 +1230,7 @@ const navItems = [
 const appViews = new Set([...navItems.map((item) => item.id), "settings", "support"]);
 
 const userSeatPlans = {
-  Basic: { seats: 2, next: "Gold" },
+  Base: { seats: 2, next: "Gold" },
   Gold: { seats: 5, next: "Premium" },
   Premium: { seats: 15, next: null },
 };
@@ -5477,14 +5479,24 @@ function TenantsView({ tenants = [], t }) {
       />
 
       <div className="overview-metric-grid tenant-metric-grid">
-        <MetricCard label={t.saas.tenantCount} value={tenants.length} />
-        <MetricCard label={t.saas.activeTenants} value={activeTenants} />
-        <MetricCard label={t.settings.users} value={tenants.reduce((total, tenant) => total + Number(tenant.activeUsers || 0), 0)} />
+        {[
+          [t.saas.tenantCount, tenants.length],
+          [t.saas.activeTenants, activeTenants],
+          [t.settings.users, tenants.reduce((total, tenant) => total + Number(tenant.activeUsers || 0), 0)],
+        ].map(([label, value]) => (
+          <article className="metric-card" key={label}>
+            <span className="metric-card-title">
+              <Building2 size={17} />
+              <span>{label}</span>
+            </span>
+            <strong>{value}</strong>
+          </article>
+        ))}
       </div>
 
       <Panel title={t.saas.tenants} icon={Building2}>
         <DataTable
-          columns={[t.settings.organizationName, t.settings.currentPlan, t.common.status, t.settings.users, t.donorForm.totalDonors, t.donationForm.donations, t.saas.renews]}
+          columns={[t.settings.organizationName, t.saas.subscriptionModel, t.common.status, t.settings.users, t.donorForm.totalDonors, t.donationForm.donations, t.saas.renews]}
           rows={tenants.map((tenant) => [
             tenant.organisme,
             tenant.planName || "-",
@@ -5505,7 +5517,7 @@ function TenantsView({ tenants = [], t }) {
 
 function Subscription({ saas, member, setMember, subscriptionAnswer, setSubscriptionAnswer, t, onPlanChange, onSubmit, onToggleTask }) {
   const subscription = saas?.subscription;
-  const currentPlanID = subscription?.planID || "gold";
+  const currentPlanID = subscription?.planID || "base";
   const plans = saas?.plans?.length ? saas.plans : t.subscription.plansList.map((plan) => ({
     planID: plan.name.toLowerCase(),
     name: plan.name,
@@ -5714,7 +5726,7 @@ function SettingsView({ bootstrap, saasSecret, setSaasSecret, t, user, onCustomi
   const currentPlan = subscription.plan || {};
   const users = bootstrap?.users?.length ? bootstrap.users : [user].filter(Boolean);
   const isAdmin = Boolean(user?.admin);
-  const currentPlanName = currentPlan.name || "Gold";
+  const currentPlanName = currentPlan.name || "Base";
   const currentSeatPlan = {
     seats: currentPlan.includedSeats || userSeatPlans[currentPlanName]?.seats || 1,
     next: userSeatPlans[currentPlanName]?.next || null,

@@ -64,7 +64,7 @@ test("SaaS admin can see all tenants and tenant users cannot", async () => {
   assert.equal(saasResponse.status, 200);
   assert.ok(Array.isArray(saasResponse.body));
   assert.ok(saasResponse.body.length >= 1);
-  assert.ok(saasResponse.body[0].planName);
+  assert.equal(saasResponse.body[0].planName, "Base");
 
   for (const role of ["orgAdmin", "editor", "auditor", "viewer"]) {
     const response = await api("/api/platform/tenants", { token: sessions.get(role).token });
