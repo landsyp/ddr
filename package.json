@@ -10,6 +10,7 @@
     "test": "node --test tests/bdd/*.test.mjs",
     "test:ci": "npm test",
     "bdd:list": "node tests/bdd/feature-catalog.mjs",
+    "bdd:report": "node tests/bdd/generate-report.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server/index.js"

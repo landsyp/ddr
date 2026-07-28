@@ -4,6 +4,7 @@ dist
 data/*.sqlite
 data/*.sqlite-*
 npm-debug.log*
+reports/
 temp/
 sns/*.log
 **/__history/

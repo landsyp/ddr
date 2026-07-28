@@ -8,6 +8,7 @@ This folder contains the Gherkin acceptance-test catalog and a zero-dependency N
 npm test
 npm run test:ci
 npm run bdd:list
+npm run bdd:report
 ```
 
 ## Structure
@@ -17,6 +18,7 @@ npm run bdd:list
 - `tests/bdd/feature-lint.test.mjs` validates scenario quality and coverage.
 - `tests/bdd/coverage-manifest.mjs` defines the expected feature coverage.
 - `tests/bdd/feature-catalog.mjs` prints the full scenario list.
+- `tests/bdd/generate-report.mjs` writes Markdown, JSON, and JUnit reports to `reports/`.
 
 ## Next step
 

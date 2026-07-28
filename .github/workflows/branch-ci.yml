@@ -54,6 +54,10 @@ jobs:
             echo "::notice title=No test suite configured::Add a package.json test script and this branch CI will run it automatically."
           fi
 
+      - name: Generate BDD test reports
+        if: always()
+        run: npm run bdd:report
+
       - name: Build React app
         run: npm run build
 
@@ -62,3 +66,11 @@ jobs:
           DDR_DATABASE_PATH="$RUNNER_TEMP/weserve-ci.sqlite" node -e "import('./server/db.js').then(() => console.log('SQLite store loaded'))"
           node --check server/index.js
           node --check scripts/dev.js
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weserve-test-report
+          path: reports/
+          if-no-files-found: warn
