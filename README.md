@@ -1,6 +1,6 @@
 # WeSERVE SaaS
 
-WeSERVE SaaS is a modernized React and SQLite donation management application. It keeps legacy ColdFusion source in the repository for reference while providing a functional SaaS-style workspace for multiple charities with isolated donors, donations, accounts, receipts, reports, organization settings, support, and subscription requests.
+WeSERVE SaaS is a modernized React and SQLite donation management application. It keeps legacy ColdFusion source in the repository for reference while providing a functional SaaS workspace for multiple charities with isolated donors, donations, accounts, receipts, reports, organization settings, support, subscription management, billing artifacts, security controls, API access, webhook configuration, onboarding, and audit visibility.
 
 ## Features
 
@@ -10,6 +10,12 @@ WeSERVE SaaS is a modernized React and SQLite donation management application. I
 - Self-service organization registration from the login screen.
 - Per-organization workspace isolation.
 - Admin user management for adding and deactivating workspace users.
+- SaaS plan catalog with per-plan seat, donor, donation, and receipt limits.
+- Subscription lifecycle controls with monthly/annual billing cycle updates.
+- Billing center with payment-method metadata and invoice history.
+- Tenant security settings for MFA requirement, password minimum, session timeout, and allowed domains.
+- API key and webhook administration for integration-ready SaaS workflows.
+- Onboarding checklist and audit log for operational readiness.
 - Secure local login seeded for development.
 - Receipt batch generation with email/print status tracking.
 - CSV exports for donors and reports.
@@ -98,6 +104,18 @@ Core endpoints include:
 - `POST /api/auth/forgot-password`
 - `GET /api/bootstrap`
 - `GET /api/dashboard`
+- `GET /api/saas`
+- `PATCH /api/subscription`
+- `POST /api/payment-methods`
+- `DELETE /api/payment-methods/:id`
+- `PATCH /api/security-settings`
+- `POST /api/api-keys`
+- `DELETE /api/api-keys/:id`
+- `POST /api/webhooks`
+- `POST /api/webhooks/:id/test`
+- `DELETE /api/webhooks/:id`
+- `PATCH /api/onboarding/:taskKey`
+- `GET /api/audit-events`
 - `GET /api/organization`
 - `PUT /api/organization`
 - `GET /api/users`

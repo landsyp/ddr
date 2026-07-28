@@ -9,6 +9,7 @@ export const expectedFeatureFiles = [
   "navigation-dashboard-and-notifications.feature",
   "receipts.feature",
   "reports-and-templates.feature",
+  "saas-platform-readiness.feature",
   "settings-users-and-billing.feature",
   "subscription-customization-and-support.feature",
 ];
@@ -36,8 +37,10 @@ export const expectedCoverage = [
   { tag: "@settings", minimumScenarios: 9 },
   { tag: "@users", minimumScenarios: 6 },
   { tag: "@billing", minimumScenarios: 2 },
+  { tag: "@saas", minimumScenarios: 10 },
+  { tag: "@audit", minimumScenarios: 4 },
   { tag: "@api", minimumScenarios: 7 },
   { tag: "@security", minimumScenarios: 5 },
 ];
 
-export const minimumScenarioCount = 80;
+export const minimumScenarioCount = 95;

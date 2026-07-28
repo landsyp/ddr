@@ -2489,6 +2489,90 @@ tr.is-clickable:focus-visible {
   color: var(--brand);
 }
 
+.settings-subsection {
+  display: grid;
+  gap: 12px;
+  margin: 18px;
+}
+
+.settings-subsection h3,
+.saas-admin-grid h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.empty-state-card {
+  display: grid;
+  min-height: 150px;
+  place-items: center;
+  padding: 18px;
+  border: 1px dashed color-mix(in srgb, var(--brand) 22%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--brand-soft) 24%, #ffffff);
+  color: var(--muted);
+  font-weight: 800;
+  text-align: center;
+}
+
+.secret-reveal-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  margin: 18px;
+  padding: 16px;
+  border: 1px solid rgba(183, 121, 31, 0.34);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 246, 225, 0.94), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+  box-shadow: var(--shadow-tile);
+}
+
+.secret-reveal-card span,
+.secret-reveal-card strong,
+.secret-reveal-card code {
+  display: block;
+}
+
+.secret-reveal-card span {
+  color: var(--amber);
+  font-size: 0.74rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.secret-reveal-card code {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(27, 31, 42, 0.94);
+  color: #ffffff;
+  overflow-wrap: anywhere;
+}
+
+.saas-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 18px;
+}
+
+.saas-admin-grid > div,
+.compact-saas-form {
+  display: grid;
+  gap: 12px;
+}
+
+.compact-saas-form {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
 .panel-copy {
   margin: 0 0 16px;
   color: var(--muted);
@@ -2961,6 +3045,26 @@ tr.is-clickable:focus-visible {
   align-items: center;
 }
 
+.billing-cycle-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 18px 18px 0;
+}
+
+.billing-cycle-toggle .secondary-button.active {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #ffffff;
+}
+
+.billing-cycle-toggle span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
 .subscription-plan {
   position: relative;
   display: grid;
@@ -3028,6 +3132,12 @@ tr.is-clickable:focus-visible {
   color: var(--ink);
 }
 
+.subscription-plan strong small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 .subscription-plan p {
   margin: 0;
   color: var(--muted);
@@ -3066,6 +3176,138 @@ tr.is-clickable:focus-visible {
   color: #8a641b;
   font-size: 0.72rem;
   font-weight: 900;
+}
+
+.plan-limit-list,
+.subscription-status-card dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.plan-limit-list div,
+.subscription-status-card dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(217, 227, 225, 0.68);
+}
+
+.plan-limit-list dt,
+.subscription-status-card dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.plan-limit-list dd,
+.subscription-status-card dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 850;
+  text-align: right;
+}
+
+.usage-meter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px;
+}
+
+.usage-meter {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-tile);
+}
+
+.usage-meter span,
+.usage-meter small {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.usage-meter strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+
+.usage-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(217, 227, 225, 0.78);
+  overflow: hidden;
+}
+
+.usage-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand), var(--accent));
+}
+
+.subscription-status-card {
+  display: grid;
+  gap: 12px;
+  margin: 0 18px 18px;
+  padding: 16px;
+  border: 1px solid rgba(217, 227, 225, 0.78);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(232, 244, 239, 0.82), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+}
+
+.onboarding-checklist {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px;
+}
+
+.onboarding-task {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: var(--shadow-tile);
+}
+
+.onboarding-task svg {
+  color: var(--amber);
+}
+
+.onboarding-task.is-complete svg {
+  color: var(--brand);
+}
+
+.onboarding-task span {
+  color: var(--ink);
+  font-weight: 850;
+}
+
+.onboarding-task small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .plan-note-list,
@@ -4563,6 +4805,9 @@ tr.is-clickable:focus-visible {
   .subscription-plan-grid,
   .report-template-grid,
   .report-summary-grid,
+  .usage-meter-grid,
+  .onboarding-checklist,
+  .saas-admin-grid,
   .report-builder-fields,
   .account-detail-grid,
   .account-detail-grid.is-expanded,
@@ -4649,6 +4894,9 @@ tr.is-clickable:focus-visible {
   .banking-subtle-layout,
   .categorize-donation-form,
   .user-access-card,
+  .usage-meter-grid,
+  .onboarding-checklist,
+  .saas-admin-grid,
   .settings-page .payment-tile-grid,
   .payment-tile-grid,
   .banking-tile-grid,

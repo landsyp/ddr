@@ -861,6 +861,18 @@ POST /api/auth/logout
 POST /api/auth/forgot-password
 GET  /api/bootstrap
 GET  /api/dashboard
+GET  /api/saas
+PATCH /api/subscription
+POST /api/payment-methods
+DELETE /api/payment-methods/:id
+PATCH /api/security-settings
+POST /api/api-keys
+DELETE /api/api-keys/:id
+POST /api/webhooks
+POST /api/webhooks/:id/test
+DELETE /api/webhooks/:id
+PATCH /api/onboarding/:taskKey
+GET  /api/audit-events
 GET  /api/organization
 PUT  /api/organization
 GET  /api/users
@@ -885,6 +897,17 @@ POST /api/receipts/generate
 PATCH /api/envois/:id/status
 GET  /api/reports
 POST /api/subscription-requests</div>
+          </section>
+
+          <section class="panel" id="saas-admin">
+            <h2>SaaS administration</h2>
+            <ol>
+              <li>Open <strong>Subscription</strong> to compare plans, switch monthly/annual billing, review usage limits, and complete the launch checklist.</li>
+              <li>Open <strong>Settings → Payment methods</strong> to add a billing method and review invoice history.</li>
+              <li>Open <strong>Settings → Security posture</strong> to require MFA, set password length, set session timeout, and restrict allowed email domains.</li>
+              <li>Open <strong>Settings → API keys &amp; Webhooks</strong> to create integration keys, copy one-time secrets, configure HTTPS webhook endpoints, and send test deliveries.</li>
+              <li>Open <strong>Settings → Audit log</strong> to review tenant-level actions such as subscription changes, user updates, payment changes, key revocations, and receipt generation.</li>
+            </ol>
           </section>
 
           <section class="panel" id="troubleshooting">

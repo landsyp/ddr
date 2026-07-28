@@ -16,6 +16,63 @@ const db = new DatabaseSync(databasePath);
 db.exec("PRAGMA foreign_keys = ON");
 db.exec("PRAGMA journal_mode = WAL");
 
+const planCatalog = [
+  {
+    planID: "basic",
+    name: "Basic",
+    description: "For small organizations that need core donor, donation, receipt, and export tools.",
+    monthlyPrice: 29,
+    annualPrice: 290,
+    includedSeats: 2,
+    donorLimit: 500,
+    donationLimit: 2500,
+    receiptLimit: 1000,
+    supportLevel: "Standard email support",
+    features: ["Donor management", "Donation tracking", "Manual receipt batches", "CSV exports"],
+    recommended: false,
+    sortOrder: 1,
+  },
+  {
+    planID: "gold",
+    name: "Gold",
+    description: "For growing teams that need automation, more seats, bank connections, and priority help.",
+    monthlyPrice: 59,
+    annualPrice: 590,
+    includedSeats: 5,
+    donorLimit: 2500,
+    donationLimit: 15000,
+    receiptLimit: 6000,
+    supportLevel: "Priority support",
+    features: ["Everything in Basic", "Bank and payment connections", "Receipt batches", "Report templates", "Audit log"],
+    recommended: true,
+    sortOrder: 2,
+  },
+  {
+    planID: "premium",
+    name: "Premium",
+    description: "For advanced organizations with integrations, API access, webhooks, and custom workflows.",
+    monthlyPrice: 99,
+    annualPrice: 990,
+    includedSeats: 15,
+    donorLimit: 10000,
+    donationLimit: 75000,
+    receiptLimit: 25000,
+    supportLevel: "Dedicated onboarding",
+    features: ["Everything in Gold", "API keys", "Webhooks", "Advanced integrations", "Custom onboarding"],
+    recommended: false,
+    sortOrder: 3,
+  },
+];
+
+const onboardingTemplates = [
+  ["profile", "Complete organization receipt profile"],
+  ["users", "Invite finance and admin users"],
+  ["accounts", "Review receiptable account chart"],
+  ["payments", "Add a billing payment method"],
+  ["receipts", "Generate first receipt batch"],
+  ["security", "Review security settings"],
+];
+
 function hashPassword(password, salt = randomBytes(16).toString("hex")) {
   const hash = scryptSync(password, salt, 64).toString("hex");
   return `${salt}:${hash}`;
@@ -233,6 +290,119 @@ function setupSchema() {
       statut TEXT NOT NULL DEFAULT 'new'
     );
 
+    CREATE TABLE IF NOT EXISTS saas_plans (
+      planID TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL,
+      monthlyPrice REAL NOT NULL,
+      annualPrice REAL NOT NULL,
+      includedSeats INTEGER NOT NULL,
+      donorLimit INTEGER NOT NULL,
+      donationLimit INTEGER NOT NULL,
+      receiptLimit INTEGER NOT NULL,
+      supportLevel TEXT NOT NULL,
+      features TEXT NOT NULL DEFAULT '[]',
+      recommended INTEGER NOT NULL DEFAULT 0,
+      sortOrder INTEGER NOT NULL DEFAULT 1
+    );
+
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      subscriptionID INTEGER PRIMARY KEY AUTOINCREMENT,
+      organismeID INTEGER NOT NULL UNIQUE REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      planID TEXT NOT NULL REFERENCES saas_plans(planID),
+      status TEXT NOT NULL DEFAULT 'trialing',
+      billingCycle TEXT NOT NULL DEFAULT 'monthly',
+      trialEndsAt TEXT,
+      currentPeriodStart TEXT NOT NULL,
+      currentPeriodEnd TEXT NOT NULL,
+      cancelAtPeriodEnd INTEGER NOT NULL DEFAULT 0,
+      renewalAmount REAL NOT NULL DEFAULT 0,
+      createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS payment_methods (
+      paymentMethodID INTEGER PRIMARY KEY AUTOINCREMENT,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      brand TEXT NOT NULL,
+      last4 TEXT NOT NULL,
+      expiryMonth TEXT NOT NULL,
+      expiryYear TEXT NOT NULL,
+      cardholder TEXT NOT NULL,
+      isDefault INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'active',
+      createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS invoices (
+      invoiceID INTEGER PRIMARY KEY AUTOINCREMENT,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      invoiceNumber TEXT NOT NULL UNIQUE,
+      issuedAt TEXT NOT NULL,
+      dueAt TEXT NOT NULL,
+      paidAt TEXT,
+      amount REAL NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'CAD',
+      status TEXT NOT NULL DEFAULT 'paid',
+      description TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_events (
+      auditEventID INTEGER PRIMARY KEY AUTOINCREMENT,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      utilisateurID INTEGER REFERENCES utilisateurs(utilisateurID) ON DELETE SET NULL,
+      actorEmail TEXT,
+      action TEXT NOT NULL,
+      entityType TEXT NOT NULL,
+      entityID TEXT,
+      metadata TEXT NOT NULL DEFAULT '{}',
+      createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS api_keys (
+      apiKeyID INTEGER PRIMARY KEY AUTOINCREMENT,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      label TEXT NOT NULL,
+      keyPrefix TEXT NOT NULL,
+      keyHash TEXT NOT NULL UNIQUE,
+      scopes TEXT NOT NULL DEFAULT '[]',
+      lastUsedAt TEXT,
+      active INTEGER NOT NULL DEFAULT 1,
+      createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS webhook_endpoints (
+      webhookID INTEGER PRIMARY KEY AUTOINCREMENT,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      url TEXT NOT NULL,
+      events TEXT NOT NULL DEFAULT '[]',
+      secretPrefix TEXT NOT NULL,
+      secretHash TEXT NOT NULL,
+      active INTEGER NOT NULL DEFAULT 1,
+      lastDeliveryStatus TEXT,
+      lastDeliveryAt TEXT,
+      createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS onboarding_tasks (
+      taskID INTEGER PRIMARY KEY AUTOINCREMENT,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      taskKey TEXT NOT NULL,
+      title TEXT NOT NULL,
+      completed INTEGER NOT NULL DEFAULT 0,
+      completedAt TEXT,
+      UNIQUE (organismeID, taskKey)
+    );
+
+    CREATE TABLE IF NOT EXISTS security_settings (
+      organismeID INTEGER PRIMARY KEY REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      mfaRequired INTEGER NOT NULL DEFAULT 0,
+      passwordMinLength INTEGER NOT NULL DEFAULT 8,
+      sessionTimeoutDays INTEGER NOT NULL DEFAULT 30,
+      allowedDomains TEXT NOT NULL DEFAULT '[]',
+      updatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE INDEX IF NOT EXISTS idx_dons_donateur ON dons(donateurID);
     CREATE INDEX IF NOT EXISTS idx_dons_date ON dons(dateDon);
     CREATE INDEX IF NOT EXISTS idx_incoming_transactions_org_status ON incoming_transactions(organismeID, status);
@@ -241,6 +411,12 @@ function setupSchema() {
     CREATE INDEX IF NOT EXISTS idx_accounting_integrations_org ON accounting_integrations(organismeID);
     CREATE INDEX IF NOT EXISTS idx_recus_org_period ON recus(organismeID, dateDebut, dateFin);
     CREATE INDEX IF NOT EXISTS idx_envois_org_code ON envois(organismeID, envoiCode);
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_org ON subscriptions(organismeID);
+    CREATE INDEX IF NOT EXISTS idx_payment_methods_org ON payment_methods(organismeID);
+    CREATE INDEX IF NOT EXISTS idx_invoices_org ON invoices(organismeID, issuedAt);
+    CREATE INDEX IF NOT EXISTS idx_audit_events_org_created ON audit_events(organismeID, createdAt);
+    CREATE INDEX IF NOT EXISTS idx_api_keys_org ON api_keys(organismeID, active);
+    CREATE INDEX IF NOT EXISTS idx_webhook_endpoints_org ON webhook_endpoints(organismeID, active);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_utilisateurs_courriel_unique ON utilisateurs(courriel);
   `);
 }
@@ -449,6 +625,11 @@ function seedDatabase() {
           AND COALESCE(d.description, '') = COALESCE(incoming_transactions.note, '')
       )
   `);
+
+  seedPlanCatalog();
+  for (const organization of db.prepare("SELECT organismeID FROM organismes").all()) {
+    ensureSaasDefaults(organization.organismeID);
+  }
 }
 
 setupSchema();
@@ -605,6 +786,593 @@ function normalizeIncomingTransaction(row) {
   };
 }
 
+function parseJSON(value, fallback) {
+  try {
+    return JSON.parse(value || "");
+  } catch {
+    return fallback;
+  }
+}
+
+function normalizePlan(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    ...row,
+    monthlyPrice: Number(row.monthlyPrice),
+    annualPrice: Number(row.annualPrice),
+    includedSeats: Number(row.includedSeats),
+    donorLimit: Number(row.donorLimit),
+    donationLimit: Number(row.donationLimit),
+    receiptLimit: Number(row.receiptLimit),
+    features: parseJSON(row.features, []),
+    recommended: Boolean(row.recommended),
+  };
+}
+
+function normalizeSubscription(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    ...row,
+    cancelAtPeriodEnd: Boolean(row.cancelAtPeriodEnd),
+    renewalAmount: Number(row.renewalAmount),
+    plan: normalizePlan({
+      planID: row.planID,
+      name: row.planName,
+      description: row.planDescription,
+      monthlyPrice: row.monthlyPrice,
+      annualPrice: row.annualPrice,
+      includedSeats: row.includedSeats,
+      donorLimit: row.donorLimit,
+      donationLimit: row.donationLimit,
+      receiptLimit: row.receiptLimit,
+      supportLevel: row.supportLevel,
+      features: row.features,
+      recommended: row.recommended,
+      sortOrder: row.sortOrder,
+    }),
+  };
+}
+
+function normalizePaymentMethod(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    ...row,
+    isDefault: Boolean(row.isDefault),
+  };
+}
+
+function normalizeInvoice(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    ...row,
+    amount: Number(row.amount),
+  };
+}
+
+function normalizeAuditEvent(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    ...row,
+    metadata: parseJSON(row.metadata, {}),
+  };
+}
+
+function normalizeApiKey(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    ...row,
+    active: Boolean(row.active),
+    scopes: parseJSON(row.scopes, []),
+  };
+}
+
+function normalizeWebhook(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    ...row,
+    active: Boolean(row.active),
+    events: parseJSON(row.events, []),
+  };
+}
+
+function normalizeOnboardingTask(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    ...row,
+    completed: Boolean(row.completed),
+  };
+}
+
+function normalizeSecuritySettings(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    ...row,
+    mfaRequired: Boolean(row.mfaRequired),
+    allowedDomains: parseJSON(row.allowedDomains, []),
+  };
+}
+
+function seedPlanCatalog() {
+  const upsertPlan = db.prepare(`
+    INSERT INTO saas_plans (
+      planID, name, description, monthlyPrice, annualPrice, includedSeats,
+      donorLimit, donationLimit, receiptLimit, supportLevel, features, recommended, sortOrder
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(planID) DO UPDATE SET
+      name = excluded.name,
+      description = excluded.description,
+      monthlyPrice = excluded.monthlyPrice,
+      annualPrice = excluded.annualPrice,
+      includedSeats = excluded.includedSeats,
+      donorLimit = excluded.donorLimit,
+      donationLimit = excluded.donationLimit,
+      receiptLimit = excluded.receiptLimit,
+      supportLevel = excluded.supportLevel,
+      features = excluded.features,
+      recommended = excluded.recommended,
+      sortOrder = excluded.sortOrder
+  `);
+
+  for (const plan of planCatalog) {
+    upsertPlan.run(
+      plan.planID,
+      plan.name,
+      plan.description,
+      plan.monthlyPrice,
+      plan.annualPrice,
+      plan.includedSeats,
+      plan.donorLimit,
+      plan.donationLimit,
+      plan.receiptLimit,
+      plan.supportLevel,
+      JSON.stringify(plan.features),
+      bool(plan.recommended),
+      plan.sortOrder,
+    );
+  }
+}
+
+function periodEndISO(billingCycle = "monthly") {
+  const date = new Date();
+  if (billingCycle === "annual") {
+    date.setFullYear(date.getFullYear() + 1);
+  } else {
+    date.setMonth(date.getMonth() + 1);
+  }
+  return date.toISOString().slice(0, 10);
+}
+
+function planRenewalAmount(plan, billingCycle = "monthly") {
+  return billingCycle === "annual" ? Number(plan.annualPrice) : Number(plan.monthlyPrice);
+}
+
+function ensureSaasDefaults(orgID) {
+  const numericOrgID = Number(orgID);
+  seedPlanCatalog();
+
+  const goldPlan = normalizePlan(get("SELECT * FROM saas_plans WHERE planID = 'gold'"));
+  const subscriptionExists = get("SELECT subscriptionID FROM subscriptions WHERE organismeID = ?", [numericOrgID]);
+  if (!subscriptionExists) {
+    run(
+      `INSERT INTO subscriptions (
+        organismeID, planID, status, billingCycle, trialEndsAt, currentPeriodStart,
+        currentPeriodEnd, renewalAmount
+      ) VALUES (?, 'gold', 'trialing', 'monthly', ?, ?, ?, ?)`,
+      [numericOrgID, futureDateISO(14), todayISO(), periodEndISO("monthly"), planRenewalAmount(goldPlan, "monthly")],
+    );
+  }
+
+  const securityExists = get("SELECT organismeID FROM security_settings WHERE organismeID = ?", [numericOrgID]);
+  if (!securityExists) {
+    run("INSERT INTO security_settings (organismeID) VALUES (?)", [numericOrgID]);
+  }
+
+  for (const [taskKey, title] of onboardingTemplates) {
+    run(
+      "INSERT OR IGNORE INTO onboarding_tasks (organismeID, taskKey, title, completed) VALUES (?, ?, ?, ?)",
+      [numericOrgID, taskKey, title, taskKey === "profile" ? 1 : 0],
+    );
+  }
+
+  const paymentCount = Number(get("SELECT COUNT(*) AS count FROM payment_methods WHERE organismeID = ?", [numericOrgID])?.count || 0);
+  if (numericOrgID === 1 && paymentCount === 0) {
+    run(
+      `INSERT INTO payment_methods (
+        organismeID, brand, last4, expiryMonth, expiryYear, cardholder, isDefault, status
+      ) VALUES (?, 'Visa', '4242', '04', '2029', 'Grace Community Church', 1, 'active')`,
+      [numericOrgID],
+    );
+  }
+
+  const invoiceCount = Number(get("SELECT COUNT(*) AS count FROM invoices WHERE organismeID = ?", [numericOrgID])?.count || 0);
+  if (numericOrgID === 1 && invoiceCount === 0) {
+    run(
+      `INSERT INTO invoices (
+        organismeID, invoiceNumber, issuedAt, dueAt, paidAt, amount, currency, status, description
+      ) VALUES (?, ?, ?, ?, ?, ?, 'CAD', 'paid', ?)`,
+      [numericOrgID, `WS-${new Date().getFullYear()}-0001`, todayISO(), futureDateISO(15), todayISO(), 59, "Gold monthly subscription"],
+    );
+  }
+
+  const apiKeyCount = Number(get("SELECT COUNT(*) AS count FROM api_keys WHERE organismeID = ?", [numericOrgID])?.count || 0);
+  if (numericOrgID === 1 && apiKeyCount === 0) {
+    const secret = `ws_live_${randomBytes(24).toString("hex")}`;
+    run(
+      `INSERT INTO api_keys (organismeID, label, keyPrefix, keyHash, scopes)
+       VALUES (?, 'Donation import automation', ?, ?, ?)`,
+      [numericOrgID, secret.slice(0, 12), tokenHash(secret), JSON.stringify(["donations:write", "donors:read"])],
+    );
+  }
+
+  const webhookCount = Number(get("SELECT COUNT(*) AS count FROM webhook_endpoints WHERE organismeID = ?", [numericOrgID])?.count || 0);
+  if (numericOrgID === 1 && webhookCount === 0) {
+    const secret = `whsec_${randomBytes(16).toString("hex")}`;
+    run(
+      `INSERT INTO webhook_endpoints (
+        organismeID, url, events, secretPrefix, secretHash, active, lastDeliveryStatus, lastDeliveryAt
+      ) VALUES (?, 'https://example.org/weserve/webhook', ?, ?, ?, 1, 'delivered', ?)`,
+      [numericOrgID, JSON.stringify(["donation.created", "receipt.generated"]), secret.slice(0, 10), tokenHash(secret), new Date().toISOString()],
+    );
+  }
+
+  const auditCount = Number(get("SELECT COUNT(*) AS count FROM audit_events WHERE organismeID = ?", [numericOrgID])?.count || 0);
+  if (!auditCount) {
+    audit({ organismeID: numericOrgID }, "workspace.provisioned", "organization", numericOrgID, { source: "system" });
+  }
+}
+
+function audit(context, action, entityType, entityID = "", metadata = {}) {
+  run(
+    `INSERT INTO audit_events (
+      organismeID, utilisateurID, actorEmail, action, entityType, entityID, metadata
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      organizationID(context),
+      context?.utilisateurID || null,
+      context?.courriel || "system",
+      action,
+      entityType,
+      String(entityID || ""),
+      JSON.stringify(metadata),
+    ],
+  );
+}
+
+function listSaasPlans() {
+  seedPlanCatalog();
+  return all("SELECT * FROM saas_plans ORDER BY sortOrder").map(normalizePlan);
+}
+
+function getSubscription(context = {}) {
+  const orgID = organizationID(context);
+  ensureSaasDefaults(orgID);
+  return normalizeSubscription(get(
+    `SELECT s.*, p.name AS planName, p.description AS planDescription, p.monthlyPrice, p.annualPrice,
+      p.includedSeats, p.donorLimit, p.donationLimit, p.receiptLimit, p.supportLevel,
+      p.features, p.recommended, p.sortOrder
+     FROM subscriptions AS s
+     INNER JOIN saas_plans AS p ON s.planID = p.planID
+     WHERE s.organismeID = ?`,
+    [orgID],
+  ));
+}
+
+function updateSubscription(data, context = {}) {
+  const orgID = organizationID(context);
+  const plan = normalizePlan(get("SELECT * FROM saas_plans WHERE planID = ?", [String(data.planID || "").toLowerCase()]));
+  if (!plan) {
+    const error = new Error("Plan not found");
+    error.status = 404;
+    throw error;
+  }
+
+  const billingCycle = data.billingCycle === "annual" ? "annual" : "monthly";
+  run(
+    `UPDATE subscriptions
+     SET planID = ?, status = 'active', billingCycle = ?, currentPeriodEnd = ?,
+         cancelAtPeriodEnd = ?, renewalAmount = ?, updatedAt = CURRENT_TIMESTAMP
+     WHERE organismeID = ?`,
+    [
+      plan.planID,
+      billingCycle,
+      periodEndISO(billingCycle),
+      bool(data.cancelAtPeriodEnd),
+      planRenewalAmount(plan, billingCycle),
+      orgID,
+    ],
+  );
+  audit(context, "subscription.updated", "subscription", orgID, { planID: plan.planID, billingCycle });
+  return getSubscription(context);
+}
+
+function getUsage(context = {}) {
+  const orgID = organizationID(context);
+  const subscription = getSubscription(context);
+  const plan = subscription?.plan || listSaasPlans()[0];
+  const activeUsers = Number(get("SELECT COUNT(*) AS count FROM utilisateurs WHERE organismeID = ? AND actif = 1", [orgID])?.count || 0);
+  const donors = Number(get("SELECT COUNT(*) AS count FROM donateurs WHERE organismeID = ?", [orgID])?.count || 0);
+  const donations = Number(get(
+    `SELECT COUNT(*) AS count
+     FROM dons AS d
+     INNER JOIN donateurs AS dt ON d.donateurID = dt.donateurID
+     WHERE dt.organismeID = ?`,
+    [orgID],
+  )?.count || 0);
+  const receipts = Number(get("SELECT COUNT(*) AS count FROM recus WHERE organismeID = ?", [orgID])?.count || 0);
+
+  const buildMetric = (label, used, limit) => ({
+    label,
+    used,
+    limit,
+    percent: limit ? Math.min(Math.round((used / limit) * 100), 999) : 0,
+    remaining: Math.max(limit - used, 0),
+  });
+
+  return {
+    activeUsers: buildMetric("Active seats", activeUsers, plan.includedSeats),
+    donors: buildMetric("Donors", donors, plan.donorLimit),
+    donations: buildMetric("Donations", donations, plan.donationLimit),
+    receipts: buildMetric("Receipts", receipts, plan.receiptLimit),
+  };
+}
+
+function listPaymentMethods(context = {}) {
+  return all(
+    "SELECT * FROM payment_methods WHERE organismeID = ? ORDER BY isDefault DESC, createdAt DESC",
+    [organizationID(context)],
+  ).map(normalizePaymentMethod);
+}
+
+function detectCardBrand(cardNumber = "") {
+  const digits = String(cardNumber).replace(/\D/g, "");
+  if (digits.startsWith("4")) {
+    return "Visa";
+  }
+  if (/^5[1-5]/.test(digits) || /^2[2-7]/.test(digits)) {
+    return "Mastercard";
+  }
+  if (/^3[47]/.test(digits)) {
+    return "American Express";
+  }
+  return "Card";
+}
+
+function createPaymentMethod(data, context = {}) {
+  const cardNumber = String(data.cardNumber || data.number || "");
+  const digits = cardNumber.replace(/\D/g, "");
+  const last4 = String(data.last4 || digits.slice(-4)).padStart(4, "0").slice(-4);
+  const expiry = String(data.expiryDate || data.expiry || "").replace(/\s/g, "");
+  const [expiryMonth = data.expiryMonth || "", expiryYear = data.expiryYear || ""] = expiry.split(/[/-]/);
+  const cardholder = String(data.cardholder || data.name || "").trim();
+
+  if (!cardholder || last4.length !== 4 || !expiryMonth || !expiryYear) {
+    const error = new Error("Cardholder, last four digits, and expiry are required");
+    error.status = 400;
+    throw error;
+  }
+
+  const orgID = organizationID(context);
+  const shouldDefault = data.isDefault !== false || listPaymentMethods(context).length === 0;
+  if (shouldDefault) {
+    run("UPDATE payment_methods SET isDefault = 0 WHERE organismeID = ?", [orgID]);
+  }
+
+  const result = run(
+    `INSERT INTO payment_methods (
+      organismeID, brand, last4, expiryMonth, expiryYear, cardholder, isDefault, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active')`,
+    [orgID, data.brand || detectCardBrand(cardNumber), last4, expiryMonth, expiryYear, cardholder, bool(shouldDefault)],
+  );
+  audit(context, "payment_method.created", "payment_method", result.lastInsertRowid, { brand: data.brand || detectCardBrand(cardNumber), last4 });
+  markOnboardingTask("payments", true, context);
+  return listPaymentMethods(context).find((paymentMethod) => paymentMethod.paymentMethodID === result.lastInsertRowid);
+}
+
+function deletePaymentMethod(id, context = {}) {
+  const orgID = organizationID(context);
+  const paymentMethod = get("SELECT * FROM payment_methods WHERE paymentMethodID = ? AND organismeID = ?", [Number(id), orgID]);
+  if (!paymentMethod) {
+    const error = new Error("Payment method not found");
+    error.status = 404;
+    throw error;
+  }
+  if (paymentMethod.isDefault) {
+    const error = new Error("Default payment method cannot be deleted");
+    error.status = 409;
+    throw error;
+  }
+
+  run("DELETE FROM payment_methods WHERE paymentMethodID = ? AND organismeID = ?", [Number(id), orgID]);
+  audit(context, "payment_method.deleted", "payment_method", id, { last4: paymentMethod.last4 });
+  return { deleted: true };
+}
+
+function listInvoices(context = {}) {
+  return all(
+    "SELECT * FROM invoices WHERE organismeID = ? ORDER BY issuedAt DESC, invoiceID DESC",
+    [organizationID(context)],
+  ).map(normalizeInvoice);
+}
+
+function listAuditEvents({ limit = 50 } = {}, context = {}) {
+  return all(
+    `SELECT *
+     FROM audit_events
+     WHERE organismeID = ?
+     ORDER BY createdAt DESC, auditEventID DESC
+     LIMIT ?`,
+    [organizationID(context), Number(limit) || 50],
+  ).map(normalizeAuditEvent);
+}
+
+function listApiKeys(context = {}) {
+  return all(
+    "SELECT apiKeyID, organismeID, label, keyPrefix, scopes, lastUsedAt, active, createdAt FROM api_keys WHERE organismeID = ? ORDER BY createdAt DESC",
+    [organizationID(context)],
+  ).map(normalizeApiKey);
+}
+
+function createApiKey(data, context = {}) {
+  const label = String(data.label || "").trim();
+  if (!label) {
+    const error = new Error("API key label is required");
+    error.status = 400;
+    throw error;
+  }
+
+  const secret = `ws_live_${randomBytes(24).toString("hex")}`;
+  const scopes = Array.isArray(data.scopes) && data.scopes.length ? data.scopes : ["donations:read", "donors:read"];
+  const result = run(
+    `INSERT INTO api_keys (organismeID, label, keyPrefix, keyHash, scopes)
+     VALUES (?, ?, ?, ?, ?)`,
+    [organizationID(context), label, secret.slice(0, 12), tokenHash(secret), JSON.stringify(scopes)],
+  );
+  audit(context, "api_key.created", "api_key", result.lastInsertRowid, { label, scopes });
+  return {
+    ...listApiKeys(context).find((apiKey) => apiKey.apiKeyID === result.lastInsertRowid),
+    secret,
+  };
+}
+
+function revokeApiKey(id, context = {}) {
+  run("UPDATE api_keys SET active = 0 WHERE apiKeyID = ? AND organismeID = ?", [Number(id), organizationID(context)]);
+  audit(context, "api_key.revoked", "api_key", id);
+  return listApiKeys(context).find((apiKey) => apiKey.apiKeyID === Number(id));
+}
+
+function listWebhooks(context = {}) {
+  return all(
+    "SELECT * FROM webhook_endpoints WHERE organismeID = ? ORDER BY createdAt DESC",
+    [organizationID(context)],
+  ).map(normalizeWebhook);
+}
+
+function createWebhook(data, context = {}) {
+  const url = String(data.url || "").trim();
+  if (!/^https:\/\/.+/i.test(url)) {
+    const error = new Error("Webhook URL must start with https://");
+    error.status = 400;
+    throw error;
+  }
+
+  const secret = `whsec_${randomBytes(16).toString("hex")}`;
+  const events = Array.isArray(data.events) && data.events.length ? data.events : ["donation.created", "receipt.generated"];
+  const result = run(
+    `INSERT INTO webhook_endpoints (organismeID, url, events, secretPrefix, secretHash, active)
+     VALUES (?, ?, ?, ?, ?, 1)`,
+    [organizationID(context), url, JSON.stringify(events), secret.slice(0, 10), tokenHash(secret)],
+  );
+  audit(context, "webhook.created", "webhook", result.lastInsertRowid, { url, events });
+  return {
+    ...listWebhooks(context).find((webhook) => webhook.webhookID === result.lastInsertRowid),
+    secret,
+  };
+}
+
+function deleteWebhook(id, context = {}) {
+  run("DELETE FROM webhook_endpoints WHERE webhookID = ? AND organismeID = ?", [Number(id), organizationID(context)]);
+  audit(context, "webhook.deleted", "webhook", id);
+  return { deleted: true };
+}
+
+function testWebhook(id, context = {}) {
+  const timestamp = new Date().toISOString();
+  run(
+    "UPDATE webhook_endpoints SET lastDeliveryStatus = 'test delivered', lastDeliveryAt = ? WHERE webhookID = ? AND organismeID = ?",
+    [timestamp, Number(id), organizationID(context)],
+  );
+  audit(context, "webhook.tested", "webhook", id, { deliveredAt: timestamp });
+  return listWebhooks(context).find((webhook) => webhook.webhookID === Number(id));
+}
+
+function listOnboardingTasks(context = {}) {
+  ensureSaasDefaults(organizationID(context));
+  return all(
+    "SELECT * FROM onboarding_tasks WHERE organismeID = ? ORDER BY taskID",
+    [organizationID(context)],
+  ).map(normalizeOnboardingTask);
+}
+
+function markOnboardingTask(taskKey, completed = true, context = {}) {
+  run(
+    `UPDATE onboarding_tasks
+     SET completed = ?, completedAt = CASE WHEN ? = 1 THEN CURRENT_TIMESTAMP ELSE NULL END
+     WHERE organismeID = ? AND taskKey = ?`,
+    [bool(completed), bool(completed), organizationID(context), String(taskKey)],
+  );
+  return listOnboardingTasks(context).find((task) => task.taskKey === String(taskKey));
+}
+
+function getSecuritySettings(context = {}) {
+  ensureSaasDefaults(organizationID(context));
+  return normalizeSecuritySettings(get("SELECT * FROM security_settings WHERE organismeID = ?", [organizationID(context)]));
+}
+
+function updateSecuritySettings(data, context = {}) {
+  const domains = Array.isArray(data.allowedDomains)
+    ? data.allowedDomains
+    : String(data.allowedDomains || "").split(",").map((domain) => domain.trim()).filter(Boolean);
+  const passwordMinLength = Math.min(Math.max(Number(data.passwordMinLength) || 8, 8), 64);
+  const sessionTimeoutDays = Math.min(Math.max(Number(data.sessionTimeoutDays) || 30, 1), 90);
+
+  run(
+    `UPDATE security_settings
+     SET mfaRequired = ?, passwordMinLength = ?, sessionTimeoutDays = ?, allowedDomains = ?, updatedAt = CURRENT_TIMESTAMP
+     WHERE organismeID = ?`,
+    [bool(data.mfaRequired), passwordMinLength, sessionTimeoutDays, JSON.stringify(domains), organizationID(context)],
+  );
+  audit(context, "security_settings.updated", "security_settings", organizationID(context), {
+    mfaRequired: Boolean(data.mfaRequired),
+    passwordMinLength,
+    sessionTimeoutDays,
+  });
+  markOnboardingTask("security", true, context);
+  return getSecuritySettings(context);
+}
+
+function getSaasOverview(context = {}) {
+  ensureSaasDefaults(organizationID(context));
+  return {
+    plans: listSaasPlans(),
+    subscription: getSubscription(context),
+    usage: getUsage(context),
+    paymentMethods: listPaymentMethods(context),
+    invoices: listInvoices(context),
+    auditEvents: listAuditEvents({ limit: 20 }, context),
+    apiKeys: listApiKeys(context),
+    webhooks: listWebhooks(context),
+    onboardingTasks: listOnboardingTasks(context),
+    security: getSecuritySettings(context),
+  };
+}
+
 function requestPasswordReset(courriel) {
   get(
     `SELECT utilisateurID
@@ -736,6 +1504,7 @@ function registerOrganization(data) {
 
     const orgID = orgResult.lastInsertRowid;
     addDefaultAccounts(orgID);
+    ensureSaasDefaults(orgID);
     const userResult = run(
       `INSERT INTO utilisateurs (actif, admin, courriel, langue, mot_de_passe, nom, organismeID, prenom, utilisateurStatutID)
        VALUES (1, 1, ?, ?, ?, ?, ?, ?, 1)`,
@@ -748,6 +1517,7 @@ function registerOrganization(data) {
         String(data.prenom || "SaaS").trim(),
       ],
     );
+    audit({ organismeID: orgID, utilisateurID: userResult.lastInsertRowid, courriel: email }, "workspace.registered", "organization", orgID);
 
     return sanitizeUser(get(
       `SELECT u.*, o.organisme, o.devise
@@ -814,6 +1584,8 @@ function createUser(data, context = {}) {
     ],
   );
 
+  audit(context, "user.created", "user", result.lastInsertRowid, { email, admin: Boolean(data.admin) });
+  markOnboardingTask("users", true, context);
   return listUsers(context).find((user) => user.utilisateurID === result.lastInsertRowid);
 }
 
@@ -858,6 +1630,7 @@ function updateUser(id, data, context = {}) {
     error.status = 404;
     throw error;
   }
+  audit(context, "user.updated", "user", userId, { email, admin: Boolean(data.admin) });
   return updatedUser;
 }
 
@@ -866,6 +1639,7 @@ function updateUserStatus(id, data, context = {}) {
     "UPDATE utilisateurs SET actif = ?, admin = ? WHERE utilisateurID = ? AND organismeID = ?",
     [data.actif === false ? 0 : 1, bool(data.admin), Number(id), organizationID(context)],
   );
+  audit(context, data.actif === false ? "user.deactivated" : "user.activated", "user", id);
   return listUsers(context).find((user) => user.utilisateurID === Number(id));
 }
 
@@ -896,6 +1670,8 @@ function updateOrganization(data, context = {}) {
     ],
   );
 
+  audit(context, "organization.updated", "organization", organizationID(context));
+  markOnboardingTask("profile", true, context);
   return getOrganization(context);
 }
 
@@ -941,6 +1717,10 @@ function createBankingConnection(data, context = {}) {
     ],
   );
 
+  audit(context, "banking_connection.created", "banking_connection", result.lastInsertRowid, {
+    institution: data.institution,
+    category: data.category || "bank",
+  });
   return listBankingConnections(context).find((connection) => connection.connectionID === result.lastInsertRowid);
 }
 
@@ -949,6 +1729,7 @@ function deleteBankingConnection(id, context = {}) {
     "DELETE FROM banking_connections WHERE connectionID = ? AND organismeID = ?",
     [Number(id), organizationID(context)],
   );
+  audit(context, "banking_connection.deleted", "banking_connection", id);
   return { ok: true };
 }
 
@@ -1012,6 +1793,7 @@ function createAccountingIntegration(data, context = {}) {
     ],
   );
 
+  audit(context, "accounting_integration.created", "accounting_integration", result.lastInsertRowid, { provider });
   return listAccountingIntegrations(context).find((integration) => integration.integrationID === result.lastInsertRowid);
 }
 
@@ -1020,6 +1802,7 @@ function deleteAccountingIntegration(id, context = {}) {
     "DELETE FROM accounting_integrations WHERE integrationID = ? AND organismeID = ?",
     [Number(id), organizationID(context)],
   );
+  audit(context, "accounting_integration.deleted", "accounting_integration", id);
   return { ok: true };
 }
 
@@ -1054,6 +1837,7 @@ function syncAccountingIntegration(id, context = {}) {
     [lastSyncAt, Number(id), organizationID(context)],
   );
 
+  audit(context, "accounting_integration.synced", "accounting_integration", id, { syncedAt: lastSyncAt });
   return {
     integration: normalizeAccountingIntegration({ ...integration, status: "synced", lastSyncAt }),
     syncedCount: payload.length,
@@ -1112,6 +1896,7 @@ function createReportTemplate(data, context = {}) {
     ],
   );
 
+  audit(context, "report_template.created", "report_template", result.lastInsertRowid, { title });
   return listReportTemplates(context).find((template) => template.templateID === result.lastInsertRowid);
 }
 
@@ -1120,10 +1905,12 @@ function deleteReportTemplate(id, context = {}) {
     "DELETE FROM report_templates WHERE templateID = ? AND organismeID = ?",
     [Number(id), organizationID(context)],
   );
+  audit(context, "report_template.deleted", "report_template", id);
   return { ok: true };
 }
 
 function getBootstrap(context = {}) {
+  ensureSaasDefaults(organizationID(context));
   const organisme = getOrganization(context);
   const user = get("SELECT utilisateurID, admin, courriel, langue, nom, prenom, organismeID FROM utilisateurs WHERE organismeID = ? ORDER BY admin DESC LIMIT 1", [organizationID(context)]);
   const provinces = all("SELECT provinceID, pays_en, pays_fr, provinceEtat_en, provinceEtat_fr, abreviation FROM provinces ORDER BY ordre, provinceEtat_en");
@@ -1138,6 +1925,7 @@ function getBootstrap(context = {}) {
     bankingConnections: listBankingConnections(context),
     accountingIntegrations: listAccountingIntegrations(context),
     reportTemplates: listReportTemplates(context),
+    saas: getSaasOverview(context),
   };
 }
 
@@ -1274,6 +2062,7 @@ function createDonor(data, context = {}) {
     ],
   );
 
+  audit(context, "donor.created", "donor", result.lastInsertRowid, { numero });
   return getDonor(result.lastInsertRowid, context);
 }
 
@@ -1303,11 +2092,13 @@ function updateDonor(id, data, context = {}) {
     ],
   );
 
+  audit(context, "donor.updated", "donor", id, { numero: data.numero });
   return getDonor(id, context);
 }
 
 function archiveDonor(id, actif, context = {}) {
   run("UPDATE donateurs SET actif = ? WHERE donateurID = ? AND organismeID = ?", [bool(actif), Number(id), organizationID(context)]);
+  audit(context, actif ? "donor.reactivated" : "donor.archived", "donor", id);
   return getDonor(id, context);
 }
 
@@ -1329,6 +2120,7 @@ function deleteDonor(id, context = {}) {
   }
 
   run("DELETE FROM donateurs WHERE donateurID = ? AND organismeID = ?", [donorID, orgID]);
+  audit(context, "donor.deleted", "donor", donorID, { numero: donor.numero });
   return donor;
 }
 
@@ -1380,6 +2172,8 @@ function createAccount(data, context = {}) {
     "INSERT INTO comptes (organismeID, noCompte, nom, recu) VALUES (?, ?, ?, ?)",
     [orgID, noCompte, nom, data.recu === false ? 0 : 1],
   );
+  audit(context, "account.created", "account", result.lastInsertRowid, { noCompte, nom });
+  markOnboardingTask("accounts", true, context);
   return listAccounts(context).find((account) => account.compteID === result.lastInsertRowid);
 }
 
@@ -1408,6 +2202,7 @@ function updateAccount(id, data, context = {}) {
     "UPDATE comptes SET noCompte = ?, nom = ?, recu = ? WHERE compteID = ? AND organismeID = ?",
     [noCompte, nom, data.recu === false ? 0 : 1, Number(id), orgID],
   );
+  audit(context, "account.updated", "account", id, { noCompte, nom });
   return listAccounts(context).find((account) => account.compteID === Number(id));
 }
 
@@ -1425,6 +2220,7 @@ function deleteAccount(id, context = {}) {
     throw error;
   }
   run("DELETE FROM comptes WHERE compteID = ? AND organismeID = ?", [Number(id), organizationID(context)]);
+  audit(context, "account.deleted", "account", id);
   return { deleted: true };
 }
 
@@ -1489,6 +2285,7 @@ function createDonation(data, context = {}) {
     ],
   );
 
+  audit(context, "donation.created", "donation", result.lastInsertRowid, { amount: Number(data.montant) });
   return listDonations({ limit: 500 }, context).find((donation) => donation.donID === result.lastInsertRowid);
 }
 
@@ -1529,6 +2326,7 @@ function updateDonation(id, data, context = {}) {
     ],
   );
 
+  audit(context, "donation.updated", "donation", id, { amount: Number(data.montant) });
   return listDonations({ limit: 500 }, context).find((donation) => donation.donID === Number(id));
 }
 
@@ -1539,6 +2337,7 @@ function deleteDonation(id, context = {}) {
        AND donateurID IN (SELECT donateurID FROM donateurs WHERE organismeID = ?)`,
     [Number(id), organizationID(context)],
   );
+  audit(context, "donation.deleted", "donation", id);
   return { deleted: true };
 }
 
@@ -1645,6 +2444,10 @@ function generateReceipts({ dateDebut, dateFin, mode = "email" }, context = {}) 
       created.push({ ...donor, recuID: receipt.lastInsertRowid, envoiID: envoi.lastInsertRowid, noRecu, statut: status });
     }
 
+    audit(context, "receipts.generated", "receipt_batch", code, { dateDebut, dateFin, count: created.length, mode });
+    if (created.length) {
+      markOnboardingTask("receipts", true, context);
+    }
     return {
       envoiCode: code,
       dateDebut,
@@ -1817,4 +2620,25 @@ export const store = {
   patchEnvoiStatus,
   report,
   createSubscriptionRequest,
+  listSaasPlans,
+  getSubscription,
+  updateSubscription,
+  getUsage,
+  getSaasOverview,
+  listPaymentMethods,
+  createPaymentMethod,
+  deletePaymentMethod,
+  listInvoices,
+  listAuditEvents,
+  listApiKeys,
+  createApiKey,
+  revokeApiKey,
+  listWebhooks,
+  createWebhook,
+  deleteWebhook,
+  testWebhook,
+  listOnboardingTasks,
+  markOnboardingTask,
+  getSecuritySettings,
+  updateSecuritySettings,
 };

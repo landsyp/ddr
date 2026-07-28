@@ -184,6 +184,84 @@ async function handleAPI(request, response, pathname) {
     return;
   }
 
+  if (method === "GET" && pathname === "/api/saas") {
+    requireAdmin(auth);
+    sendJSON(response, 200, store.getSaasOverview(auth));
+    return;
+  }
+
+  if (method === "PATCH" && pathname === "/api/subscription") {
+    requireAdmin(auth);
+    sendJSON(response, 200, store.updateSubscription(await readJSON(request), auth));
+    return;
+  }
+
+  if (method === "POST" && pathname === "/api/payment-methods") {
+    requireAdmin(auth);
+    sendJSON(response, 201, store.createPaymentMethod(await readJSON(request), auth));
+    return;
+  }
+
+  let params = route(method, pathname, "/api/payment-methods/:id");
+  if (params && method === "DELETE") {
+    requireAdmin(auth);
+    sendJSON(response, 200, store.deletePaymentMethod(params.id, auth));
+    return;
+  }
+
+  if (method === "PATCH" && pathname === "/api/security-settings") {
+    requireAdmin(auth);
+    sendJSON(response, 200, store.updateSecuritySettings(await readJSON(request), auth));
+    return;
+  }
+
+  if (method === "POST" && pathname === "/api/api-keys") {
+    requireAdmin(auth);
+    sendJSON(response, 201, store.createApiKey(await readJSON(request), auth));
+    return;
+  }
+
+  params = route(method, pathname, "/api/api-keys/:id");
+  if (params && method === "DELETE") {
+    requireAdmin(auth);
+    sendJSON(response, 200, store.revokeApiKey(params.id, auth));
+    return;
+  }
+
+  if (method === "POST" && pathname === "/api/webhooks") {
+    requireAdmin(auth);
+    sendJSON(response, 201, store.createWebhook(await readJSON(request), auth));
+    return;
+  }
+
+  params = route(method, pathname, "/api/webhooks/:id/test");
+  if (params && method === "POST") {
+    requireAdmin(auth);
+    sendJSON(response, 200, store.testWebhook(params.id, auth));
+    return;
+  }
+
+  params = route(method, pathname, "/api/webhooks/:id");
+  if (params && method === "DELETE") {
+    requireAdmin(auth);
+    sendJSON(response, 200, store.deleteWebhook(params.id, auth));
+    return;
+  }
+
+  params = route(method, pathname, "/api/onboarding/:taskKey");
+  if (params && method === "PATCH") {
+    requireAdmin(auth);
+    const body = await readJSON(request);
+    sendJSON(response, 200, store.markOnboardingTask(params.taskKey, body.completed !== false, auth));
+    return;
+  }
+
+  if (method === "GET" && pathname === "/api/audit-events") {
+    requireAdmin(auth);
+    sendJSON(response, 200, store.listAuditEvents(getQuery(request), auth));
+    return;
+  }
+
   if (method === "GET" && pathname === "/api/banking-connections") {
     sendJSON(response, 200, store.listBankingConnections(auth));
     return;
@@ -195,7 +273,7 @@ async function handleAPI(request, response, pathname) {
     return;
   }
 
-  let params = route(method, pathname, "/api/banking-connections/:id");
+  params = route(method, pathname, "/api/banking-connections/:id");
   if (params && method === "DELETE") {
     requireAdmin(auth);
     sendJSON(response, 200, store.deleteBankingConnection(params.id, auth));

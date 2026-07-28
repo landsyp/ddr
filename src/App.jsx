@@ -426,6 +426,65 @@ const copy = {
         },
       ],
     },
+    saas: {
+      controlCenter: "SaaS control center",
+      controlSubtitle: "Plan, billing, security, onboarding, API access, and audit controls for this workspace.",
+      usage: "Usage and limits",
+      onboarding: "Launch checklist",
+      billing: "Billing center",
+      invoices: "Invoices",
+      auditLog: "Audit log",
+      apiKeys: "API keys",
+      webhooks: "Webhooks",
+      security: "Security posture",
+      securityHelp: "Set minimum password and access requirements for this tenant.",
+      planChanged: "Subscription plan updated.",
+      paymentAdded: "Payment method added.",
+      paymentDeleted: "Payment method deleted.",
+      securitySaved: "Security settings saved.",
+      apiKeyCreated: "API key created. Copy the secret now; it will not be shown again.",
+      apiKeyRevoked: "API key revoked.",
+      webhookCreated: "Webhook endpoint created.",
+      webhookDeleted: "Webhook endpoint deleted.",
+      webhookTested: "Webhook test delivered.",
+      createApiKey: "Create API key",
+      revokeApiKey: "Revoke",
+      addWebhook: "Add webhook",
+      testWebhook: "Send test",
+      saveSecurity: "Save security",
+      mfaRequired: "Require MFA",
+      passwordMinLength: "Minimum password length",
+      sessionTimeoutDays: "Session timeout days",
+      allowedDomains: "Allowed email domains",
+      noPaymentMethods: "No payment methods yet.",
+      noInvoices: "No invoices yet.",
+      noApiKeys: "No API keys yet.",
+      noWebhooks: "No webhook endpoints yet.",
+      secretOnce: "Copy this secret now",
+      currentPeriod: "Current period",
+      renews: "Renews",
+      trialEnds: "Trial ends",
+      billingCycle: "Billing cycle",
+      monthly: "Monthly",
+      annual: "Annual",
+      annualSavings: "Annual saves two months",
+      choosePlan: "Choose this plan",
+      included: "Included",
+      used: "Used",
+      remaining: "Remaining",
+      event: "Event",
+      actor: "Actor",
+      entity: "Entity",
+      when: "When",
+      status: "Status",
+      lastDelivery: "Last delivery",
+      scopes: "Scopes",
+      keyLabel: "Key label",
+      webhookUrl: "Webhook URL",
+      eventTypes: "Event types",
+      lastFour: "Last four",
+      expiry: "Expiry",
+    },
     settings: {
       title: "Organization settings",
       subtitle: "Update the charity profile fields used for receipts, replies, and deposit slips.",
@@ -934,6 +993,65 @@ const copy = {
         },
       ],
     },
+    saas: {
+      controlCenter: "Centre de contrôle SaaS",
+      controlSubtitle: "Plan, facturation, sécurité, démarrage, accès API et journal d'audit de cet espace.",
+      usage: "Utilisation et limites",
+      onboarding: "Liste de lancement",
+      billing: "Centre de facturation",
+      invoices: "Factures",
+      auditLog: "Journal d'audit",
+      apiKeys: "Clés API",
+      webhooks: "Webhooks",
+      security: "Sécurité",
+      securityHelp: "Définissez les exigences de mot de passe et d'accès de ce locataire.",
+      planChanged: "Plan d'abonnement mis à jour.",
+      paymentAdded: "Méthode de paiement ajoutée.",
+      paymentDeleted: "Méthode de paiement supprimée.",
+      securitySaved: "Paramètres de sécurité enregistrés.",
+      apiKeyCreated: "Clé API créée. Copiez le secret maintenant; il ne sera plus affiché.",
+      apiKeyRevoked: "Clé API révoquée.",
+      webhookCreated: "Webhook créé.",
+      webhookDeleted: "Webhook supprimé.",
+      webhookTested: "Test webhook livré.",
+      createApiKey: "Créer une clé API",
+      revokeApiKey: "Révoquer",
+      addWebhook: "Ajouter un webhook",
+      testWebhook: "Envoyer un test",
+      saveSecurity: "Enregistrer la sécurité",
+      mfaRequired: "Exiger MFA",
+      passwordMinLength: "Longueur minimale du mot de passe",
+      sessionTimeoutDays: "Jours avant expiration de session",
+      allowedDomains: "Domaines courriel autorisés",
+      noPaymentMethods: "Aucune méthode de paiement.",
+      noInvoices: "Aucune facture.",
+      noApiKeys: "Aucune clé API.",
+      noWebhooks: "Aucun webhook.",
+      secretOnce: "Copiez ce secret maintenant",
+      currentPeriod: "Période actuelle",
+      renews: "Renouvelle",
+      trialEnds: "Essai jusqu'au",
+      billingCycle: "Cycle de facturation",
+      monthly: "Mensuel",
+      annual: "Annuel",
+      annualSavings: "Annuel économise deux mois",
+      choosePlan: "Choisir ce plan",
+      included: "Inclus",
+      used: "Utilisé",
+      remaining: "Restant",
+      event: "Événement",
+      actor: "Acteur",
+      entity: "Entité",
+      when: "Quand",
+      status: "Statut",
+      lastDelivery: "Dernière livraison",
+      scopes: "Portées",
+      keyLabel: "Libellé de la clé",
+      webhookUrl: "URL webhook",
+      eventTypes: "Types d'événement",
+      lastFour: "Quatre derniers",
+      expiry: "Expiration",
+    },
     settings: {
       title: "Paramètres de l'organisme",
       subtitle: "Mettez à jour les champs utilisés pour les reçus, les réponses et les dépôts.",
@@ -1081,9 +1199,9 @@ const navItems = [
 const appViews = new Set([...navItems.map((item) => item.id), "settings", "support"]);
 
 const userSeatPlans = {
-  Basic: { seats: 1, next: "Gold" },
-  Gold: { seats: 1, next: "Premium" },
-  Premium: { seats: 8, next: null },
+  Basic: { seats: 2, next: "Gold" },
+  Gold: { seats: 5, next: "Premium" },
+  Premium: { seats: 15, next: null },
 };
 
 const demoUserAvatar =
@@ -1282,6 +1400,7 @@ function App() {
   const [bankingConnections, setBankingConnections] = useState([]);
   const [accountingIntegrations, setAccountingIntegrations] = useState([]);
   const [reportTemplates, setReportTemplates] = useState([]);
+  const [saasSecret, setSaasSecret] = useState(null);
   const t = copy[language];
   const notifications = pendingDonations.map((donation) => ({
     id: donation.id,
@@ -1830,6 +1949,137 @@ function App() {
     }
   }
 
+  async function handleUpdateSubscription(planID, billingCycle = "monthly") {
+    try {
+      await api("/api/subscription", {
+        method: "PATCH",
+        body: JSON.stringify({ planID, billingCycle }),
+      });
+      await refresh(t.saas.planChanged);
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
+  async function handleCreatePaymentMethod(event) {
+    event.preventDefault();
+    try {
+      await api("/api/payment-methods", {
+        method: "POST",
+        body: JSON.stringify(formObject(event.currentTarget)),
+      });
+      event.currentTarget.reset();
+      await refresh(t.saas.paymentAdded);
+      return true;
+    } catch (saveError) {
+      showError(saveError.message);
+      return false;
+    }
+  }
+
+  async function handleDeletePaymentMethod(paymentMethod) {
+    try {
+      await api(`/api/payment-methods/${paymentMethod.paymentMethodID}`, { method: "DELETE" });
+      await refresh(t.saas.paymentDeleted);
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
+  async function handleUpdateSecuritySettings(event) {
+    event.preventDefault();
+    try {
+      const data = formObject(event.currentTarget);
+      await api("/api/security-settings", {
+        method: "PATCH",
+        body: JSON.stringify({
+          ...data,
+          mfaRequired: data.mfaRequired === "on",
+        }),
+      });
+      await refresh(t.saas.securitySaved);
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
+  async function handleCreateApiKey(event) {
+    event.preventDefault();
+    try {
+      const data = formObject(event.currentTarget);
+      const apiKey = await api("/api/api-keys", {
+        method: "POST",
+        body: JSON.stringify({
+          label: data.label,
+          scopes: String(data.scopes || "").split(",").map((scope) => scope.trim()).filter(Boolean),
+        }),
+      });
+      event.currentTarget.reset();
+      await refresh(t.saas.apiKeyCreated);
+      setSaasSecret({ type: "api", label: apiKey.label, secret: apiKey.secret });
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
+  async function handleRevokeApiKey(apiKey) {
+    try {
+      await api(`/api/api-keys/${apiKey.apiKeyID}`, { method: "DELETE" });
+      await refresh(t.saas.apiKeyRevoked);
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
+  async function handleCreateWebhook(event) {
+    event.preventDefault();
+    try {
+      const data = formObject(event.currentTarget);
+      const webhook = await api("/api/webhooks", {
+        method: "POST",
+        body: JSON.stringify({
+          url: data.url,
+          events: String(data.events || "").split(",").map((eventName) => eventName.trim()).filter(Boolean),
+        }),
+      });
+      event.currentTarget.reset();
+      await refresh(t.saas.webhookCreated);
+      setSaasSecret({ type: "webhook", label: webhook.url, secret: webhook.secret });
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
+  async function handleDeleteWebhook(webhook) {
+    try {
+      await api(`/api/webhooks/${webhook.webhookID}`, { method: "DELETE" });
+      await refresh(t.saas.webhookDeleted);
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
+  async function handleTestWebhook(webhook) {
+    try {
+      await api(`/api/webhooks/${webhook.webhookID}/test`, { method: "POST" });
+      await refresh(t.saas.webhookTested);
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
+  async function handleToggleOnboardingTask(task) {
+    try {
+      await api(`/api/onboarding/${task.taskKey}`, {
+        method: "PATCH",
+        body: JSON.stringify({ completed: !task.completed }),
+      });
+      await loadWorkspace();
+    } catch (saveError) {
+      showError(saveError.message);
+    }
+  }
+
   async function handleUpdateOrganization(event) {
     event.preventDefault();
     try {
@@ -2159,12 +2409,15 @@ function App() {
         )}
         {!loading && activeView === "subscription" && (
           <Subscription
+            saas={bootstrap?.saas}
             member={member}
             setMember={setMember}
             subscriptionAnswer={subscriptionAnswer}
             setSubscriptionAnswer={setSubscriptionAnswer}
             t={t}
+            onPlanChange={handleUpdateSubscription}
             onSubmit={handleSubscription}
+            onToggleTask={handleToggleOnboardingTask}
           />
         )}
         {!loading && activeView === "customization" && (
@@ -2179,10 +2432,20 @@ function App() {
         {!loading && activeView === "settings" && (
           <SettingsView
             bootstrap={bootstrap}
+            saasSecret={saasSecret}
+            setSaasSecret={setSaasSecret}
             t={t}
             user={displayUser}
             onCustomize={() => openView("customization")}
+            onCreateApiKey={handleCreateApiKey}
+            onCreatePaymentMethod={handleCreatePaymentMethod}
+            onCreateWebhook={handleCreateWebhook}
             onCreateUser={handleCreateUser}
+            onDeletePaymentMethod={handleDeletePaymentMethod}
+            onDeleteWebhook={handleDeleteWebhook}
+            onRevokeApiKey={handleRevokeApiKey}
+            onTestWebhook={handleTestWebhook}
+            onUpdateSecurity={handleUpdateSecuritySettings}
             onUpdateUser={handleUpdateUser}
             onSubmit={handleUpdateOrganization}
             onUserStatus={toggleUser}
@@ -5161,8 +5424,23 @@ function reportExportRows(rows, summary, selectedTemplate, t) {
   }));
 }
 
-function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAnswer, t, onSubmit }) {
-  const currentPlanName = "Gold";
+function Subscription({ saas, member, setMember, subscriptionAnswer, setSubscriptionAnswer, t, onPlanChange, onSubmit, onToggleTask }) {
+  const subscription = saas?.subscription;
+  const currentPlanID = subscription?.planID || "gold";
+  const plans = saas?.plans?.length ? saas.plans : t.subscription.plansList.map((plan) => ({
+    planID: plan.name.toLowerCase(),
+    name: plan.name,
+    monthlyPrice: Number(String(plan.price).replace(/[^0-9.]/g, "")) || 0,
+    annualPrice: (Number(String(plan.price).replace(/[^0-9.]/g, "")) || 0) * 10,
+    description: plan.description,
+    features: plan.features,
+    recommended: plan.name === "Gold",
+  }));
+  const [billingCycle, setBillingCycle] = useState(subscription?.billingCycle || "monthly");
+
+  useEffect(() => {
+    setBillingCycle(subscription?.billingCycle || "monthly");
+  }, [subscription?.billingCycle]);
 
   return (
     <section className="view-stack">
@@ -5176,27 +5454,78 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
       />
 
       <Panel title={t.subscription.plans} icon={Sparkles}>
+        <div className="billing-cycle-toggle" role="group" aria-label={t.saas.billingCycle}>
+          {["monthly", "annual"].map((cycle) => (
+            <button
+              className={billingCycle === cycle ? "secondary-button active" : "secondary-button"}
+              key={cycle}
+              type="button"
+              onClick={() => setBillingCycle(cycle)}
+            >
+              {cycle === "annual" ? t.saas.annual : t.saas.monthly}
+            </button>
+          ))}
+          <span>{t.saas.annualSavings}</span>
+        </div>
         <div className="subscription-plan-grid">
-          {t.subscription.plansList.map((plan, index) => (
-            <article className={`subscription-plan plan-${plan.name.toLowerCase()} ${plan.name === currentPlanName ? "is-current" : ""} ${index === 1 ? "is-featured" : ""}`} key={plan.name}>
-              {plan.name === currentPlanName && <span className="plan-badge">{t.subscription.currentPlan}</span>}
+          {plans.map((plan) => (
+            <article className={`subscription-plan plan-${plan.name.toLowerCase()} ${plan.planID === currentPlanID ? "is-current" : ""} ${plan.recommended ? "is-featured" : ""}`} key={plan.planID}>
+              {plan.planID === currentPlanID && <span className="plan-badge">{t.subscription.currentPlan}</span>}
               <span>{plan.name}</span>
-              <strong>{plan.price}</strong>
+              <strong>{currency(billingCycle === "annual" ? plan.annualPrice : plan.monthlyPrice)}<small>/{billingCycle === "annual" ? "yr" : "mo"}</small></strong>
               <p>{plan.description}</p>
+              <dl className="plan-limit-list">
+                <div><dt>{t.settings.includedSeats}</dt><dd>{plan.includedSeats}</dd></div>
+                <div><dt>{t.saas.included}</dt><dd>{plan.donorLimit?.toLocaleString?.() || plan.donorLimit} donors</dd></div>
+              </dl>
               <ul>
                 {plan.features.map((feature) => (
                   <li key={feature}><CheckCircle2 size={16} /> {feature}</li>
                 ))}
               </ul>
-              <button className={plan.name === currentPlanName ? "secondary-button" : "primary-button"} type="button" disabled={plan.name === currentPlanName}>
-                <span>{plan.name === currentPlanName ? t.subscription.currentPlan : t.subscription.upgradePlan}</span>
+              <button className={plan.planID === currentPlanID ? "secondary-button" : "primary-button"} type="button" disabled={plan.planID === currentPlanID} onClick={() => onPlanChange(plan.planID, billingCycle)}>
+                <span>{plan.planID === currentPlanID ? t.subscription.currentPlan : t.saas.choosePlan}</span>
               </button>
             </article>
           ))}
         </div>
       </Panel>
 
-        <Panel id="subscription-form" title={t.subscription.submissionRequest} icon={ClipboardList}>
+      {saas?.usage && (
+        <Panel title={t.saas.usage} icon={BarChart3}>
+          <div className="usage-meter-grid">
+            {Object.entries(saas.usage).map(([metricKey, metric]) => (
+              <UsageMeter key={metricKey} metric={metric} t={t} />
+            ))}
+          </div>
+          {subscription && (
+            <div className="subscription-status-card">
+              <span className="status-pill issued">{subscription.status}</span>
+              <dl>
+                <div><dt>{t.saas.currentPeriod}</dt><dd>{subscription.currentPeriodStart} {t.common.to} {subscription.currentPeriodEnd}</dd></div>
+                <div><dt>{t.saas.renews}</dt><dd>{currency(subscription.renewalAmount)} / {subscription.billingCycle}</dd></div>
+                <div><dt>{t.saas.trialEnds}</dt><dd>{subscription.trialEndsAt || "-"}</dd></div>
+              </dl>
+            </div>
+          )}
+        </Panel>
+      )}
+
+      {saas?.onboardingTasks?.length > 0 && (
+        <Panel title={t.saas.onboarding} icon={CheckCircle2}>
+          <div className="onboarding-checklist">
+            {saas.onboardingTasks.map((task) => (
+              <button className={task.completed ? "onboarding-task is-complete" : "onboarding-task"} key={task.taskKey} type="button" onClick={() => onToggleTask(task)}>
+                {task.completed ? <CheckCircle2 size={18} /> : <CircleDollarSign size={18} />}
+                <span>{task.title}</span>
+                <small>{task.completed ? t.common.done || "Done" : t.common.pending}</small>
+              </button>
+            ))}
+          </div>
+        </Panel>
+      )}
+
+      <Panel id="subscription-form" title={t.subscription.submissionRequest} icon={ClipboardList}>
           <form className="form-grid subscription-form" onSubmit={onSubmit}>
             <label>
               {t.subscription.charityName}
@@ -5254,17 +5583,40 @@ function Subscription({ member, setMember, subscriptionAnswer, setSubscriptionAn
               <span>{t.subscription.submit}</span>
             </button>
           </form>
-        </Panel>
+      </Panel>
     </section>
   );
 }
 
-function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onUpdateUser, onSubmit, onUserStatus }) {
+function UsageMeter({ metric, t }) {
+  const percent = Math.min(Number(metric.percent || 0), 100);
+
+  return (
+    <article className="usage-meter">
+      <div>
+        <span>{metric.label}</span>
+        <strong>{metric.used?.toLocaleString?.() || metric.used} / {metric.limit?.toLocaleString?.() || metric.limit}</strong>
+      </div>
+      <div className="usage-bar" aria-label={`${metric.label} ${percent}%`}>
+        <span style={{ width: `${percent}%` }} />
+      </div>
+      <small>{metric.remaining?.toLocaleString?.() || metric.remaining} {t.saas.remaining}</small>
+    </article>
+  );
+}
+
+function SettingsView({ bootstrap, saasSecret, setSaasSecret, t, user, onCustomize, onCreateApiKey, onCreatePaymentMethod, onCreateUser, onCreateWebhook, onDeletePaymentMethod, onDeleteWebhook, onRevokeApiKey, onTestWebhook, onUpdateSecurity, onUpdateUser, onSubmit, onUserStatus }) {
   const organization = bootstrap?.organisme || {};
+  const saas = bootstrap?.saas || {};
+  const subscription = saas.subscription || {};
+  const currentPlan = subscription.plan || {};
   const users = bootstrap?.users?.length ? bootstrap.users : [user].filter(Boolean);
   const isAdmin = Boolean(user?.admin);
-  const currentPlanName = "Gold";
-  const currentSeatPlan = userSeatPlans[currentPlanName];
+  const currentPlanName = currentPlan.name || "Gold";
+  const currentSeatPlan = {
+    seats: currentPlan.includedSeats || userSeatPlans[currentPlanName]?.seats || 1,
+    next: userSeatPlans[currentPlanName]?.next || null,
+  };
   const activeSeatCount = users.filter((account) => account?.actif !== false).length;
   const seatsRemaining = Math.max(currentSeatPlan.seats - activeSeatCount, 0);
   const canAddUser = seatsRemaining > 0;
@@ -5275,6 +5627,9 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onUpdateU
     profile: true,
     users: false,
     payments: false,
+    security: false,
+    api: false,
+    audit: false,
   });
   const toggleSettingsSection = (section) => {
     setOpenSettingsSections((openSections) => ({
@@ -5560,19 +5915,19 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onUpdateU
         >
           <p className="panel-copy">{t.settings.paymentSubtitle}</p>
           <div className="payment-tile-grid">
-            <PaymentMethodCard
-              brand="Visa"
-              details="•••• 4242"
-              expiry="04/29"
-              isDefault
-              t={t}
-            />
-            <PaymentMethodCard
-              brand="Mastercard"
-              details="•••• 1881"
-              expiry="11/28"
-              t={t}
-            />
+            {saas.paymentMethods?.length ? saas.paymentMethods.map((paymentMethod) => (
+              <PaymentMethodCard
+                brand={paymentMethod.brand}
+                details={`•••• ${paymentMethod.last4}`}
+                expiry={`${paymentMethod.expiryMonth}/${paymentMethod.expiryYear}`}
+                isDefault={paymentMethod.isDefault}
+                key={paymentMethod.paymentMethodID}
+                onDelete={() => onDeletePaymentMethod(paymentMethod)}
+                t={t}
+              />
+            )) : (
+              <div className="empty-state-card">{t.saas.noPaymentMethods}</div>
+            )}
             <button className="payment-method-tile add-payment-tile" type="button" onClick={() => setAddPaymentOpen((open) => !open)} aria-expanded={addPaymentOpen}>
               <span><Plus size={28} /></span>
               <strong>{t.settings.addPayment}</strong>
@@ -5580,7 +5935,12 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onUpdateU
             </button>
           </div>
           {addPaymentOpen && (
-            <form className="form-grid payment-link-form">
+            <form className="form-grid payment-link-form" onSubmit={async (event) => {
+              const saved = await onCreatePaymentMethod(event);
+              if (saved) {
+                setAddPaymentOpen(false);
+              }
+            }}>
               <label>
                 {t.settings.cardholder}
                 <input name="cardholder" autoComplete="cc-name" placeholder="Grace Community Church" />
@@ -5597,12 +5957,175 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onUpdateU
                 {t.settings.cvc}
                 <input name="cvc" autoComplete="cc-csc" inputMode="numeric" maxLength="4" placeholder="123" />
               </label>
-              <button className="primary-button form-submit" type="button" onClick={() => setAddPaymentOpen(false)}>
+              <button className="primary-button form-submit" type="submit">
                 <CreditCard size={17} />
                 <span>{t.settings.addPayment}</span>
               </button>
             </form>
           )}
+          <div className="settings-subsection">
+            <h3>{t.saas.invoices}</h3>
+            <DataTable
+              columns={["#", t.common.status, t.saas.when, t.saas.renews, t.common.description || "Description"]}
+              rows={(saas.invoices || []).map((invoice) => [
+                invoice.invoiceNumber,
+                invoice.status,
+                invoice.issuedAt,
+                currency(invoice.amount),
+                invoice.description,
+              ])}
+              emptyMessage={t.saas.noInvoices}
+              t={t}
+            />
+          </div>
+        </SettingsAccordionSection>
+        )}
+
+        {isAdmin && (
+        <SettingsAccordionSection
+          title={t.saas.security}
+          icon={LockKeyhole}
+          isOpen={openSettingsSections.security}
+          onToggle={() => toggleSettingsSection("security")}
+        >
+          <p className="panel-copy">{t.saas.securityHelp}</p>
+          <form className="form-grid settings-profile-form" onSubmit={onUpdateSecurity}>
+            <label className="checkbox-label">
+              <input name="mfaRequired" type="checkbox" defaultChecked={Boolean(saas.security?.mfaRequired)} />
+              <span>{t.saas.mfaRequired}</span>
+            </label>
+            <label>
+              {t.saas.passwordMinLength}
+              <input name="passwordMinLength" min="8" max="64" type="number" defaultValue={saas.security?.passwordMinLength || 8} />
+            </label>
+            <label>
+              {t.saas.sessionTimeoutDays}
+              <input name="sessionTimeoutDays" min="1" max="90" type="number" defaultValue={saas.security?.sessionTimeoutDays || 30} />
+            </label>
+            <label className="full-field">
+              {t.saas.allowedDomains}
+              <input name="allowedDomains" placeholder="organization.org, charity.ca" defaultValue={(saas.security?.allowedDomains || []).join(", ")} />
+            </label>
+            <button className="primary-button form-submit" type="submit">
+              <LockKeyhole size={17} />
+              <span>{t.saas.saveSecurity}</span>
+            </button>
+          </form>
+        </SettingsAccordionSection>
+        )}
+
+        {isAdmin && (
+        <SettingsAccordionSection
+          title={`${t.saas.apiKeys} & ${t.saas.webhooks}`}
+          icon={Link2}
+          isOpen={openSettingsSections.api}
+          onToggle={() => toggleSettingsSection("api")}
+        >
+          {saasSecret && (
+            <div className="secret-reveal-card">
+              <div>
+                <span>{t.saas.secretOnce}</span>
+                <strong>{saasSecret.label}</strong>
+                <code>{saasSecret.secret}</code>
+              </div>
+              <button className="icon-button" type="button" onClick={() => setSaasSecret(null)} aria-label={t.common.close || t.common.cancel}>
+                <X size={16} />
+              </button>
+            </div>
+          )}
+          <div className="saas-admin-grid">
+            <div>
+              <h3>{t.saas.apiKeys}</h3>
+              <form className="form-grid compact-saas-form" onSubmit={onCreateApiKey}>
+                <label>
+                  {t.saas.keyLabel}
+                  <input name="label" required placeholder="Donation import automation" />
+                </label>
+                <label>
+                  {t.saas.scopes}
+                  <input name="scopes" placeholder="donations:read, donors:read" />
+                </label>
+                <button className="primary-button form-submit" type="submit">
+                  <LockKeyhole size={17} />
+                  <span>{t.saas.createApiKey}</span>
+                </button>
+              </form>
+              <DataTable
+                columns={[t.common.name, t.saas.scopes, t.common.status, ""]}
+                rows={(saas.apiKeys || []).map((apiKey) => [
+                  `${apiKey.label} (${apiKey.keyPrefix}...)`,
+                  apiKey.scopes.join(", "),
+                  apiKey.active ? t.common.active : t.common.inactive,
+                  apiKey.active ? (
+                    <button className="secondary-button compact" type="button" onClick={() => onRevokeApiKey(apiKey)} key={`revoke-${apiKey.apiKeyID}`}>
+                      {t.saas.revokeApiKey}
+                    </button>
+                  ) : "",
+                ])}
+                emptyMessage={t.saas.noApiKeys}
+                t={t}
+              />
+            </div>
+            <div>
+              <h3>{t.saas.webhooks}</h3>
+              <form className="form-grid compact-saas-form" onSubmit={onCreateWebhook}>
+                <label>
+                  {t.saas.webhookUrl}
+                  <input name="url" required type="url" placeholder="https://example.org/weserve/webhook" />
+                </label>
+                <label>
+                  {t.saas.eventTypes}
+                  <input name="events" placeholder="donation.created, receipt.generated" />
+                </label>
+                <button className="primary-button form-submit" type="submit">
+                  <Link2 size={17} />
+                  <span>{t.saas.addWebhook}</span>
+                </button>
+              </form>
+              <DataTable
+                columns={["URL", t.saas.eventTypes, t.saas.lastDelivery, ""]}
+                rows={(saas.webhooks || []).map((webhook) => [
+                  webhook.url,
+                  webhook.events.join(", "),
+                  webhook.lastDeliveryStatus || t.common.pending,
+                  (
+                    <div className="table-action-group" key={`webhook-${webhook.webhookID}`}>
+                      <button className="secondary-button compact" type="button" onClick={() => onTestWebhook(webhook)}>
+                        {t.saas.testWebhook}
+                      </button>
+                      <button className="icon-button table-icon danger" type="button" onClick={() => onDeleteWebhook(webhook)} aria-label={t.common.delete}>
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  ),
+                ])}
+                emptyMessage={t.saas.noWebhooks}
+                t={t}
+              />
+            </div>
+          </div>
+        </SettingsAccordionSection>
+        )}
+
+        {isAdmin && (
+        <SettingsAccordionSection
+          title={t.saas.auditLog}
+          icon={FileText}
+          isOpen={openSettingsSections.audit}
+          onToggle={() => toggleSettingsSection("audit")}
+        >
+          <DataTable
+            columns={[t.saas.event, t.saas.actor, t.saas.entity, t.saas.when]}
+            rows={(saas.auditEvents || []).map((event) => [
+              event.action,
+              event.actorEmail || "system",
+              `${event.entityType}${event.entityID ? ` #${event.entityID}` : ""}`,
+              event.createdAt,
+            ])}
+            emptyMessage={t.common.noRecords}
+            paginate
+            t={t}
+          />
         </SettingsAccordionSection>
         )}
 
@@ -5619,11 +6142,11 @@ function SettingsView({ bootstrap, t, user, onCustomize, onCreateUser, onUpdateU
           <aside className="donor-edge-panel app-edge-panel" id="settings-plan-drawer">
             <EdgePanelHeader icon={Sparkles} title={t.settings.currentPlan} subtitle={t.settings.planHelp} onClose={() => setActiveDrawer(null)} t={t} />
             <div className="settings-plan-card">
-              <span className="status-pill issued">Gold</span>
-              <strong>{t.subscription.plansList[1]?.price || "$59/mo"}</strong>
-              <p>{t.subscription.plansList[1]?.description}</p>
+              <span className="status-pill issued">{currentPlanName}</span>
+              <strong>{currency(subscription.renewalAmount || currentPlan.monthlyPrice || 0)}</strong>
+              <p>{currentPlan.description || t.subscription.plansList[1]?.description}</p>
               <ul>
-                {t.subscription.plansList[1]?.features.map((feature) => (
+                {(currentPlan.features || t.subscription.plansList[1]?.features || []).map((feature) => (
                   <li key={feature}><CheckCircle2 size={15} /> {feature}</li>
                 ))}
               </ul>
@@ -5692,7 +6215,7 @@ function PaymentCardLogo({ brand }) {
   return <CreditCard size={20} />;
 }
 
-function PaymentMethodCard({ brand, details, expiry, isDefault = false, t }) {
+function PaymentMethodCard({ brand, details, expiry, isDefault = false, onDelete, t }) {
   const cardBrand = paymentCardBrand(brand);
 
   return (
@@ -5726,6 +6249,7 @@ function PaymentMethodCard({ brand, details, expiry, isDefault = false, t }) {
           className="icon-button table-icon payment-action-pill danger"
           type="button"
           disabled={isDefault}
+          onClick={onDelete}
           title={isDefault ? t.settings.defaultPaymentLocked : t.settings.deletePayment}
           aria-label={isDefault ? t.settings.defaultPaymentLocked : t.settings.deletePayment}
         >
