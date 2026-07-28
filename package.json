@@ -7,6 +7,9 @@
     "dev": "node scripts/dev.js",
     "dev:client": "vite",
     "dev:api": "node server/index.js",
+    "test": "node --test tests/bdd/*.test.mjs",
+    "test:ci": "npm test",
+    "bdd:list": "node tests/bdd/feature-catalog.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server/index.js"

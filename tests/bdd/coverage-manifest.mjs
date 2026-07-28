@@ -1,0 +1,43 @@
+export const expectedFeatureFiles = [
+  "accounting-integrations.feature",
+  "accounts.feature",
+  "api-security-and-tenant-isolation.feature",
+  "authentication-and-workspaces.feature",
+  "banking-connections.feature",
+  "donations-and-pending-transactions.feature",
+  "donors.feature",
+  "navigation-dashboard-and-notifications.feature",
+  "receipts.feature",
+  "reports-and-templates.feature",
+  "settings-users-and-billing.feature",
+  "subscription-customization-and-support.feature",
+];
+
+export const expectedCoverage = [
+  { tag: "@auth", minimumScenarios: 6 },
+  { tag: "@tenant", minimumScenarios: 3 },
+  { tag: "@navigation", minimumScenarios: 4 },
+  { tag: "@dashboard", minimumScenarios: 1 },
+  { tag: "@notifications", minimumScenarios: 2 },
+  { tag: "@donors", minimumScenarios: 9 },
+  { tag: "@accounts", minimumScenarios: 7 },
+  { tag: "@donations", minimumScenarios: 9 },
+  { tag: "@pending", minimumScenarios: 3 },
+  { tag: "@receipts", minimumScenarios: 7 },
+  { tag: "@reports", minimumScenarios: 8 },
+  { tag: "@templates", minimumScenarios: 4 },
+  { tag: "@banking", minimumScenarios: 5 },
+  { tag: "@connections", minimumScenarios: 5 },
+  { tag: "@integrations", minimumScenarios: 4 },
+  { tag: "@accounting", minimumScenarios: 4 },
+  { tag: "@subscription", minimumScenarios: 3 },
+  { tag: "@customization", minimumScenarios: 3 },
+  { tag: "@support", minimumScenarios: 2 },
+  { tag: "@settings", minimumScenarios: 9 },
+  { tag: "@users", minimumScenarios: 6 },
+  { tag: "@billing", minimumScenarios: 2 },
+  { tag: "@api", minimumScenarios: 7 },
+  { tag: "@security", minimumScenarios: 5 },
+];
+
+export const minimumScenarioCount = 80;
