@@ -10,6 +10,7 @@ export const expectedFeatureFiles = [
   "receipts.feature",
   "reports-and-templates.feature",
   "saas-platform-readiness.feature",
+  "self-serve-giving.feature",
   "settings-users-and-billing.feature",
   "subscription-customization-and-support.feature",
 ];
@@ -37,6 +38,8 @@ export const expectedCoverage = [
   { tag: "@settings", minimumScenarios: 9 },
   { tag: "@users", minimumScenarios: 6 },
   { tag: "@billing", minimumScenarios: 2 },
+  { tag: "@selfserve", minimumScenarios: 6 },
+  { tag: "@payments", minimumScenarios: 4 },
   { tag: "@saas", minimumScenarios: 10 },
   { tag: "@audit", minimumScenarios: 4 },
   { tag: "@roles", minimumScenarios: 3 },
@@ -44,4 +47,4 @@ export const expectedCoverage = [
   { tag: "@security", minimumScenarios: 5 },
 ];
 
-export const minimumScenarioCount = 105;
+export const minimumScenarioCount = 113;

@@ -366,6 +366,38 @@ function setupSchema() {
       createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS payment_gateway_settings (
+      organismeID INTEGER PRIMARY KEY REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      provider TEXT NOT NULL DEFAULT 'test_gateway',
+      mode TEXT NOT NULL DEFAULT 'test',
+      publicKey TEXT,
+      merchantAccount TEXT,
+      status TEXT NOT NULL DEFAULT 'ready',
+      tapToDonateEnabled INTEGER NOT NULL DEFAULT 1,
+      confirmationEmailEnabled INTEGER NOT NULL DEFAULT 1,
+      updatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS donation_payments (
+      paymentID INTEGER PRIMARY KEY AUTOINCREMENT,
+      organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
+      donID INTEGER REFERENCES dons(donID),
+      donateurID INTEGER NOT NULL REFERENCES donateurs(donateurID),
+      compteID INTEGER NOT NULL REFERENCES comptes(compteID),
+      gatewayProvider TEXT NOT NULL,
+      gatewayMode TEXT NOT NULL DEFAULT 'test',
+      gatewayStatus TEXT NOT NULL DEFAULT 'approved',
+      gatewayReference TEXT NOT NULL UNIQUE,
+      donorNumber TEXT NOT NULL,
+      amount REAL NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'CAD',
+      donorEmail TEXT,
+      confirmationNumber TEXT NOT NULL UNIQUE,
+      receiptRequested INTEGER NOT NULL DEFAULT 1,
+      createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      confirmedAt TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS invoices (
       invoiceID INTEGER PRIMARY KEY AUTOINCREMENT,
       organismeID INTEGER NOT NULL REFERENCES organismes(organismeID) ON DELETE CASCADE,
@@ -445,6 +477,8 @@ function setupSchema() {
     CREATE INDEX IF NOT EXISTS idx_envois_org_code ON envois(organismeID, envoiCode);
     CREATE INDEX IF NOT EXISTS idx_subscriptions_org ON subscriptions(organismeID);
     CREATE INDEX IF NOT EXISTS idx_payment_methods_org ON payment_methods(organismeID);
+    CREATE INDEX IF NOT EXISTS idx_donation_payments_org_created ON donation_payments(organismeID, createdAt);
+    CREATE INDEX IF NOT EXISTS idx_donation_payments_donor ON donation_payments(organismeID, donorNumber);
     CREATE INDEX IF NOT EXISTS idx_invoices_org ON invoices(organismeID, issuedAt);
     CREATE INDEX IF NOT EXISTS idx_audit_events_org_created ON audit_events(organismeID, createdAt);
     CREATE INDEX IF NOT EXISTS idx_api_keys_org ON api_keys(organismeID, active);
@@ -918,6 +952,46 @@ function normalizePaymentMethod(row) {
   };
 }
 
+function normalizePaymentGateway(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    provider: row.provider,
+    mode: row.mode,
+    publicKey: row.publicKey || "",
+    merchantAccount: row.merchantAccount || "",
+    status: row.status,
+    tapToDonateEnabled: Boolean(row.tapToDonateEnabled),
+    confirmationEmailEnabled: Boolean(row.confirmationEmailEnabled),
+    updatedAt: row.updatedAt,
+  };
+}
+
+function normalizeDonationPayment(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    paymentID: row.paymentID,
+    donID: row.donID,
+    donorNumber: row.donorNumber,
+    amount: Number(row.amount),
+    currency: row.currency,
+    gatewayProvider: row.gatewayProvider,
+    gatewayMode: row.gatewayMode,
+    gatewayStatus: row.gatewayStatus,
+    gatewayReference: row.gatewayReference,
+    donorEmail: row.donorEmail || "",
+    confirmationNumber: row.confirmationNumber,
+    receiptRequested: Boolean(row.receiptRequested),
+    createdAt: row.createdAt,
+    confirmedAt: row.confirmedAt,
+  };
+}
+
 function normalizeInvoice(row) {
   if (!row) {
     return row;
@@ -1064,6 +1138,8 @@ function ensureSaasDefaults(orgID) {
     run("INSERT INTO security_settings (organismeID) VALUES (?)", [numericOrgID]);
   }
 
+  ensureSelfServeGivingDefaults(numericOrgID);
+
   for (const [taskKey, title] of onboardingTemplates) {
     run(
       "INSERT OR IGNORE INTO onboarding_tasks (organismeID, taskKey, title, completed) VALUES (?, ?, ?, ?)",
@@ -1115,6 +1191,20 @@ function ensureSaasDefaults(orgID) {
   const auditCount = Number(get("SELECT COUNT(*) AS count FROM audit_events WHERE organismeID = ?", [numericOrgID])?.count || 0);
   if (!auditCount) {
     audit({ organismeID: numericOrgID }, "workspace.provisioned", "organization", numericOrgID, { source: "system" });
+  }
+}
+
+function ensureSelfServeGivingDefaults(orgID) {
+  const numericOrgID = Number(orgID);
+  const gatewayExists = get("SELECT organismeID FROM payment_gateway_settings WHERE organismeID = ?", [numericOrgID]);
+  if (!gatewayExists) {
+    run(
+      `INSERT INTO payment_gateway_settings (
+        organismeID, provider, mode, publicKey, merchantAccount, status,
+        tapToDonateEnabled, confirmationEmailEnabled
+      ) VALUES (?, 'test_gateway', 'test', 'pk_test_weserve_self_serve', 'WeSERVE Test Merchant', 'ready', 1, 1)`,
+      [numericOrgID],
+    );
   }
 }
 
@@ -1324,6 +1414,248 @@ function deletePaymentMethod(id, context = {}) {
   run("DELETE FROM payment_methods WHERE paymentMethodID = ? AND organismeID = ?", [Number(id), orgID]);
   audit(context, "payment_method.deleted", "payment_method", id, { last4: paymentMethod.last4 });
   return { deleted: true };
+}
+
+function getPaymentGatewaySettings(context = {}) {
+  const orgID = organizationID(context);
+  ensureSelfServeGivingDefaults(orgID);
+  return normalizePaymentGateway(get("SELECT * FROM payment_gateway_settings WHERE organismeID = ?", [orgID]));
+}
+
+function updatePaymentGatewaySettings(data, context = {}) {
+  const orgID = organizationID(context);
+  const provider = String(data.provider || "test_gateway").trim();
+  const mode = String(data.mode || "test").trim() === "live" ? "live" : "test";
+  const status = data.status === "disabled" ? "disabled" : "ready";
+
+  ensureSelfServeGivingDefaults(orgID);
+  run(
+    `UPDATE payment_gateway_settings
+     SET provider = ?, mode = ?, publicKey = ?, merchantAccount = ?, status = ?,
+      tapToDonateEnabled = ?, confirmationEmailEnabled = ?, updatedAt = CURRENT_TIMESTAMP
+     WHERE organismeID = ?`,
+    [
+      provider,
+      mode,
+      data.publicKey || "",
+      data.merchantAccount || "",
+      status,
+      data.tapToDonateEnabled === false ? 0 : 1,
+      data.confirmationEmailEnabled === false ? 0 : 1,
+      orgID,
+    ],
+  );
+  audit(context, "payment_gateway.updated", "payment_gateway", orgID, { provider, mode, status });
+  return getPaymentGatewaySettings(context);
+}
+
+function resolvePublicOrganization(data = {}) {
+  const requestedOrg = String(data.organismeID || data.organizationID || data.org || data.tenant || "1").trim();
+  const orgID = Number(requestedOrg);
+  const organization = Number.isFinite(orgID) && orgID > 0
+    ? get("SELECT * FROM organismes WHERE organismeID = ?", [orgID])
+    : get("SELECT * FROM organismes WHERE lower(organisme) = lower(?)", [requestedOrg]);
+
+  if (!organization || !organization.actif || organization.date_fin_licence < todayISO()) {
+    const error = new Error("Giving page not found");
+    error.status = 404;
+    throw error;
+  }
+
+  ensureSelfServeGivingDefaults(organization.organismeID);
+  return organization;
+}
+
+function publicDonorName(donor) {
+  if (!donor) {
+    return "";
+  }
+  return `${donor.prenom || ""} ${donor.nom || ""}`.trim();
+}
+
+function publicDonationPortal(query = {}) {
+  const organization = resolvePublicOrganization(query);
+  const orgID = Number(organization.organismeID);
+  const donorNumber = String(query.donorNumber || query.donor || query.numero || "").trim();
+  const donor = donorNumber
+    ? normalizeDonor(get("SELECT * FROM donateurs WHERE organismeID = ? AND numero = ? AND actif = 1", [orgID, donorNumber]))
+    : null;
+
+  if (donorNumber && !donor) {
+    const error = new Error("Donor number not found");
+    error.status = 404;
+    throw error;
+  }
+
+  const accounts = all(
+    "SELECT compteID, noCompte, nom, recu FROM comptes WHERE organismeID = ? ORDER BY noCompte",
+    [orgID],
+  ).map((account) => ({
+    compteID: account.compteID,
+    noCompte: account.noCompte,
+    nom: account.nom,
+    recu: Boolean(account.recu),
+  }));
+  const gateway = getPaymentGatewaySettings({ organismeID: orgID });
+
+  return {
+    organization: {
+      organismeID: orgID,
+      name: organization.organisme,
+      city: organization.ville || "",
+      currency: organization.devise || "CAD",
+      registrationNumber: organization.enregistrement || "",
+      receiptEmail: organization.reponse_courriel || organization.responsable_courriel || "",
+    },
+    gateway: {
+      provider: gateway.provider,
+      mode: gateway.mode,
+      status: gateway.status,
+      tapToDonateEnabled: gateway.tapToDonateEnabled,
+      confirmationEmailEnabled: gateway.confirmationEmailEnabled,
+      merchantAccount: gateway.merchantAccount,
+    },
+    donor: donor ? {
+      donateurID: donor.donateurID,
+      donorNumber: donor.numero,
+      fullName: publicDonorName(donor),
+      email: donor.courriel || "",
+      receiptsEnabled: donor.recu,
+    } : null,
+    accounts,
+    suggestedAmounts: [25, 50, 100, 250],
+  };
+}
+
+function confirmationCode() {
+  return `WSG-${new Date().getFullYear()}-${randomBytes(3).toString("hex").toUpperCase()}`;
+}
+
+function roundMoney(value) {
+  return Math.round(Number(value || 0) * 100) / 100;
+}
+
+function createSelfServeDonation(data = {}) {
+  const organization = resolvePublicOrganization(data);
+  const orgID = Number(organization.organismeID);
+  const gateway = getPaymentGatewaySettings({ organismeID: orgID });
+  if (!gateway.tapToDonateEnabled || gateway.status !== "ready") {
+    const error = new Error("Online giving is not available for this organization");
+    error.status = 409;
+    throw error;
+  }
+
+  const donorNumber = String(data.donorNumber || data.donor || data.numero || "").trim();
+  const donor = get("SELECT * FROM donateurs WHERE organismeID = ? AND numero = ? AND actif = 1", [orgID, donorNumber]);
+  if (!donor) {
+    const error = new Error("Donor number not found");
+    error.status = 404;
+    throw error;
+  }
+
+  const compteID = Number(data.compteID || 0);
+  const noCompte = Number(data.noCompte || 0);
+  const account = compteID
+    ? get("SELECT * FROM comptes WHERE organismeID = ? AND compteID = ?", [orgID, compteID])
+    : get("SELECT * FROM comptes WHERE organismeID = ? AND noCompte = ?", [orgID, noCompte]);
+  if (!account) {
+    const error = new Error("Donation account not found");
+    error.status = 400;
+    throw error;
+  }
+
+  const amount = roundMoney(data.amount || data.montant);
+  if (!Number.isFinite(amount) || amount < 1) {
+    const error = new Error("Donation amount must be at least 1.00");
+    error.status = 400;
+    throw error;
+  }
+
+  return transaction(() => {
+    const note = String(data.note || data.description || "").trim();
+    const donorEmail = String(data.donorEmail || data.email || donor.courriel || "").trim().toLowerCase();
+    const confirmationNumber = confirmationCode();
+    const gatewayReference = `${gateway.provider}_${Date.now()}_${randomBytes(4).toString("hex")}`;
+    const donationResult = run(
+      `INSERT INTO dons (compteID, dateDon, description, donateurID, montant, methodeDonID)
+       VALUES (?, ?, ?, ?, ?, 4)`,
+      [
+        account.compteID,
+        todayISO(),
+        note ? `Self-serve online gift - ${note}` : "Self-serve online gift",
+        donor.donateurID,
+        amount,
+      ],
+    );
+    const paymentResult = run(
+      `INSERT INTO donation_payments (
+        organismeID, donID, donateurID, compteID, gatewayProvider, gatewayMode,
+        gatewayStatus, gatewayReference, donorNumber, amount, currency, donorEmail,
+        confirmationNumber, receiptRequested, confirmedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, 'approved', ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      [
+        orgID,
+        donationResult.lastInsertRowid,
+        donor.donateurID,
+        account.compteID,
+        gateway.provider,
+        gateway.mode,
+        gatewayReference,
+        donor.numero,
+        amount,
+        organization.devise || "CAD",
+        donorEmail,
+        confirmationNumber,
+        data.receiptRequested === false ? 0 : 1,
+      ],
+    );
+
+    audit({ organismeID: orgID, courriel: donorEmail || `donor-${donor.numero}` }, "self_serve_donation.confirmed", "donation", donationResult.lastInsertRowid, {
+      amount,
+      donorNumber: donor.numero,
+      gatewayProvider: gateway.provider,
+      gatewayMode: gateway.mode,
+      confirmationNumber,
+    });
+
+    const donation = listDonations({ limit: 500 }, { organismeID: orgID }).find((row) => row.donID === donationResult.lastInsertRowid);
+    return {
+      payment: normalizeDonationPayment(get("SELECT * FROM donation_payments WHERE paymentID = ?", [paymentResult.lastInsertRowid])),
+      confirmation: {
+        confirmationNumber,
+        status: "approved",
+        amount,
+        currency: organization.devise || "CAD",
+        gatewayProvider: gateway.provider,
+        gatewayMode: gateway.mode,
+        gatewayReference,
+        donor: publicDonorName(donor),
+        donorNumber: donor.numero,
+        donorEmail,
+        organization: organization.organisme,
+        account: `${account.noCompte} - ${account.nom}`,
+        receiptStatus: donation?.receiptStatus || (account.recu && donor.recu ? "Ready" : "No receipt"),
+        donationDate: todayISO(),
+      },
+    };
+  });
+}
+
+function listSelfServeDonationPayments(context = {}) {
+  return all(
+    `SELECT p.*, dt.prenom, dt.nom, c.noCompte, c.nom AS accountName
+     FROM donation_payments AS p
+     INNER JOIN donateurs AS dt ON p.donateurID = dt.donateurID
+     INNER JOIN comptes AS c ON p.compteID = c.compteID
+     WHERE p.organismeID = ?
+     ORDER BY p.createdAt DESC, p.paymentID DESC
+     LIMIT 25`,
+    [organizationID(context)],
+  ).map((row) => ({
+    ...normalizeDonationPayment(row),
+    donorName: publicDonorName(row),
+    account: `${row.noCompte} - ${row.accountName}`,
+  }));
 }
 
 function listInvoices(context = {}) {
@@ -2070,6 +2402,10 @@ function getBootstrap(context = {}) {
     bankingConnections: listBankingConnections(context),
     accountingIntegrations: listAccountingIntegrations(context),
     reportTemplates: listReportTemplates(context),
+    selfServeGiving: {
+      gateway: getPaymentGatewaySettings(context),
+      recentPayments: listSelfServeDonationPayments(context),
+    },
     saas: getSaasOverview(context),
     platformTenants: context.role === "saas_admin" ? listPlatformTenants(context) : [],
   };
@@ -2776,6 +3112,11 @@ export const store = {
   listPaymentMethods,
   createPaymentMethod,
   deletePaymentMethod,
+  getPaymentGatewaySettings,
+  updatePaymentGatewaySettings,
+  publicDonationPortal,
+  createSelfServeDonation,
+  listSelfServeDonationPayments,
   listInvoices,
   listAuditEvents,
   listApiKeys,

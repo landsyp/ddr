@@ -13,6 +13,7 @@ WeSERVE SaaS is a modernized React and SQLite donation management application. I
 - SaaS plan catalog with per-plan seat, donor, donation, and receipt limits.
 - Subscription lifecycle controls with monthly/annual billing cycle updates.
 - Billing center with payment-method metadata and invoice history.
+- Donor self-serve giving portal at `/give` with donor-number lookup, NFC/QR-ready links, gateway-ready checkout, and confirmation numbers.
 - Tenant security settings for MFA requirement, password minimum, session timeout, and allowed domains.
 - API key and webhook administration for integration-ready SaaS workflows.
 - Onboarding checklist and audit log for operational readiness.
@@ -93,6 +94,47 @@ Current subscription model:
 
 New organizations can also be created from the login screen with **Create organization workspace**. Each new organization receives its own isolated accounts, users, donors, donations, receipts, and reports.
 
+## Collaborator Guide
+
+This project is now structured as a working SaaS prototype:
+
+1. A **SaaS Admin** can see all tenants from the Tenants page.
+2. An **Organization Admin** manages one tenant workspace.
+3. Editors, auditors, and viewers have different access levels inside the same tenant.
+4. Each tenant has isolated donors, accounts, donations, receipts, users, billing records, gateway settings, and audit events.
+5. Every tenant currently uses the **Base** subscription model by default; future paid plan variations can be added through the SaaS plan catalog.
+
+### Self-Serve Giving Flow
+
+The new self-serve giving feature lets a donor donate from their phone:
+
+1. An organization admin opens **Donations** and uses the wallet/self-serve side tab.
+2. The admin chooses a donor number and copies the generated tap/QR donation link.
+3. That link can be placed behind an NFC tag, QR code, email button, or kiosk.
+4. The donor opens the public `/give` page without logging in.
+5. The donor enters or confirms their donor number.
+6. The donor chooses a donation fund/account and amount.
+7. The payment gateway approves the gift.
+8. WeSERVE records the donation, stores the gateway confirmation metadata, and shows the donor a confirmation number.
+
+Local example:
+
+```text
+http://127.0.0.1:5173/give?org=1&donor=1
+```
+
+The current gateway is a safe `test_gateway` implementation. It records approval and confirmation metadata for product testing. Real production card details should be handled only by a payment provider such as Stripe, Moneris, Square, or another PCI-compliant gateway. WeSERVE should store references, confirmation numbers, status, amount, donor number, and receipt state, not raw card numbers.
+
+### Production Readiness Checklist
+
+Before integrating a branch to `main` or using it as production-ready:
+
+1. Run the full quality gate with `npm run test:ci`.
+2. Confirm the pass rate is at least **80%**.
+3. Review the generated HTML test report in `reports/test-report.html`.
+4. Confirm GitHub Actions passes on the branch.
+5. Open a pull request into `main` after the branch quality gate passes.
+
 ## Scripts
 
 ```bash
@@ -132,6 +174,9 @@ Core endpoints include:
 - `PATCH /api/subscription`
 - `POST /api/payment-methods`
 - `DELETE /api/payment-methods/:id`
+- `PATCH /api/payment-gateway`
+- `GET /api/public/donation-portal`
+- `POST /api/public/donation-portal/checkout`
 - `PATCH /api/security-settings`
 - `POST /api/api-keys`
 - `DELETE /api/api-keys/:id`
@@ -156,13 +201,15 @@ Core endpoints include:
 - `GET /api/reports`
 - `POST /api/subscription-requests`
 
-All endpoints except health, login, register, forgot password, and subscription requests require:
+All endpoints except health, login, register, forgot password, subscription requests, and public donation portal requests require:
 
 ```text
 Authorization: Bearer <session-token>
 ```
 
 The server derives tenant scope from the session token, so organization IDs are not trusted from client request bodies.
+
+Public self-serve giving requests use the public organization identifier plus a donor number, then store only payment confirmation metadata. Card details should stay inside the external gateway such as Stripe, Moneris, Square, or another provider.
 
 ## Project Layout
 
@@ -184,7 +231,13 @@ Run the production build before pushing changes:
 npm run build
 ```
 
-The current React/SQLite flows have been checked for login, dashboard navigation, support/settings, profile updates, search, reports, receipt generation, and browser console errors.
+Run the full CI-quality test suite before integration:
+
+```bash
+npm run test:ci
+```
+
+The current React/SQLite flows have been checked for login, dashboard navigation, support/settings, profile updates, search, reports, receipt generation, SaaS roles, tenant visibility, self-serve giving, payment confirmation, and browser console errors.
 
 ## Notes
 

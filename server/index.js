@@ -173,6 +173,16 @@ async function handleAPI(request, response, pathname) {
     return;
   }
 
+  if (method === "GET" && pathname === "/api/public/donation-portal") {
+    sendJSON(response, 200, store.publicDonationPortal(getQuery(request)));
+    return;
+  }
+
+  if (method === "POST" && pathname === "/api/public/donation-portal/checkout") {
+    sendJSON(response, 201, store.createSelfServeDonation(await readJSON(request)));
+    return;
+  }
+
   const auth = store.authenticate(getBearerToken(request));
   if (!auth) {
     sendJSON(response, 401, { error: "Authentication required" });
@@ -221,6 +231,12 @@ async function handleAPI(request, response, pathname) {
   if (method === "POST" && pathname === "/api/payment-methods") {
     requireAdmin(auth);
     sendJSON(response, 201, store.createPaymentMethod(await readJSON(request), auth));
+    return;
+  }
+
+  if (method === "PATCH" && pathname === "/api/payment-gateway") {
+    requireAdmin(auth);
+    sendJSON(response, 200, store.updatePaymentGatewaySettings(await readJSON(request), auth));
     return;
   }
 

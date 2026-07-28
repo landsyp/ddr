@@ -245,6 +245,39 @@ const copy = {
       categorizeSuccess: "Pending donation categorized.",
       noPendingDonations: "No pending donations to categorize.",
     },
+    giving: {
+      title: "Self-serve giving",
+      subtitle: "Let donors tap a phone, enter their donor number, and confirm a gift through the payment gateway.",
+      publicTitle: "Give to {organization}",
+      publicSubtitle: "Enter your donor number, choose a fund, confirm the amount, and receive a confirmation number.",
+      donorLookup: "Find my donor record",
+      donorNumberHelp: "Use the donor number printed on your statement or given by the organization.",
+      tapLink: "Tap / QR donation link",
+      tapLinkHelp: "Put this link behind an NFC tag or QR code so donors can open the giving page from their phone.",
+      gatewayStatus: "Payment gateway",
+      testMode: "Test mode",
+      liveMode: "Live mode",
+      connected: "Connected",
+      copyLink: "Copy link",
+      copied: "Donation link copied.",
+      openPortal: "Open donor portal",
+      chooseDonor: "Choose donor number",
+      fund: "Donation fund",
+      suggested: "Suggested amounts",
+      donorEmail: "Confirmation email",
+      note: "Optional note",
+      notePlaceholder: "Campaign, pledge, or dedication",
+      pay: "Tap phone / confirm gift",
+      confirmationTitle: "Gift confirmed",
+      confirmationBody: "Your gift was approved and recorded. Keep this confirmation number for your records.",
+      confirmationNumber: "Confirmation number",
+      receiptStatus: "Receipt status",
+      sentTo: "Confirmation shown for",
+      thankYou: "Thank you for your generosity.",
+      recent: "Recent self-serve confirmations",
+      noRecent: "No self-serve payments yet.",
+      lookupError: "Enter a valid donor number to continue.",
+    },
     accounts: {
       title: "Account list",
       subtitle: "Accounts control how donations are grouped and whether they are receipt eligible.",
@@ -826,6 +859,39 @@ const copy = {
       chooseAccount: "Choisir le compte",
       categorizeSuccess: "Don en attente catégorisé.",
       noPendingDonations: "Aucun don en attente à catégoriser.",
+    },
+    giving: {
+      title: "Don autonome",
+      subtitle: "Permettez aux donateurs de toucher avec leur téléphone, d'entrer leur numéro et de confirmer un don avec la passerelle de paiement.",
+      publicTitle: "Donner à {organization}",
+      publicSubtitle: "Entrez votre numéro de donateur, choisissez un fonds, confirmez le montant et recevez un numéro de confirmation.",
+      donorLookup: "Trouver mon dossier donateur",
+      donorNumberHelp: "Utilisez le numéro de donateur indiqué sur votre relevé ou fourni par l'organisme.",
+      tapLink: "Lien don tactile / QR",
+      tapLinkHelp: "Placez ce lien derrière une puce NFC ou un code QR pour ouvrir la page de don sur téléphone.",
+      gatewayStatus: "Passerelle de paiement",
+      testMode: "Mode test",
+      liveMode: "Mode réel",
+      connected: "Connectée",
+      copyLink: "Copier le lien",
+      copied: "Lien de don copié.",
+      openPortal: "Ouvrir le portail donateur",
+      chooseDonor: "Choisir le numéro de donateur",
+      fund: "Fonds du don",
+      suggested: "Montants suggérés",
+      donorEmail: "Courriel de confirmation",
+      note: "Note optionnelle",
+      notePlaceholder: "Campagne, promesse ou dédicace",
+      pay: "Toucher / confirmer le don",
+      confirmationTitle: "Don confirmé",
+      confirmationBody: "Votre don a été approuvé et enregistré. Conservez ce numéro de confirmation.",
+      confirmationNumber: "Numéro de confirmation",
+      receiptStatus: "Statut du reçu",
+      sentTo: "Confirmation affichée pour",
+      thankYou: "Merci pour votre générosité.",
+      recent: "Confirmations autonomes récentes",
+      noRecent: "Aucun paiement autonome pour le moment.",
+      lookupError: "Entrez un numéro de donateur valide pour continuer.",
     },
     accounts: {
       title: "Liste des comptes",
@@ -2260,6 +2326,17 @@ function App() {
 
   const activeOrg = bootstrap?.organisme;
   const displayUser = currentUser || bootstrap?.user;
+  const isPublicGivingPage = window.location.pathname.startsWith("/give");
+
+  if (isPublicGivingPage) {
+    return (
+      <PublicDonationPortal
+        language={language}
+        onLanguageChange={setLanguage}
+        t={t}
+      />
+    );
+  }
 
   if (!currentUser) {
     return (
@@ -2639,6 +2716,204 @@ function LoginScreen({ error, language, onForgotPassword, onLanguageChange, onLo
                 <span>{t.common.startWorkspace}</span>
               </button>
             </form>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function PublicDonationPortal({ language, onLanguageChange, t }) {
+  const params = new URLSearchParams(window.location.search);
+  const [organizationID, setOrganizationID] = useState(params.get("org") || params.get("tenant") || "1");
+  const [donorNumber, setDonorNumber] = useState(params.get("donor") || params.get("donorNumber") || "");
+  const [portal, setPortal] = useState(null);
+  const [amount, setAmount] = useState("50");
+  const [confirmation, setConfirmation] = useState(null);
+  const [loadingPortal, setLoadingPortal] = useState(true);
+  const [portalError, setPortalError] = useState("");
+
+  async function loadPortal(nextDonorNumber = donorNumber) {
+    setLoadingPortal(true);
+    setPortalError("");
+    try {
+      const portalParams = new URLSearchParams({ org: organizationID || "1" });
+      if (nextDonorNumber) {
+        portalParams.set("donor", nextDonorNumber);
+      }
+      const result = await api(`/api/public/donation-portal?${portalParams.toString()}`);
+      setPortal(result);
+      setDonorNumber(nextDonorNumber);
+      const nextUrl = `/give?${portalParams.toString()}`;
+      window.history.replaceState({}, "", nextUrl);
+    } catch (loadError) {
+      setPortalError(loadError.message);
+    } finally {
+      setLoadingPortal(false);
+    }
+  }
+
+  useEffect(() => {
+    loadPortal(donorNumber);
+  }, []);
+
+  async function submitLookup(event) {
+    event.preventDefault();
+    if (!donorNumber.trim()) {
+      setPortalError(t.giving.lookupError);
+      return;
+    }
+    setConfirmation(null);
+    await loadPortal(donorNumber.trim());
+  }
+
+  async function submitDonation(event) {
+    event.preventDefault();
+    setPortalError("");
+    try {
+      const data = formObject(event.currentTarget);
+      const result = await api("/api/public/donation-portal/checkout", {
+        method: "POST",
+        body: JSON.stringify({
+          ...data,
+          org: organizationID || "1",
+          donorNumber: portal?.donor?.donorNumber || donorNumber,
+          amount,
+        }),
+      });
+      setConfirmation(result.confirmation);
+    } catch (paymentError) {
+      setPortalError(paymentError.message);
+    }
+  }
+
+  const organizationName = portal?.organization?.name || t.product;
+  const gatewayMode = portal?.gateway?.mode === "live" ? t.giving.liveMode : t.giving.testMode;
+
+  return (
+    <main className="public-donation-screen">
+      <section className="public-donation-shell">
+        <div className="public-donation-hero">
+          <span className="eyebrow"><Wallet size={15} /> {t.giving.title}</span>
+          <h1>{t.giving.publicTitle.replace("{organization}", organizationName)}</h1>
+          <p>{t.giving.publicSubtitle}</p>
+          <div className="login-facts">
+            <span><CreditCard size={16} /> {t.giving.gatewayStatus}: {gatewayMode}</span>
+            <span><Check size={16} /> {t.giving.thankYou}</span>
+          </div>
+        </div>
+
+        <div className="public-donation-card">
+          <div className="login-panel-title">
+            <h2>{portal?.donor ? portal.donor.fullName : t.giving.donorLookup}</h2>
+            <button className="language-toggle dark" type="button" onClick={() => onLanguageChange(language === "en" ? "fr" : "en")}>
+              {language === "en" ? "FR" : "EN"}
+            </button>
+          </div>
+
+          {loadingPortal && <div className="loading-state">{t.overview.loading}</div>}
+          {portalError && <div className="inline-error">{portalError}</div>}
+
+          {!loadingPortal && !confirmation && (
+            <>
+              <form className="public-donor-lookup" onSubmit={submitLookup}>
+                <label>
+                  {t.donationForm.donorNumber}
+                  <input name="donorNumber" value={donorNumber} onChange={(event) => setDonorNumber(event.target.value)} placeholder="1" required />
+                </label>
+                <label>
+                  Organization
+                  <input name="org" value={organizationID} onChange={(event) => setOrganizationID(event.target.value)} required />
+                </label>
+                <button className="secondary-button compact" type="submit">
+                  <Search size={15} />
+                  <span>{t.giving.donorLookup}</span>
+                </button>
+              </form>
+              <p className="inline-hint">{t.giving.donorNumberHelp}</p>
+            </>
+          )}
+
+          {!loadingPortal && portal?.donor && !confirmation && (
+            <form className="public-donation-form" onSubmit={submitDonation}>
+              <div className="public-donor-summary">
+                <span className="status-pill issued">{t.common.active}</span>
+                <strong>{portal.donor.donorNumber} - {portal.donor.fullName}</strong>
+                <small>{portal.organization.registrationNumber}</small>
+              </div>
+
+              <label>
+                {t.giving.fund}
+                <select name="compteID" required defaultValue={portal.accounts[0]?.compteID || ""}>
+                  {portal.accounts.map((account) => (
+                    <option value={account.compteID} key={account.compteID}>
+                      {account.noCompte} - {account.nom}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                {t.donationForm.amount}
+                <input name="amount" required min="1" step="0.01" type="number" value={amount} onChange={(event) => setAmount(event.target.value)} />
+              </label>
+
+              <div className="suggested-amounts" aria-label={t.giving.suggested}>
+                {portal.suggestedAmounts.map((suggestedAmount) => (
+                  <button className={Number(amount) === suggestedAmount ? "active" : ""} type="button" key={suggestedAmount} onClick={() => setAmount(String(suggestedAmount))}>
+                    {currency(suggestedAmount)}
+                  </button>
+                ))}
+              </div>
+
+              <label>
+                {t.giving.donorEmail}
+                <input name="donorEmail" type="email" defaultValue={portal.donor.email || ""} />
+              </label>
+              <label>
+                {t.giving.note}
+                <input name="note" placeholder={t.giving.notePlaceholder} />
+              </label>
+
+              <button className="primary-button form-submit" type="submit">
+                <CreditCard size={17} />
+                <span>{t.giving.pay}</span>
+              </button>
+            </form>
+          )}
+
+          {confirmation && (
+            <div className="public-confirmation-card" role="status">
+              <CheckCircle2 size={34} />
+              <h2>{t.giving.confirmationTitle}</h2>
+              <p>{t.giving.confirmationBody}</p>
+              <dl className="banking-detail-list">
+                <div>
+                  <dt>{t.giving.confirmationNumber}</dt>
+                  <dd>{confirmation.confirmationNumber}</dd>
+                </div>
+                <div>
+                  <dt>{t.donationForm.amount}</dt>
+                  <dd>{currency(confirmation.amount)}</dd>
+                </div>
+                <div>
+                  <dt>{t.giving.fund}</dt>
+                  <dd>{confirmation.account}</dd>
+                </div>
+                <div>
+                  <dt>{t.giving.receiptStatus}</dt>
+                  <dd>{confirmation.receiptStatus}</dd>
+                </div>
+                <div>
+                  <dt>{t.giving.sentTo}</dt>
+                  <dd>{confirmation.donorEmail || confirmation.donor}</dd>
+                </div>
+              </dl>
+              <button className="secondary-button compact" type="button" onClick={() => setConfirmation(null)}>
+                <Plus size={15} />
+                <span>{t.donationForm.add}</span>
+              </button>
+            </div>
           )}
         </div>
       </section>
@@ -3042,6 +3317,7 @@ function Donations({ accounts, bankingConnections, bootstrap, donations, donors,
   const [donationSearch, setDonationSearch] = useState("");
   const [donationToolsOpen, setDonationToolsOpen] = useState(false);
   const linkedBankAccounts = bankingConnections || [];
+  const selfServeGiving = bootstrap?.selfServeGiving || {};
   const allDonationRows = [
     ...pendingDonations.map((donation) => ({
       id: donation.id,
@@ -3296,6 +3572,9 @@ function Donations({ accounts, bankingConnections, bootstrap, donations, donors,
         <button className={`donor-edge-tab ${activeDrawer === "banking" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "banking" ? null : "banking")} aria-label={t.banking.title} title={t.banking.title} aria-expanded={activeDrawer === "banking"}>
           <Landmark size={18} />
         </button>
+        <button className={`donor-edge-tab ${activeDrawer === "selfServe" ? "active" : ""}`} type="button" onClick={() => setActiveDrawer((drawer) => drawer === "selfServe" ? null : "selfServe")} aria-label={t.giving.title} title={t.giving.title} aria-expanded={activeDrawer === "selfServe"}>
+          <Wallet size={18} />
+        </button>
 
         {activeDrawer === "add" && (
           <aside className="donor-edge-panel app-edge-panel" id="donation-add-drawer">
@@ -3411,6 +3690,18 @@ function Donations({ accounts, bankingConnections, bootstrap, donations, donors,
             </div>
           </aside>
         )}
+
+        {activeDrawer === "selfServe" && (
+          <aside className="donor-edge-panel app-edge-panel" id="donation-self-serve-drawer">
+            <EdgePanelHeader icon={Wallet} title={t.giving.title} subtitle={t.giving.subtitle} onClose={() => setActiveDrawer(null)} t={t} />
+            <SelfServeGivingPanel
+              donors={donors}
+              organization={bootstrap?.organisme}
+              selfServeGiving={selfServeGiving}
+              t={t}
+            />
+          </aside>
+        )}
       </div>
 
       {donationPendingDelete && (
@@ -3431,6 +3722,92 @@ function Donations({ accounts, bankingConnections, bootstrap, donations, donors,
         />
       )}
     </section>
+  );
+}
+
+function buildSelfServeGivingUrl(organizationID, donorNumber = "") {
+  const params = new URLSearchParams({ org: String(organizationID || 1) });
+  if (donorNumber) {
+    params.set("donor", donorNumber);
+  }
+  return `${window.location.origin}/give?${params.toString()}`;
+}
+
+function SelfServeGivingPanel({ donors, organization, selfServeGiving, t }) {
+  const [selectedDonorNumber, setSelectedDonorNumber] = useState(donors[0]?.numero || "");
+  const [copied, setCopied] = useState(false);
+  const gateway = selfServeGiving?.gateway || {};
+  const recentPayments = selfServeGiving?.recentPayments || [];
+  const givingUrl = buildSelfServeGivingUrl(organization?.organismeID, selectedDonorNumber);
+  const gatewayMode = gateway.mode === "live" ? t.giving.liveMode : t.giving.testMode;
+
+  async function copyGivingLink() {
+    setCopied(false);
+    try {
+      await navigator.clipboard.writeText(givingUrl);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <div className="self-serve-giving-panel">
+      <article className="payment-method-tile giving-link-card">
+        <div className="payment-card-mark">
+          <Wallet size={22} />
+        </div>
+        <div>
+          <span>{t.giving.gatewayStatus}</span>
+          <h2>{gateway.provider || "test_gateway"}</h2>
+          <p>{gatewayMode} • {gateway.status || t.giving.connected}</p>
+        </div>
+      </article>
+
+      <label>
+        {t.giving.chooseDonor}
+        <select value={selectedDonorNumber} onChange={(event) => setSelectedDonorNumber(event.target.value)}>
+          {donors.map((donor) => (
+            <option value={donor.numero} key={donor.donateurID}>
+              {donor.numero} - {donor.fullName}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className="giving-link-box">
+        <span>{t.giving.tapLink}</span>
+        <input value={givingUrl} readOnly />
+        <p>{t.giving.tapLinkHelp}</p>
+        <div className="payment-card-actions">
+          <button className="secondary-button compact" type="button" onClick={copyGivingLink}>
+            <Link2 size={15} />
+            <span>{copied ? t.giving.copied : t.giving.copyLink}</span>
+          </button>
+          <a className="primary-button compact" href={givingUrl} target="_blank" rel="noreferrer">
+            <CreditCard size={15} />
+            <span>{t.giving.openPortal}</span>
+          </a>
+        </div>
+      </div>
+
+      <div className="recent-self-serve-list">
+        <h3>{t.giving.recent}</h3>
+        {recentPayments.length === 0 && <p className="panel-copy">{t.giving.noRecent}</p>}
+        {recentPayments.map((payment) => (
+          <article className="incoming-donation" key={payment.paymentID}>
+            <div className="incoming-donation-summary">
+              <div>
+                <span className="status-pill issued">{payment.gatewayStatus}</span>
+                <strong>{currency(payment.amount)}</strong>
+                <small>{payment.confirmationNumber} • {payment.donorName}</small>
+                <p>{payment.account}</p>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
   );
 }
 
