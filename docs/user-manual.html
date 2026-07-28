@@ -862,6 +862,7 @@ POST /api/auth/forgot-password
 GET  /api/bootstrap
 GET  /api/dashboard
 GET  /api/saas
+GET  /api/platform/tenants
 PATCH /api/subscription
 POST /api/payment-methods
 DELETE /api/payment-methods/:id
@@ -902,12 +903,50 @@ POST /api/subscription-requests</div>
           <section class="panel" id="saas-admin">
             <h2>SaaS administration</h2>
             <ol>
+              <li>Sign in as <code>saas.admin@ddr.local</code> to open the <strong>Tenants</strong> page and review all tenant organizations.</li>
               <li>Open <strong>Subscription</strong> to compare plans, switch monthly/annual billing, review usage limits, and complete the launch checklist.</li>
               <li>Open <strong>Settings → Payment methods</strong> to add a billing method and review invoice history.</li>
               <li>Open <strong>Settings → Security posture</strong> to require MFA, set password length, set session timeout, and restrict allowed email domains.</li>
               <li>Open <strong>Settings → API keys &amp; Webhooks</strong> to create integration keys, copy one-time secrets, configure HTTPS webhook endpoints, and send test deliveries.</li>
               <li>Open <strong>Settings → Audit log</strong> to review tenant-level actions such as subscription changes, user updates, payment changes, key revocations, and receipt generation.</li>
             </ol>
+            <h3>Role matrix</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Scope</th>
+                  <th>Purpose</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>SaaS Admin</td>
+                  <td>All tenants</td>
+                  <td>Platform operator who can see the tenant overview and manage SaaS controls.</td>
+                </tr>
+                <tr>
+                  <td>Organization Admin</td>
+                  <td>One organization</td>
+                  <td>Tenant owner who manages users, settings, billing, subscriptions, and workspace data.</td>
+                </tr>
+                <tr>
+                  <td>Editor</td>
+                  <td>One organization</td>
+                  <td>Operational user who can maintain donors, donations, accounts, receipts, and reports.</td>
+                </tr>
+                <tr>
+                  <td>Auditor</td>
+                  <td>One organization</td>
+                  <td>Read-only reviewer for reports, receipts, billing history, and audit events.</td>
+                </tr>
+                <tr>
+                  <td>Viewer</td>
+                  <td>One organization</td>
+                  <td>Read-only user for dashboards and workspace records.</td>
+                </tr>
+              </tbody>
+            </table>
           </section>
 
           <section class="panel" id="troubleshooting">

@@ -16,13 +16,14 @@ npm run bdd:report
 - `tests/features/*.feature` contains the business-readable Gherkin scenarios.
 - `tests/bdd/gherkin-parser.mjs` parses the feature files.
 - `tests/bdd/feature-lint.test.mjs` validates scenario quality and coverage.
+- `tests/api/*.test.mjs` runs executable API checks for SaaS roles and permission gates.
 - `tests/bdd/coverage-manifest.mjs` defines the expected feature coverage.
 - `tests/bdd/feature-catalog.mjs` prints the full scenario list.
 - `tests/bdd/generate-report.mjs` writes HTML, Markdown, JSON, and JUnit reports to `reports/`.
 
 ## Quality gate
 
-`npm run test:ci` generates the BDD reports, calculates the validation pass rate, and marks the branch ready to integrate when at least 80% of checks pass. Override the threshold in CI with `QUALITY_GATE_THRESHOLD`.
+`npm run test:ci` runs the executable Node tests, generates the BDD reports, calculates the validation pass rate, and marks the branch ready to integrate when at least 80% of checks pass. Override the threshold in CI with `QUALITY_GATE_THRESHOLD`.
 
 ## Next step
 

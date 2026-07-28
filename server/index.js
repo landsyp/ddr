@@ -59,12 +59,28 @@ function getBearerToken(request) {
   return scheme?.toLowerCase() === "bearer" ? token : "";
 }
 
-function requireAdmin(user) {
-  if (!user?.admin) {
-    const error = new Error("Admin access required");
+function requireRoles(user, roles, message = "Access denied") {
+  if (!roles.includes(user?.role)) {
+    const error = new Error(message);
     error.status = 403;
     throw error;
   }
+}
+
+function requireAdmin(user) {
+  requireRoles(user, ["org_admin", "saas_admin"], "Admin access required");
+}
+
+function requireEditor(user) {
+  requireRoles(user, ["org_admin", "saas_admin", "editor"], "Editor access required");
+}
+
+function requireAuditor(user) {
+  requireRoles(user, ["org_admin", "saas_admin", "editor", "auditor"], "Auditor access required");
+}
+
+function requireSaasAdmin(user) {
+  requireRoles(user, ["saas_admin"], "SaaS admin access required");
 }
 
 function route(method, pathname, pattern) {
@@ -184,6 +200,12 @@ async function handleAPI(request, response, pathname) {
     return;
   }
 
+  if (method === "GET" && pathname === "/api/platform/tenants") {
+    requireSaasAdmin(auth);
+    sendJSON(response, 200, store.listPlatformTenants(auth));
+    return;
+  }
+
   if (method === "GET" && pathname === "/api/saas") {
     requireAdmin(auth);
     sendJSON(response, 200, store.getSaasOverview(auth));
@@ -257,7 +279,7 @@ async function handleAPI(request, response, pathname) {
   }
 
   if (method === "GET" && pathname === "/api/audit-events") {
-    requireAdmin(auth);
+    requireAuditor(auth);
     sendJSON(response, 200, store.listAuditEvents(getQuery(request), auth));
     return;
   }
@@ -311,13 +333,14 @@ async function handleAPI(request, response, pathname) {
   }
 
   if (method === "POST" && pathname === "/api/report-templates") {
+    requireEditor(auth);
     sendJSON(response, 201, store.createReportTemplate(await readJSON(request), auth));
     return;
   }
 
   params = route(method, pathname, "/api/report-templates/:id");
   if (params && method === "DELETE") {
-    requireAdmin(auth);
+    requireEditor(auth);
     sendJSON(response, 200, store.deleteReportTemplate(params.id, auth));
     return;
   }
@@ -359,23 +382,27 @@ async function handleAPI(request, response, pathname) {
   }
 
   if (method === "POST" && pathname === "/api/donors") {
+    requireEditor(auth);
     sendJSON(response, 201, store.createDonor(await readJSON(request), auth));
     return;
   }
 
   params = route(method, pathname, "/api/donors/:id");
   if (params && method === "PUT") {
+    requireEditor(auth);
     sendJSON(response, 200, store.updateDonor(params.id, await readJSON(request), auth));
     return;
   }
 
   if (params && method === "DELETE") {
+    requireEditor(auth);
     sendJSON(response, 200, store.deleteDonor(params.id, auth));
     return;
   }
 
   params = route(method, pathname, "/api/donors/:id/archive");
   if (params && method === "PATCH") {
+    requireEditor(auth);
     const body = await readJSON(request);
     sendJSON(response, 200, store.archiveDonor(params.id, body.actif !== false, auth));
     return;
@@ -387,19 +414,19 @@ async function handleAPI(request, response, pathname) {
   }
 
   if (method === "POST" && pathname === "/api/accounts") {
-    requireAdmin(auth);
+    requireEditor(auth);
     sendJSON(response, 201, store.createAccount(await readJSON(request), auth));
     return;
   }
 
   params = route(method, pathname, "/api/accounts/:id");
   if (params && method === "PUT") {
-    requireAdmin(auth);
+    requireEditor(auth);
     sendJSON(response, 200, store.updateAccount(params.id, await readJSON(request), auth));
     return;
   }
   if (params && method === "DELETE") {
-    requireAdmin(auth);
+    requireEditor(auth);
     sendJSON(response, 200, store.deleteAccount(params.id, auth));
     return;
   }
@@ -415,22 +442,26 @@ async function handleAPI(request, response, pathname) {
   }
 
   if (method === "POST" && pathname === "/api/donations") {
+    requireEditor(auth);
     sendJSON(response, 201, store.createDonation(await readJSON(request), auth));
     return;
   }
 
   params = route(method, pathname, "/api/pending-donations/:id/categorize");
   if (params && method === "POST") {
+    requireEditor(auth);
     sendJSON(response, 201, store.categorizePendingDonation(params.id, await readJSON(request), auth));
     return;
   }
 
   params = route(method, pathname, "/api/donations/:id");
   if (params && method === "PUT") {
+    requireEditor(auth);
     sendJSON(response, 200, store.updateDonation(params.id, await readJSON(request), auth));
     return;
   }
   if (params && method === "DELETE") {
+    requireEditor(auth);
     sendJSON(response, 200, store.deleteDonation(params.id, auth));
     return;
   }
@@ -446,12 +477,14 @@ async function handleAPI(request, response, pathname) {
   }
 
   if (method === "POST" && pathname === "/api/receipts/generate") {
+    requireEditor(auth);
     sendJSON(response, 201, store.generateReceipts(await readJSON(request), auth));
     return;
   }
 
   params = route(method, pathname, "/api/envois/:id/status");
   if (params && method === "PATCH") {
+    requireEditor(auth);
     const body = await readJSON(request);
     sendJSON(response, 200, store.patchEnvoiStatus(params.id, body.statut || body.status, auth));
     return;

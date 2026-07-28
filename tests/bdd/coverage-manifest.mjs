@@ -39,8 +39,9 @@ export const expectedCoverage = [
   { tag: "@billing", minimumScenarios: 2 },
   { tag: "@saas", minimumScenarios: 10 },
   { tag: "@audit", minimumScenarios: 4 },
+  { tag: "@roles", minimumScenarios: 3 },
   { tag: "@api", minimumScenarios: 7 },
   { tag: "@security", minimumScenarios: 5 },
 ];
 
-export const minimumScenarioCount = 95;
+export const minimumScenarioCount = 105;

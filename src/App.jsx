@@ -62,6 +62,7 @@ const copy = {
       integrations: "Integrations",
       subscription: "Subscription",
       customization: "Customization",
+      tenants: "Tenants",
     },
     overview: {
       eyebrow: "Operations dashboard",
@@ -484,6 +485,11 @@ const copy = {
       eventTypes: "Event types",
       lastFour: "Last four",
       expiry: "Expiry",
+      tenantOverview: "Tenant overview",
+      tenantSubtitle: "Platform-wide tenant list for SaaS admins.",
+      tenants: "Tenants",
+      activeTenants: "Active tenants",
+      tenantCount: "Tenant count",
     },
     settings: {
       title: "Organization settings",
@@ -520,6 +526,14 @@ const copy = {
       firstName: "First name",
       lastName: "Last name",
       adminAccess: "Admin access",
+      userRole: "User role",
+      roleDescriptions: {
+        saas_admin: "SaaS admin across all tenants",
+        org_admin: "Organization admin",
+        editor: "Editor",
+        auditor: "Auditor",
+        viewer: "Viewer",
+      },
       addUser: "Add user",
       editUser: "Edit user",
       updateUser: "Update user",
@@ -629,6 +643,7 @@ const copy = {
       integrations: "Intégrations",
       subscription: "Abonnement",
       customization: "Personnalisation",
+      tenants: "Locataires",
     },
     overview: {
       eyebrow: "Tableau de bord",
@@ -1051,6 +1066,11 @@ const copy = {
       eventTypes: "Types d'événement",
       lastFour: "Quatre derniers",
       expiry: "Expiration",
+      tenantOverview: "Vue des locataires",
+      tenantSubtitle: "Liste plateforme des locataires pour les admins SaaS.",
+      tenants: "Locataires",
+      activeTenants: "Locataires actifs",
+      tenantCount: "Nombre de locataires",
     },
     settings: {
       title: "Paramètres de l'organisme",
@@ -1087,6 +1107,14 @@ const copy = {
       firstName: "Prénom",
       lastName: "Nom",
       adminAccess: "Accès administrateur",
+      userRole: "Rôle utilisateur",
+      roleDescriptions: {
+        saas_admin: "Admin SaaS pour tous les locataires",
+        org_admin: "Admin de l'organisme",
+        editor: "Éditeur",
+        auditor: "Auditeur",
+        viewer: "Lecteur",
+      },
       addUser: "Ajouter un utilisateur",
       editUser: "Modifier l'utilisateur",
       updateUser: "Mettre à jour l'utilisateur",
@@ -1194,6 +1222,7 @@ const navItems = [
   { id: "integrations", icon: BookOpenCheck },
   { id: "subscription", icon: Building2 },
   { id: "customization", icon: Palette },
+  { id: "tenants", icon: Globe2, saasOnly: true },
 ];
 
 const appViews = new Set([...navItems.map((item) => item.id), "settings", "support"]);
@@ -1416,6 +1445,12 @@ function App() {
       localStorage.setItem("weserve-active-view", activeView);
     }
   }, [activeView]);
+
+  useEffect(() => {
+    if (currentUser && activeView === "tenants" && currentUser.role !== "saas_admin") {
+      setActiveView("overview");
+    }
+  }, [activeView, currentUser]);
 
   useEffect(() => {
     if (!currentUser || loading || !pageTour) {
@@ -2106,7 +2141,7 @@ function App() {
         method: "POST",
         body: JSON.stringify({
           ...data,
-          admin: data.admin === "on",
+          admin: data.role === "org_admin" || data.role === "saas_admin",
           actif: true,
           langue: language,
         }),
@@ -2126,7 +2161,7 @@ function App() {
         method: "PATCH",
         body: JSON.stringify({
           ...data,
-          admin: data.admin === "on",
+          admin: data.role === "org_admin" || data.role === "saas_admin",
         }),
       });
 
@@ -2150,7 +2185,7 @@ function App() {
         method: "PATCH",
         body: JSON.stringify({
           actif: !userAccount.actif,
-          admin: userAccount.admin,
+          role: userAccount.role || (userAccount.admin ? "org_admin" : "viewer"),
         }),
       });
       await refresh(t.settings.userUpdated);
@@ -2257,7 +2292,7 @@ function App() {
         </div>
 
         <nav className="sidebar-nav" aria-label="Primary">
-          {navItems.map((item) => {
+          {navItems.filter((item) => !item.saasOnly || displayUser?.role === "saas_admin").map((item) => {
             const Icon = item.icon;
             return (
               <button
@@ -2426,6 +2461,12 @@ function App() {
             savedPalettes={savedPalettes}
             onSavePalette={handleSavePalette}
             setPalette={setPalette}
+            t={t}
+          />
+        )}
+        {!loading && activeView === "tenants" && displayUser?.role === "saas_admin" && (
+          <TenantsView
+            tenants={bootstrap?.platformTenants || []}
             t={t}
           />
         )}
@@ -5424,6 +5465,44 @@ function reportExportRows(rows, summary, selectedTemplate, t) {
   }));
 }
 
+function TenantsView({ tenants = [], t }) {
+  const activeTenants = tenants.filter((tenant) => tenant.actif).length;
+
+  return (
+    <section className="view-stack">
+      <ViewHeader
+        title={t.saas.tenantOverview}
+        subtitle={t.saas.tenantSubtitle}
+        icon={Globe2}
+      />
+
+      <div className="overview-metric-grid tenant-metric-grid">
+        <MetricCard label={t.saas.tenantCount} value={tenants.length} />
+        <MetricCard label={t.saas.activeTenants} value={activeTenants} />
+        <MetricCard label={t.settings.users} value={tenants.reduce((total, tenant) => total + Number(tenant.activeUsers || 0), 0)} />
+      </div>
+
+      <Panel title={t.saas.tenants} icon={Building2}>
+        <DataTable
+          columns={[t.settings.organizationName, t.settings.currentPlan, t.common.status, t.settings.users, t.donorForm.totalDonors, t.donationForm.donations, t.saas.renews]}
+          rows={tenants.map((tenant) => [
+            tenant.organisme,
+            tenant.planName || "-",
+            tenant.actif ? t.common.active : t.common.inactive,
+            tenant.activeUsers,
+            tenant.donors,
+            tenant.donations,
+            `${currency(tenant.renewalAmount)} / ${tenant.billingCycle || "-"}`,
+          ])}
+          emptyMessage={t.common.noRecords}
+          paginate
+          t={t}
+        />
+      </Panel>
+    </section>
+  );
+}
+
 function Subscription({ saas, member, setMember, subscriptionAnswer, setSubscriptionAnswer, t, onPlanChange, onSubmit, onToggleTask }) {
   const subscription = saas?.subscription;
   const currentPlanID = subscription?.planID || "gold";
@@ -5605,6 +5684,29 @@ function UsageMeter({ metric, t }) {
   );
 }
 
+function roleLabel(role, t, definitions = {}) {
+  return t.settings.roleDescriptions?.[role] || definitions[role]?.label || role;
+}
+
+function roleOptionsForUser(bootstrap, user) {
+  const options = bootstrap?.roleOptions?.length ? bootstrap.roleOptions : ["org_admin", "editor", "auditor", "viewer"];
+  return user?.role === "saas_admin" ? options : options.filter((role) => role !== "saas_admin");
+}
+
+function RoleSelect({ bootstrap, disabled = false, name = "role", t, user, value = "viewer" }) {
+  const definitions = bootstrap?.roleDefinitions || {};
+
+  return (
+    <select name={name} defaultValue={value || "viewer"} disabled={disabled}>
+      {roleOptionsForUser(bootstrap, user).map((role) => (
+        <option value={role} key={role}>
+          {roleLabel(role, t, definitions)}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 function SettingsView({ bootstrap, saasSecret, setSaasSecret, t, user, onCustomize, onCreateApiKey, onCreatePaymentMethod, onCreateUser, onCreateWebhook, onDeletePaymentMethod, onDeleteWebhook, onRevokeApiKey, onTestWebhook, onUpdateSecurity, onUpdateUser, onSubmit, onUserStatus }) {
   const organization = bootstrap?.organisme || {};
   const saas = bootstrap?.saas || {};
@@ -5759,7 +5861,7 @@ function SettingsView({ bootstrap, saasSecret, setSaasSecret, t, user, onCustomi
               </label>
               <label>
                 {t.settings.role}
-                <input readOnly value={t.common.user} />
+                <input readOnly value={roleLabel(user?.role || "viewer", t, bootstrap?.roleDefinitions)} />
               </label>
             </form>
           )}
@@ -5826,9 +5928,9 @@ function SettingsView({ bootstrap, saasSecret, setSaasSecret, t, user, onCustomi
               {t.settings.temporaryPassword}
               <input name="password" required minLength="8" type="password" disabled={!canAddUser} />
             </label>
-            <label className="checkbox-label">
-              <input name="admin" type="checkbox" disabled={!canAddUser} />
-              <span>{t.settings.adminAccess}</span>
+            <label>
+              {t.settings.userRole}
+              <RoleSelect bootstrap={bootstrap} disabled={!canAddUser} t={t} user={user} value="viewer" />
             </label>
             <button className="primary-button form-submit" type={canAddUser ? "submit" : "button"} onClick={!canAddUser ? () => setActiveDrawer("plan") : undefined}>
               {canAddUser ? <UserPlus size={17} /> : <Sparkles size={17} />}
@@ -5865,9 +5967,9 @@ function SettingsView({ bootstrap, saasSecret, setSaasSecret, t, user, onCustomi
                   <option value="fr">FR</option>
                 </select>
               </label>
-              <label className="checkbox-label">
-                <input name="admin" type="checkbox" defaultChecked={Boolean(editingUser.admin)} />
-                <span>{t.settings.adminAccess}</span>
+              <label>
+                {t.settings.userRole}
+                <RoleSelect bootstrap={bootstrap} t={t} user={user} value={editingUser.role || (editingUser.admin ? "org_admin" : "viewer")} />
               </label>
               <div className="form-submit user-edit-actions">
                 <button className="secondary-button" type="button" onClick={() => setEditingUserId(null)}>
@@ -5887,7 +5989,7 @@ function SettingsView({ bootstrap, saasSecret, setSaasSecret, t, user, onCustomi
               `${account.prenom || ""} ${account.nom || ""}`.trim() || t.common.user,
               account.courriel || "-",
               String(account.langue || "en").toUpperCase(),
-              account.admin ? t.common.admin : t.common.user,
+              roleLabel(account.role || (account.admin ? "org_admin" : "viewer"), t, bootstrap?.roleDefinitions),
               account.actif === false ? t.common.no : t.common.yes,
               (
                 <div className="table-action-group" key={`user-actions-${account.utilisateurID}`}>

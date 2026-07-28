@@ -1,4 +1,4 @@
-@saas @billing @security @api @audit
+@saas @billing @security @api @audit @roles
 Feature: SaaS platform readiness
   As a workspace owner
   I want subscription, billing, security, API, webhook, onboarding, and audit controls
@@ -70,3 +70,18 @@ Feature: SaaS platform readiness
     When I call subscription, billing, API key, webhook, or security administration endpoints
     Then the API should return admin access required
     And no SaaS control data should be changed
+
+  Scenario: Distinguish tenant user roles
+    Given the tenant has organization admin, editor, auditor, and viewer users
+    When I open organization settings
+    Then each user should display a distinct role label
+    And organization admins should be able to manage tenant users and billing
+    And editors should be able to maintain donors, donations, receipts, and reports
+    And auditors and viewers should not be able to change tenant data
+
+  Scenario: Distinguish SaaS admins from tenant admins
+    Given I am signed in as a SaaS admin
+    When I open the Tenants page
+    Then I should see all tenant organizations
+    And I should see tenant plan, status, users, donors, donations, and renewal amount
+    And tenant admins should not see the Tenants page

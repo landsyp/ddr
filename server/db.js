@@ -73,6 +73,37 @@ const onboardingTemplates = [
   ["security", "Review security settings"],
 ];
 
+const roleDefinitions = {
+  saas_admin: {
+    label: "SaaS Admin",
+    description: "Platform administrator with access to all tenants and SaaS controls.",
+    scope: "platform",
+  },
+  org_admin: {
+    label: "Organization Admin",
+    description: "Tenant administrator for users, settings, billing, and all workspace data.",
+    scope: "tenant",
+  },
+  editor: {
+    label: "Editor",
+    description: "Can create and update donor, donation, receipt, report, and integration records.",
+    scope: "tenant",
+  },
+  auditor: {
+    label: "Auditor",
+    description: "Read-only access to records, reports, receipts, invoices, and audit history.",
+    scope: "tenant",
+  },
+  viewer: {
+    label: "Viewer",
+    description: "Read-only workspace access for dashboards and operational records.",
+    scope: "tenant",
+  },
+};
+
+const tenantRoleOrder = ["org_admin", "editor", "auditor", "viewer"];
+const platformRoleOrder = ["saas_admin", ...tenantRoleOrder];
+
 function hashPassword(password, salt = randomBytes(16).toString("hex")) {
   const hash = scryptSync(password, salt, 64).toString("hex");
   return `${salt}:${hash}`;
@@ -132,6 +163,7 @@ function setupSchema() {
       nom TEXT NOT NULL,
       organismeID INTEGER NOT NULL REFERENCES organismes(organismeID),
       prenom TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'viewer',
       utilisateurStatutID INTEGER NOT NULL DEFAULT 1
     );
 
@@ -421,6 +453,21 @@ function setupSchema() {
   `);
 }
 
+function hasColumn(table, column) {
+  return db.prepare(`PRAGMA table_info(${table})`).all().some((row) => row.name === column);
+}
+
+function migrateSchema() {
+  if (!hasColumn("utilisateurs", "role")) {
+    db.exec("ALTER TABLE utilisateurs ADD COLUMN role TEXT NOT NULL DEFAULT 'viewer'");
+  }
+
+  db.exec("UPDATE utilisateurs SET role = 'org_admin' WHERE admin = 1 AND (role IS NULL OR role = '' OR role = 'viewer')");
+  db.exec("UPDATE utilisateurs SET role = 'viewer' WHERE role IS NULL OR role = ''");
+  db.exec("UPDATE utilisateurs SET admin = 1 WHERE role IN ('org_admin', 'saas_admin')");
+  db.exec("UPDATE utilisateurs SET admin = 0 WHERE role NOT IN ('org_admin', 'saas_admin')");
+}
+
 function seedDatabase() {
   const provinceCount = db.prepare("SELECT COUNT(*) AS count FROM provinces").get().count;
   if (!provinceCount) {
@@ -484,10 +531,25 @@ function seedDatabase() {
   const userCount = db.prepare("SELECT COUNT(*) AS count FROM utilisateurs").get().count;
   if (!userCount) {
     db.prepare(`
-      INSERT INTO utilisateurs (actif, admin, courriel, langue, mot_de_passe, nom, organismeID, prenom, utilisateurStatutID)
-      VALUES (1, 1, 'admin@ddr.local', 'en', ?, 'Brouillet', 1, 'Francois', 1)
+      INSERT INTO utilisateurs (actif, admin, courriel, langue, mot_de_passe, nom, organismeID, prenom, role, utilisateurStatutID)
+      VALUES (1, 1, 'admin@ddr.local', 'en', ?, 'Brouillet', 1, 'Francois', 'org_admin', 1)
     `).run(hashPassword("password"));
   }
+
+  const seedUser = db.prepare(`
+    INSERT INTO utilisateurs (actif, admin, courriel, langue, mot_de_passe, nom, organismeID, prenom, role, utilisateurStatutID)
+    SELECT 1, ?, ?, 'en', ?, ?, 1, ?, ?, 1
+    WHERE NOT EXISTS (SELECT 1 FROM utilisateurs WHERE lower(courriel) = lower(?))
+  `);
+
+  [
+    ["editor@ddr.local", "Editor", "Emma", "editor"],
+    ["auditor@ddr.local", "Auditor", "Andre", "auditor"],
+    ["viewer@ddr.local", "Viewer", "Vera", "viewer"],
+    ["saas.admin@ddr.local", "Platform", "Sasha", "saas_admin"],
+  ].forEach(([email, nom, prenom, role]) => {
+    seedUser.run(role === "saas_admin" || role === "org_admin" ? 1 : 0, email, hashPassword("password"), nom, prenom, role, email);
+  });
 
   const accountCount = db.prepare("SELECT COUNT(*) AS count FROM comptes").get().count;
   if (!accountCount) {
@@ -633,6 +695,7 @@ function seedDatabase() {
 }
 
 setupSchema();
+migrateSchema();
 seedDatabase();
 
 function all(sql, params = []) {
@@ -700,14 +763,19 @@ function sanitizeUser(user) {
     return null;
   }
 
+  const role = user.role || (user.admin ? "org_admin" : "viewer");
+
   return {
     utilisateurID: user.utilisateurID,
     actif: Boolean(user.actif ?? true),
-    admin: Boolean(user.admin),
+    admin: role === "org_admin" || role === "saas_admin" || Boolean(user.admin),
     courriel: user.courriel,
     langue: user.langue,
     nom: user.nom,
     prenom: user.prenom,
+    role,
+    roleLabel: roleDefinitions[role]?.label || roleDefinitions.viewer.label,
+    roleScope: roleDefinitions[role]?.scope || "tenant",
     organismeID: user.organismeID,
     organisme: user.organisme,
     devise: user.devise,
@@ -1143,6 +1211,48 @@ function getUsage(context = {}) {
   };
 }
 
+function listPlatformTenants(context = {}) {
+  if (context.role !== "saas_admin") {
+    const error = new Error("SaaS admin access required");
+    error.status = 403;
+    throw error;
+  }
+
+  return all(
+    `SELECT
+      o.organismeID,
+      o.organisme,
+      o.actif,
+      o.responsable,
+      o.responsable_courriel,
+      o.date_fin_licence,
+      o.devise,
+      s.status AS subscriptionStatus,
+      s.billingCycle,
+      s.renewalAmount,
+      p.name AS planName,
+      (SELECT COUNT(*) FROM utilisateurs AS u WHERE u.organismeID = o.organismeID AND u.actif = 1) AS activeUsers,
+      (SELECT COUNT(*) FROM donateurs AS d WHERE d.organismeID = o.organismeID) AS donors,
+      (
+        SELECT COUNT(*)
+        FROM dons AS dn
+        INNER JOIN donateurs AS dd ON dn.donateurID = dd.donateurID
+        WHERE dd.organismeID = o.organismeID
+      ) AS donations
+     FROM organismes AS o
+     LEFT JOIN subscriptions AS s ON s.organismeID = o.organismeID
+     LEFT JOIN saas_plans AS p ON p.planID = s.planID
+     ORDER BY o.organisme`,
+  ).map((tenant) => ({
+    ...tenant,
+    actif: Boolean(tenant.actif),
+    activeUsers: Number(tenant.activeUsers || 0),
+    donors: Number(tenant.donors || 0),
+    donations: Number(tenant.donations || 0),
+    renewalAmount: Number(tenant.renewalAmount || 0),
+  }));
+}
+
 function listPaymentMethods(context = {}) {
   return all(
     "SELECT * FROM payment_methods WHERE organismeID = ? ORDER BY isDefault DESC, createdAt DESC",
@@ -1506,8 +1616,8 @@ function registerOrganization(data) {
     addDefaultAccounts(orgID);
     ensureSaasDefaults(orgID);
     const userResult = run(
-      `INSERT INTO utilisateurs (actif, admin, courriel, langue, mot_de_passe, nom, organismeID, prenom, utilisateurStatutID)
-       VALUES (1, 1, ?, ?, ?, ?, ?, ?, 1)`,
+      `INSERT INTO utilisateurs (actif, admin, courriel, langue, mot_de_passe, nom, organismeID, prenom, role, utilisateurStatutID)
+       VALUES (1, 1, ?, ?, ?, ?, ?, ?, 'org_admin', 1)`,
       [
         email,
         data.langue || "en",
@@ -1541,21 +1651,47 @@ function getOrganization(context = {}) {
 
 function listUsers(context = {}) {
   return all(
-    `SELECT utilisateurID, actif, admin, courriel, langue, nom, organismeID, prenom, utilisateurStatutID
+    `SELECT utilisateurID, actif, admin, courriel, langue, nom, organismeID, prenom, role, utilisateurStatutID
      FROM utilisateurs
      WHERE organismeID = ?
-     ORDER BY admin DESC, nom, prenom`,
+     ORDER BY CASE role
+       WHEN 'saas_admin' THEN 0
+       WHEN 'org_admin' THEN 1
+       WHEN 'editor' THEN 2
+       WHEN 'auditor' THEN 3
+       ELSE 4
+     END, nom, prenom`,
     [organizationID(context)],
   ).map((user) => ({
     ...user,
     actif: Boolean(user.actif),
+    role: user.role || (user.admin ? "org_admin" : "viewer"),
     admin: Boolean(user.admin),
+    roleLabel: roleDefinitions[user.role || (user.admin ? "org_admin" : "viewer")]?.label || roleDefinitions.viewer.label,
   }));
+}
+
+function normalizeUserRole(role, context = {}) {
+  const requestedRole = String(role || "").trim() || (bool(context.admin) ? "org_admin" : "viewer");
+  if (!roleDefinitions[requestedRole]) {
+    const error = new Error("Unknown user role");
+    error.status = 400;
+    throw error;
+  }
+
+  if (requestedRole === "saas_admin" && context.role !== "saas_admin") {
+    const error = new Error("Only a SaaS admin can assign the SaaS admin role");
+    error.status = 403;
+    throw error;
+  }
+
+  return requestedRole;
 }
 
 function createUser(data, context = {}) {
   const email = String(data.courriel || data.email || "").trim().toLowerCase();
   const password = String(data.password || data.mdp || "");
+  const role = normalizeUserRole(data.role || (data.admin ? "org_admin" : "viewer"), context);
   if (!email || password.length < 8) {
     const error = new Error("A valid email and an 8 character password are required");
     error.status = 400;
@@ -1570,21 +1706,22 @@ function createUser(data, context = {}) {
   }
 
   const result = run(
-    `INSERT INTO utilisateurs (actif, admin, courriel, langue, mot_de_passe, nom, organismeID, prenom, utilisateurStatutID)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+    `INSERT INTO utilisateurs (actif, admin, courriel, langue, mot_de_passe, nom, organismeID, prenom, role, utilisateurStatutID)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
     [
       data.actif === false ? 0 : 1,
-      bool(data.admin),
+      role === "org_admin" || role === "saas_admin" ? 1 : 0,
       email,
       data.langue || "en",
       hashPassword(password),
       String(data.nom || "").trim(),
       organizationID(context),
       String(data.prenom || "").trim(),
+      role,
     ],
   );
 
-  audit(context, "user.created", "user", result.lastInsertRowid, { email, admin: Boolean(data.admin) });
+  audit(context, "user.created", "user", result.lastInsertRowid, { email, role });
   markOnboardingTask("users", true, context);
   return listUsers(context).find((user) => user.utilisateurID === result.lastInsertRowid);
 }
@@ -1592,6 +1729,7 @@ function createUser(data, context = {}) {
 function updateUser(id, data, context = {}) {
   const email = String(data.courriel || data.email || "").trim().toLowerCase();
   const userId = Number(id);
+  const role = normalizeUserRole(data.role || (data.admin ? "org_admin" : "viewer"), context);
 
   if (!email) {
     const error = new Error("A valid email is required");
@@ -1611,14 +1749,15 @@ function updateUser(id, data, context = {}) {
 
   run(
     `UPDATE utilisateurs
-     SET admin = ?, courriel = ?, langue = ?, nom = ?, prenom = ?
+     SET admin = ?, courriel = ?, langue = ?, nom = ?, prenom = ?, role = ?
      WHERE utilisateurID = ? AND organismeID = ?`,
     [
-      bool(data.admin),
+      role === "org_admin" || role === "saas_admin" ? 1 : 0,
       email,
       data.langue || "en",
       String(data.nom || "").trim(),
       String(data.prenom || "").trim(),
+      role,
       userId,
       organizationID(context),
     ],
@@ -1630,14 +1769,16 @@ function updateUser(id, data, context = {}) {
     error.status = 404;
     throw error;
   }
-  audit(context, "user.updated", "user", userId, { email, admin: Boolean(data.admin) });
+  audit(context, "user.updated", "user", userId, { email, role });
   return updatedUser;
 }
 
 function updateUserStatus(id, data, context = {}) {
+  const existingUser = listUsers(context).find((user) => user.utilisateurID === Number(id));
+  const role = normalizeUserRole(data.role || existingUser?.role || (data.admin ? "org_admin" : "viewer"), context);
   run(
-    "UPDATE utilisateurs SET actif = ?, admin = ? WHERE utilisateurID = ? AND organismeID = ?",
-    [data.actif === false ? 0 : 1, bool(data.admin), Number(id), organizationID(context)],
+    "UPDATE utilisateurs SET actif = ?, admin = ?, role = ? WHERE utilisateurID = ? AND organismeID = ?",
+    [data.actif === false ? 0 : 1, role === "org_admin" || role === "saas_admin" ? 1 : 0, role, Number(id), organizationID(context)],
   );
   audit(context, data.actif === false ? "user.deactivated" : "user.activated", "user", id);
   return listUsers(context).find((user) => user.utilisateurID === Number(id));
@@ -1912,20 +2053,23 @@ function deleteReportTemplate(id, context = {}) {
 function getBootstrap(context = {}) {
   ensureSaasDefaults(organizationID(context));
   const organisme = getOrganization(context);
-  const user = get("SELECT utilisateurID, admin, courriel, langue, nom, prenom, organismeID FROM utilisateurs WHERE organismeID = ? ORDER BY admin DESC LIMIT 1", [organizationID(context)]);
+  const user = get("SELECT utilisateurID, admin, courriel, langue, nom, prenom, role, organismeID FROM utilisateurs WHERE utilisateurID = ?", [context.utilisateurID]);
   const provinces = all("SELECT provinceID, pays_en, pays_fr, provinceEtat_en, provinceEtat_fr, abreviation FROM provinces ORDER BY ordre, provinceEtat_en");
   const methods = all("SELECT methodeDonID, methode_fr, methode_en, methode_intuit, ordre FROM methodesDon ORDER BY ordre");
 
   return {
     organisme,
-    user: { ...user, admin: Boolean(user.admin) },
+    user: sanitizeUser({ ...user, organisme: context.organisme, devise: context.devise }),
     users: listUsers(context),
+    roleDefinitions,
+    roleOptions: context.role === "saas_admin" ? platformRoleOrder : tenantRoleOrder,
     provinces,
     methods,
     bankingConnections: listBankingConnections(context),
     accountingIntegrations: listAccountingIntegrations(context),
     reportTemplates: listReportTemplates(context),
     saas: getSaasOverview(context),
+    platformTenants: context.role === "saas_admin" ? listPlatformTenants(context) : [],
   };
 }
 
@@ -2574,6 +2718,7 @@ function createSubscriptionRequest(data) {
 
 export const store = {
   databasePath,
+  roleDefinitions,
   login,
   authenticate,
   createSession,
@@ -2621,6 +2766,7 @@ export const store = {
   report,
   createSubscriptionRequest,
   listSaasPlans,
+  listPlatformTenants,
   getSubscription,
   updateSubscription,
   getUsage,

@@ -68,6 +68,24 @@ Email: admin@ddr.local
 Password: password
 ```
 
+Additional seeded role-based accounts all use the password `password`:
+
+| Email | Role | Scope |
+| --- | --- | --- |
+| `saas.admin@ddr.local` | SaaS Admin | All tenants |
+| `admin@ddr.local` | Organization Admin | Current organization |
+| `editor@ddr.local` | Editor | Current organization |
+| `auditor@ddr.local` | Auditor | Current organization |
+| `viewer@ddr.local` | Viewer | Current organization |
+
+Role model:
+
+- **SaaS Admin** sees the platform tenant overview and can administer SaaS controls across the platform.
+- **Organization Admin** manages one organization workspace, including users, billing, settings, and SaaS controls.
+- **Editor** can maintain operational records such as donors, donations, receipts, reports, accounts, and templates.
+- **Auditor** has read-only access for reports, receipts, billing history, and audit review.
+- **Viewer** has read-only workspace access.
+
 New organizations can also be created from the login screen with **Create organization workspace**. Each new organization receives its own isolated accounts, users, donors, donations, receipts, and reports.
 
 ## Scripts
@@ -105,6 +123,7 @@ Core endpoints include:
 - `GET /api/bootstrap`
 - `GET /api/dashboard`
 - `GET /api/saas`
+- `GET /api/platform/tenants`
 - `PATCH /api/subscription`
 - `POST /api/payment-methods`
 - `DELETE /api/payment-methods/:id`
