@@ -47,20 +47,8 @@ jobs:
           echo "Event: ${{ github.event_name }}"
           echo "Commit: ${{ github.sha }}"
 
-      - name: Run test suite when configured
-        continue-on-error: true
-        run: |
-          if node -e "process.exit(require('./package.json').scripts?.['test:ci'] ? 0 : 1)"; then
-            npm run test:ci
-          elif node -e "process.exit(require('./package.json').scripts?.test ? 0 : 1)"; then
-            npm test
-          else
-            echo "::notice title=No test suite configured::Add a package.json test script and this branch CI will run it automatically."
-          fi
-
-      - name: Generate BDD test reports
-        if: always()
-        run: npm run bdd:report
+      - name: Run quality gate test suite
+        run: npm run test:ci
 
       - name: Build React app
         run: npm run build
@@ -74,6 +62,12 @@ jobs:
       - name: Write quality summary
         if: always()
         run: |
+          PASS_RATE="not available"
+          READY_TO_INTEGRATE="false"
+          if [ -f reports/summary.json ]; then
+            PASS_RATE="$(node -e "const s=require('./reports/summary.json'); console.log(s.passRate + '%')")"
+            READY_TO_INTEGRATE="$(node -e "const s=require('./reports/summary.json'); console.log(s.readyToIntegrate ? 'yes' : 'no')")"
+          fi
           {
             echo "## Branch CI quality report"
             echo ""
@@ -82,7 +76,9 @@ jobs:
             echo "| Branch | ${{ github.ref_name }} |"
             echo "| Commit | ${{ github.sha }} |"
             echo "| Test command | npm run test:ci |"
+            echo "| Test pass rate | ${PASS_RATE} |"
             echo "| Quality gate threshold | ${QUALITY_GATE_THRESHOLD}% test pass rate |"
+            echo "| Ready to integrate | ${READY_TO_INTEGRATE} |"
             echo "| Integration rule | Ready when test pass rate is greater than or equal to ${QUALITY_GATE_THRESHOLD}% |"
             echo "| Report artifact | weserve-test-report |"
           } >> "$GITHUB_STEP_SUMMARY"

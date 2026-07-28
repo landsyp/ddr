@@ -22,7 +22,7 @@ npm run bdd:report
 
 ## Quality gate
 
-`npm run bdd:report` calculates the validation pass rate and marks the branch ready to integrate when at least 80% of checks pass. Override the threshold in CI with `QUALITY_GATE_THRESHOLD`.
+`npm run test:ci` generates the BDD reports, calculates the validation pass rate, and marks the branch ready to integrate when at least 80% of checks pass. Override the threshold in CI with `QUALITY_GATE_THRESHOLD`.
 
 ## Next step
 
