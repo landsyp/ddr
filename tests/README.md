@@ -18,7 +18,7 @@ npm run bdd:report
 - `tests/bdd/feature-lint.test.mjs` validates scenario quality and coverage.
 - `tests/bdd/coverage-manifest.mjs` defines the expected feature coverage.
 - `tests/bdd/feature-catalog.mjs` prints the full scenario list.
-- `tests/bdd/generate-report.mjs` writes Markdown, JSON, and JUnit reports to `reports/`.
+- `tests/bdd/generate-report.mjs` writes HTML, Markdown, JSON, and JUnit reports to `reports/`.
 
 ## Next step
 
