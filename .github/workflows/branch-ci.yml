@@ -59,11 +59,21 @@ jobs:
           node --check server/index.js
           node --check scripts/dev.js
 
+      - name: Upload test reports
+        id: upload-test-reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weserve-test-report
+          path: reports/
+          if-no-files-found: warn
+
       - name: Write quality summary
         if: always()
         run: |
           PASS_RATE="not available"
           READY_TO_INTEGRATE="false"
+          REPORT_ARTIFACT_URL="${{ steps.upload-test-reports.outputs.artifact-url }}"
           if [ -f reports/summary.json ]; then
             PASS_RATE="$(node -e "const s=require('./reports/summary.json'); console.log(s.passRate + '%')")"
             READY_TO_INTEGRATE="$(node -e "const s=require('./reports/summary.json'); console.log(s.readyToIntegrate ? 'yes' : 'no')")"
@@ -80,16 +90,18 @@ jobs:
             echo "| Quality gate threshold | ${QUALITY_GATE_THRESHOLD}% test pass rate |"
             echo "| Ready to integrate | ${READY_TO_INTEGRATE} |"
             echo "| Integration rule | Ready when test pass rate is greater than or equal to ${QUALITY_GATE_THRESHOLD}% |"
-            echo "| Report artifact | weserve-test-report |"
+            if [ -n "${REPORT_ARTIFACT_URL}" ]; then
+              echo "| Report artifact | [Download weserve-test-report](${REPORT_ARTIFACT_URL}) |"
+            else
+              echo "| Report artifact | weserve-test-report |"
+            fi
+            if [ -f reports/test-report.md ]; then
+              echo ""
+              echo "## Full test report"
+              echo ""
+              cat reports/test-report.md
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload test reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: weserve-test-report
-          path: reports/
-          if-no-files-found: warn
 
   quality-gate:
     name: Quality gate
