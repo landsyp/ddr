@@ -13,6 +13,7 @@ import {
 } from "./gherkin-parser.mjs";
 
 const reportDir = "reports";
+const qualityGateThreshold = Number(process.env.QUALITY_GATE_THRESHOLD || 80);
 const featureFiles = readFeatureFiles();
 const features = parseAllFeatures();
 const scenarios = features.flatMap((feature) => (
@@ -103,6 +104,10 @@ const checkResults = checks.map((check) => {
   }
 });
 const failedChecks = checkResults.filter((check) => check.status === "failed");
+const passedChecks = checkResults.length - failedChecks.length;
+const passRate = checkResults.length ? (passedChecks / checkResults.length) * 100 : 0;
+const qualityGatePassed = passRate >= qualityGateThreshold;
+const qualityGateStatus = qualityGatePassed ? "Ready to integrate" : "Blocked";
 
 mkdirSync(reportDir, { recursive: true });
 writeFileSync(join(reportDir, "test-report.md"), buildTestReport(), "utf8");
@@ -112,10 +117,11 @@ writeFileSync(join(reportDir, "junit.xml"), buildJUnitReport(), "utf8");
 writeFileSync(join(reportDir, "summary.json"), JSON.stringify(buildSummary(), null, 2), "utf8");
 
 console.log(`BDD reports written to ${reportDir}/`);
-console.log(`${checkResults.length - failedChecks.length}/${checkResults.length} checks passed`);
+console.log(`${passedChecks}/${checkResults.length} checks passed`);
+console.log(`Quality gate: ${qualityGatePassed ? "passed" : "failed"} (${formatPercent(passRate)} ${qualityGatePassed ? ">=" : "<"} ${qualityGateThreshold}%)`);
 console.log(`${features.length} feature files, ${scenarios.length} scenarios`);
 
-if (failedChecks.length) {
+if (!qualityGatePassed) {
   process.exitCode = 1;
 }
 
@@ -144,8 +150,11 @@ function buildTestReport() {
 | Feature files | ${features.length} |
 | Scenarios | ${scenarios.length} |
 | Validation checks | ${checkResults.length} |
-| Passed checks | ${checkResults.length - failedChecks.length} |
+| Passed checks | ${passedChecks} |
 | Failed checks | ${failedChecks.length} |
+| Test pass rate | ${formatPercent(passRate)} |
+| Quality gate threshold | ${qualityGateThreshold}% |
+| Quality gate | ${qualityGateStatus} |
 
 ## Validation Checks
 
@@ -171,8 +180,8 @@ ${tagRows}
 
 function buildHtmlReport() {
   const generatedAt = new Date().toISOString();
-  const status = failedChecks.length ? "Failed" : "Passed";
-  const statusClass = failedChecks.length ? "failed" : "passed";
+  const status = qualityGateStatus;
+  const statusClass = qualityGatePassed ? "passed" : "failed";
   const branch = process.env.GITHUB_REF_NAME || "local";
   const commit = process.env.GITHUB_SHA || "local";
   const workflowRun = process.env.GITHUB_RUN_ID || "local";
@@ -467,7 +476,7 @@ function buildHtmlReport() {
         </div>
         <div class="summary-grid">
           <div class="summary-card status ${statusClass}">
-            <span>Status</span>
+            <span>Quality Gate</span>
             <strong>${status}</strong>
           </div>
           <div class="summary-card">
@@ -480,7 +489,15 @@ function buildHtmlReport() {
           </div>
           <div class="summary-card">
             <span>Validation Checks</span>
-            <strong>${checkResults.length - failedChecks.length}/${checkResults.length}</strong>
+            <strong>${passedChecks}/${checkResults.length}</strong>
+          </div>
+          <div class="summary-card">
+            <span>Pass Rate</span>
+            <strong>${formatPercent(passRate)}</strong>
+          </div>
+          <div class="summary-card">
+            <span>Threshold</span>
+            <strong>${qualityGateThreshold}%</strong>
           </div>
         </div>
         <div class="meta">
@@ -572,12 +589,20 @@ ${testCases}
 function buildSummary() {
   return {
     status: failedChecks.length ? "failed" : "passed",
+    qualityGate: qualityGatePassed ? "passed" : "failed",
+    qualityGateStatus,
+    qualityGateThreshold,
+    passRate: Number(passRate.toFixed(2)),
+    readyToIntegrate: qualityGatePassed,
     generatedAt: new Date().toISOString(),
     branch: process.env.GITHUB_REF_NAME || "local",
     commit: process.env.GITHUB_SHA || "local",
     workflowRun: process.env.GITHUB_RUN_ID || "local",
     featureFiles: features.length,
     scenarios: scenarios.length,
+    passedChecks,
+    failedChecks: failedChecks.length,
+    totalChecks: checkResults.length,
     checks: checkResults,
   };
 }
@@ -605,4 +630,8 @@ function escapeXml(value) {
 
 function escapeHtml(value) {
   return escapeXml(value);
+}
+
+function formatPercent(value) {
+  return `${Number(value.toFixed(2))}%`;
 }

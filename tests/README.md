@@ -20,6 +20,10 @@ npm run bdd:report
 - `tests/bdd/feature-catalog.mjs` prints the full scenario list.
 - `tests/bdd/generate-report.mjs` writes HTML, Markdown, JSON, and JUnit reports to `reports/`.
 
+## Quality gate
+
+`npm run bdd:report` calculates the validation pass rate and marks the branch ready to integrate when at least 80% of checks pass. Override the threshold in CI with `QUALITY_GATE_THRESHOLD`.
+
 ## Next step
 
 The current framework validates that every feature has Gherkin coverage and can run in CI without third-party dependencies. When the implementation test suite is ready, add browser/API step execution on top of these feature files and keep `npm run test:ci` as the branch-gating command.
