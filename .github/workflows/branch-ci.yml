@@ -24,7 +24,6 @@ jobs:
     timeout-minutes: 15
     env:
       CI: true
-      DDR_DATABASE_PATH: ${{ runner.temp }}/weserve-ci.sqlite
 
     steps:
       - name: Checkout branch
@@ -60,6 +59,6 @@ jobs:
 
       - name: Smoke test API modules
         run: |
-          node -e "import('./server/db.js').then(() => console.log('SQLite store loaded'))"
+          DDR_DATABASE_PATH="$RUNNER_TEMP/weserve-ci.sqlite" node -e "import('./server/db.js').then(() => console.log('SQLite store loaded'))"
           node --check server/index.js
           node --check scripts/dev.js
