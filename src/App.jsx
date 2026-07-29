@@ -169,6 +169,7 @@ const copy = {
       city: "City",
       postalCode: "Postal code",
       province: "Province",
+      provinceCode: "Province code",
       cell: "Mobile",
       residence: "Home phone",
       receiptsEnabled: "Receipts enabled",
@@ -784,6 +785,7 @@ const copy = {
       city: "Ville",
       postalCode: "Code postal",
       province: "Province",
+      provinceCode: "Code province",
       cell: "Cellulaire",
       residence: "Téléphone résidentiel",
       receiptsEnabled: "Reçus activés",
@@ -4048,6 +4050,37 @@ function maskEmail(value = "") {
   return `${name.slice(0, 2)}***@${domain}`;
 }
 
+const canadianPostalProvinceMap = {
+  A: "NL",
+  B: "NS",
+  C: "PE",
+  E: "NB",
+  G: "QC",
+  H: "QC",
+  J: "QC",
+  K: "ON",
+  L: "ON",
+  M: "ON",
+  N: "ON",
+  P: "ON",
+  R: "MB",
+  S: "SK",
+  T: "AB",
+  V: "BC",
+  X: "NT",
+  Y: "YT",
+};
+
+function detectProvinceIdFromPostalCode(postalCode, provinces = []) {
+  const firstCharacter = String(postalCode || "").trim().toUpperCase().replace(/\s/g, "").charAt(0);
+  const abbreviation = canadianPostalProvinceMap[firstCharacter];
+  if (!abbreviation) {
+    return "";
+  }
+
+  return provinces.find((province) => province.abreviation === abbreviation)?.provinceID || "";
+}
+
 function BankingView({
   accounts,
   linkedAccounts = [],
@@ -4730,6 +4763,22 @@ function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
           <strong>{donor.ville || "-"}</strong>
         </div>
         <div>
+          <span>{t.donorForm.postalCode}</span>
+          <strong>{donor.code_postal || "-"}</strong>
+        </div>
+        <div>
+          <span>{t.donorForm.provinceCode}</span>
+          <strong>{donor.province || "-"}</strong>
+        </div>
+        <div>
+          <span>{t.donorForm.cell}</span>
+          <strong>{donor.tel_cellulaire || "-"}</strong>
+        </div>
+        <div>
+          <span>{t.donorForm.residence}</span>
+          <strong>{donor.tel_residence || "-"}</strong>
+        </div>
+        <div>
           <span>{t.common.member}</span>
           <span className="donor-detail-boolean-value">
             <BooleanIcon value={donor.membre} trueLabel={t.common.yes} falseLabel={t.common.no} />
@@ -4775,6 +4824,14 @@ function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
 }
 
 function DonorForm({ bootstrap, donor, onSubmit, submitLabel, t }) {
+  function updateProvinceFromPostalCode(event) {
+    const provinceID = detectProvinceIdFromPostalCode(event.currentTarget.value, bootstrap?.provinces || []);
+    const provinceSelect = event.currentTarget.form?.elements.provinceID;
+    if (provinceID && provinceSelect) {
+      provinceSelect.value = String(provinceID);
+    }
+  }
+
   return (
     <form className="form-grid" onSubmit={onSubmit}>
               <label>
@@ -4803,7 +4860,7 @@ function DonorForm({ bootstrap, donor, onSubmit, submitLabel, t }) {
               </label>
               <label>
                 {t.donorForm.postalCode}
-                <input name="code_postal" defaultValue={donor?.code_postal || ""} />
+                <input name="code_postal" defaultValue={donor?.code_postal || ""} onBlur={updateProvinceFromPostalCode} onChange={updateProvinceFromPostalCode} />
               </label>
               <label>
                 {t.donorForm.province}
