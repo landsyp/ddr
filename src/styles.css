@@ -2070,7 +2070,7 @@ tr.is-clickable:focus-visible {
 
 .donor-detail-grid,
 .donor-detail-grid.is-expanded {
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -4811,6 +4811,8 @@ tr.is-clickable:focus-visible {
   .report-builder-fields,
   .account-detail-grid,
   .account-detail-grid.is-expanded,
+  .donor-detail-grid,
+  .donor-detail-grid.is-expanded,
   .settings-profile-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -5027,6 +5029,8 @@ tr.is-clickable:focus-visible {
   .subscription-plan-grid,
   .account-detail-grid,
   .account-detail-grid.is-expanded,
+  .donor-detail-grid,
+  .donor-detail-grid.is-expanded,
   .donor-statement-grid,
   .form-grid,
   .settings-profile-form,

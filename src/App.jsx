@@ -171,6 +171,7 @@ const copy = {
       province: "Province",
       provinceCode: "Province code",
       cell: "Mobile",
+      mobilePhone: "Mobile phone",
       residence: "Home phone",
       receiptsEnabled: "Receipts enabled",
       notes: "Notes",
@@ -203,7 +204,7 @@ const copy = {
       expandProfile: "Expand donor profile",
       donationCount: "Donation count",
       averageDonation: "Average donation",
-      readyReceipts: "Ready receipts",
+      readyReceipts: "Receipts ready",
       totalDonors: "Donors",
     },
     donationForm: {
@@ -787,6 +788,7 @@ const copy = {
       province: "Province",
       provinceCode: "Code province",
       cell: "Cellulaire",
+      mobilePhone: "Téléphone cellulaire",
       residence: "Téléphone résidentiel",
       receiptsEnabled: "Reçus activés",
       notes: "Notes",
@@ -4771,7 +4773,7 @@ function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
           <strong>{donor.province || "-"}</strong>
         </div>
         <div>
-          <span>{t.donorForm.cell}</span>
+          <span>{t.donorForm.mobilePhone}</span>
           <strong>{donor.tel_cellulaire || "-"}</strong>
         </div>
         <div>
@@ -4789,10 +4791,6 @@ function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
           <span className="donor-detail-boolean-value">
             <BooleanIcon value={donor.recu} trueLabel={t.common.yes} falseLabel={t.common.no} />
           </span>
-        </div>
-        <div>
-          <span>{t.donorForm.lifetime}</span>
-          <strong>{currency(total)}</strong>
         </div>
       </div>
 
