@@ -1507,14 +1507,13 @@ tr.is-clickable:focus-visible {
 }
 
 .boolean-icon {
-  display: inline-grid;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  place-items: center;
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  line-height: 1;
+  line-height: 0;
 }
 
 .boolean-icon svg {
@@ -1522,8 +1521,8 @@ tr.is-clickable:focus-visible {
   flex: 0 0 auto;
   width: 16px;
   height: 16px;
-  margin: auto;
-  transform: translateY(0.5px);
+  margin: 0;
+  transform: none;
 }
 
 .boolean-icon.is-true {
