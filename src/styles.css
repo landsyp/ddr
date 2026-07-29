@@ -2095,6 +2095,9 @@ tr.is-clickable:focus-visible {
 }
 
 .donor-detail-grid .boolean-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
   padding: 0;
 }
