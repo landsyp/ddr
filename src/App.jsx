@@ -119,7 +119,10 @@ const copy = {
       member: "Member",
       members: "Members",
       nonMember: "Non-member",
+      export: "Export",
       csv: "CSV",
+      excel: "Excel",
+      pdf: "PDF",
       noRecords: "No records found",
       status: "Status",
       name: "Name",
@@ -736,7 +739,10 @@ const copy = {
       member: "Membre",
       members: "Membres",
       nonMember: "Non-membre",
+      export: "Exporter",
       csv: "CSV",
+      excel: "Excel",
+      pdf: "PDF",
       noRecords: "Aucun dossier trouvé",
       status: "Statut",
       name: "Nom",
@@ -3474,14 +3480,7 @@ function Donations({ accounts, bankingConnections, bootstrap, donations, donors,
               <span className="status-pill pending">{filteredPendingCount} {t.common.pending}</span>
             </div>
             <div className="export-actions">
-              <button className="secondary-button compact" type="button" onClick={() => downloadCSV("donations.csv", donationExportRows)}>
-                <FileText size={16} />
-                <span>{t.common.csv}</span>
-              </button>
-              <button className="secondary-button compact" type="button" onClick={() => downloadExcel("donations.xls", donationExportRows)}>
-                <FileSpreadsheet size={16} />
-                <span>Excel</span>
-              </button>
+              <ExportMenu filename="donations" rows={donationExportRows} t={t} />
             </div>
           </div>
         </div>
@@ -4496,14 +4495,7 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
               </label>
             </div>
             <div className="export-actions">
-              <button className="secondary-button compact" type="button" onClick={() => downloadCSV("donors.csv", donorExportRows)}>
-                <FileText size={16} />
-                <span>{t.common.csv}</span>
-              </button>
-              <button className="secondary-button compact" type="button" onClick={() => downloadExcel("donors.xls", donorExportRows)}>
-                <FileSpreadsheet size={16} />
-                <span>Excel</span>
-              </button>
+              <ExportMenu filename="donors" rows={donorExportRows} t={t} />
             </div>
           </div>
         </div>
@@ -4726,14 +4718,7 @@ function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
       <div className="panel-subheader">
         <h3>{t.donorForm.donorStatement}</h3>
         <div className="export-actions">
-          <button className="secondary-button compact" type="button" onClick={() => downloadCSV(`donor-${donor.numero}-statement.csv`, statementRows)}>
-            <FileText size={16} />
-            <span>{t.common.csv}</span>
-          </button>
-          <button className="secondary-button compact" type="button" onClick={() => downloadExcel(`donor-${donor.numero}-statement.xls`, statementRows)}>
-            <FileSpreadsheet size={16} />
-            <span>Excel</span>
-          </button>
+          <ExportMenu filename={`donor-${donor.numero}-statement`} rows={statementRows} t={t} />
         </div>
       </div>
       <div className="donor-statement-grid">
@@ -5012,14 +4997,7 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
           <div className="panel-subheader">
             <h3>{t.accounts.title}</h3>
             <div className="export-actions">
-              <button className="secondary-button compact" type="button" onClick={() => downloadCSV("accounts.csv", accountExportRows)} disabled={!accountExportRows.length}>
-                <FileText size={16} />
-                <span>{t.common.csv}</span>
-              </button>
-              <button className="secondary-button compact" type="button" onClick={() => downloadExcel("accounts.xls", accountExportRows)} disabled={!accountExportRows.length}>
-                <FileSpreadsheet size={16} />
-                <span>Excel</span>
-              </button>
+              <ExportMenu disabled={!accountExportRows.length} filename="accounts" rows={accountExportRows} t={t} />
             </div>
           </div>
           <div className="account-accordion">
@@ -5417,14 +5395,7 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
           <div className="panel-subheader">
             <h3>{t.nav.receipts}</h3>
             <div className="export-actions">
-              <button className="secondary-button compact" type="button" onClick={() => downloadCSV("receipts.csv", receiptExportRows)} disabled={!receiptExportRows.length}>
-                <FileText size={16} />
-                <span>{t.common.csv}</span>
-              </button>
-              <button className="secondary-button compact" type="button" onClick={() => downloadExcel("receipts.xls", receiptExportRows)} disabled={!receiptExportRows.length}>
-                <FileSpreadsheet size={16} />
-                <span>Excel</span>
-              </button>
+              <ExportMenu disabled={!receiptExportRows.length} filename="receipts" rows={receiptExportRows} t={t} />
             </div>
           </div>
           <DataTable
@@ -5449,14 +5420,7 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
           <div className="panel-subheader">
             <h3>{t.receipts.batches}</h3>
             <div className="export-actions">
-              <button className="secondary-button compact" type="button" onClick={() => downloadCSV("receipt-batches.csv", batchExportRows)} disabled={!batchExportRows.length}>
-                <FileText size={16} />
-                <span>{t.common.csv}</span>
-              </button>
-              <button className="secondary-button compact" type="button" onClick={() => downloadExcel("receipt-batches.xls", batchExportRows)} disabled={!batchExportRows.length}>
-                <FileSpreadsheet size={16} />
-                <span>Excel</span>
-              </button>
+              <ExportMenu disabled={!batchExportRows.length} filename="receipt-batches" rows={batchExportRows} t={t} />
             </div>
           </div>
           <DataTable
@@ -5689,14 +5653,7 @@ function Reports({ customTemplates = [], reportResult, t, onCreateTemplate, onRu
               <BarChart3 size={17} />
               <span>{t.reports.run}</span>
             </button>
-            <button className="secondary-button" type="button" disabled={!downloadableRows.length} onClick={() => downloadCSV("weserve-report.csv", downloadableRows)}>
-              <FileText size={17} />
-              <span>{t.common.csv}</span>
-            </button>
-            <button className="secondary-button" type="button" disabled={!downloadableRows.length} onClick={() => downloadExcel("weserve-report.xls", downloadableRows)}>
-              <FileSpreadsheet size={17} />
-              <span>Excel</span>
-            </button>
+            <ExportMenu disabled={!downloadableRows.length} filename="weserve-report" rows={downloadableRows} t={t} />
           </div>
         </form>
       </Panel>
@@ -7142,6 +7099,52 @@ function cellToText(cell) {
   return "";
 }
 
+function ExportMenu({ disabled = false, filename, rows, t }) {
+  const [open, setOpen] = useState(false);
+  const baseFilename = String(filename || "export").replace(/\.[^.]+$/, "");
+  const options = [
+    { label: t.common.csv, icon: FileText, action: () => downloadCSV(`${baseFilename}.csv`, rows) },
+    { label: t.common.excel, icon: FileSpreadsheet, action: () => downloadExcel(`${baseFilename}.xls`, rows) },
+    { label: t.common.pdf, icon: Download, action: () => downloadPDF(`${baseFilename}.pdf`, rows) },
+  ];
+
+  function runExport(action) {
+    action();
+    setOpen(false);
+  }
+
+  return (
+    <div className="export-menu" onBlur={(event) => {
+      if (!event.currentTarget.contains(event.relatedTarget)) {
+        setOpen(false);
+      }
+    }}>
+      <button
+        className="secondary-button compact export-menu-toggle"
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((isOpen) => !isOpen)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+      >
+        <Download size={16} />
+        <span>{t.common.export}</span>
+        <ChevronDown size={14} />
+      </button>
+      {open && !disabled && (
+        <div className="export-menu-options" role="menu">
+          {options.map(({ label, icon: Icon, action }) => (
+            <button key={label} type="button" role="menuitem" onClick={() => runExport(action)}>
+              <Icon size={16} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowContent, onRowClick, alwaysShowPagination = false, paginate = false, pageSize = 10 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPageSize, setSelectedPageSize] = useState(pageSize);
@@ -7464,6 +7467,63 @@ function downloadExcel(filename, rows) {
   downloadBlob(safeFilename, blob);
 }
 
+function downloadPDF(filename, rows) {
+  const { headers, normalizedRows } = normalizeExportRows(rows);
+  if (!normalizedRows.length) {
+    return;
+  }
+
+  const safeFilename = filename.endsWith(".pdf") ? filename : filename.replace(/\.[^.]+$/, "") + ".pdf";
+  const title = safeFilename.replace(/\.pdf$/i, "").replace(/[-_]+/g, " ");
+  const lines = [
+    title.toUpperCase(),
+    "",
+    headers.join(" | "),
+    headers.map(() => "-----------").join("-+-"),
+    ...normalizedRows.map((row) => headers.map((header) => formatCell(row[header])).join(" | ")),
+  ].flatMap((line) => wrapPdfLine(line, 108));
+  const pages = chunk(lines, 46);
+  const objects = ["", "", "", ""];
+  const pageObjectIds = [];
+  const fontObjectId = 3;
+
+  pages.forEach((pageLines) => {
+    const content = [
+      "BT",
+      "/F1 8 Tf",
+      "42 760 Td",
+      "10 TL",
+      ...pageLines.map((line, index) => `${index ? "T*" : ""} (${pdfText(line)}) Tj`),
+      "ET",
+    ].join("\n");
+    const contentObjectId = objects.length;
+    objects[contentObjectId] = `<< /Length ${content.length} >>\nstream\n${content}\nendstream`;
+    const pageObjectId = objects.length;
+    pageObjectIds.push(pageObjectId);
+    objects[pageObjectId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${fontObjectId} 0 R >> >> /Contents ${contentObjectId} 0 R >>`;
+  });
+
+  objects[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+  objects[2] = `<< /Type /Pages /Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageObjectIds.length} >>`;
+  objects[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>";
+
+  const bodyParts = ["%PDF-1.4\n"];
+  const offsets = [0];
+  for (let index = 1; index < objects.length; index += 1) {
+    offsets[index] = bodyParts.join("").length;
+    bodyParts.push(`${index} 0 obj\n${objects[index]}\nendobj\n`);
+  }
+  const xrefOffset = bodyParts.join("").length;
+  bodyParts.push(`xref\n0 ${objects.length}\n0000000000 65535 f \n`);
+  for (let index = 1; index < objects.length; index += 1) {
+    bodyParts.push(`${String(offsets[index]).padStart(10, "0")} 00000 n \n`);
+  }
+  bodyParts.push(`trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+
+  const blob = new Blob([bodyParts.join("")], { type: "application/pdf" });
+  downloadBlob(safeFilename, blob);
+}
+
 function normalizeExportRows(rows) {
   const normalizedRows = (rows || []).map((row) => (row && typeof row === "object" && !Array.isArray(row) ? row : { Value: row }));
   const headers = Array.from(normalizedRows.reduce((set, row) => {
@@ -7489,6 +7549,35 @@ function downloadBlob(filename, blob) {
 function csvValue(value) {
   const normalized = value === null || value === undefined ? "" : String(value);
   return `"${normalized.replaceAll('"', '""')}"`;
+}
+
+function pdfText(value) {
+  return String(value || "")
+    .replace(/[^\x20-\x7E]/g, "?")
+    .replace(/\\/g, "\\\\")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)");
+}
+
+function wrapPdfLine(line, maxLength) {
+  const normalized = String(line || "");
+  if (normalized.length <= maxLength) {
+    return [normalized];
+  }
+
+  const lines = [];
+  for (let index = 0; index < normalized.length; index += maxLength) {
+    lines.push(normalized.slice(index, index + maxLength));
+  }
+  return lines;
+}
+
+function chunk(items, size) {
+  const groups = [];
+  for (let index = 0; index < items.length; index += size) {
+    groups.push(items.slice(index, index + size));
+  }
+  return groups;
 }
 
 export default App;
