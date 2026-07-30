@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart3,
   Bell,
@@ -3326,6 +3326,7 @@ function Donations({ accounts, bankingConnections, bootstrap, donations, donors,
   const [showAllPending, setShowAllPending] = useState(false);
   const [donationSearch, setDonationSearch] = useState("");
   const [donationToolsOpen, setDonationToolsOpen] = useState(false);
+  const [currentDonationExportRows, setCurrentDonationExportRows] = useState([]);
   const linkedBankAccounts = bankingConnections || [];
   const selfServeGiving = bootstrap?.selfServeGiving || {};
   const allDonationRows = [
@@ -3480,7 +3481,7 @@ function Donations({ accounts, bankingConnections, bootstrap, donations, donors,
               <span className="status-pill pending">{filteredPendingCount} {t.common.pending}</span>
             </div>
             <div className="export-actions">
-              <ExportMenu filename="donations" rows={donationExportRows} t={t} />
+              <ExportMenu filename="donations" rows={currentDonationExportRows.length ? currentDonationExportRows : donationExportRows} t={t} />
             </div>
           </div>
         </div>
@@ -3488,6 +3489,8 @@ function Donations({ accounts, bankingConnections, bootstrap, donations, donors,
           t={t}
           paginate
           columns={["ID", t.donationForm.donor, t.donationForm.date, t.donationForm.account, t.donationForm.method, t.donationForm.description, t.donationForm.amount, t.common.status, ""]}
+          exportRows={donationExportRows}
+          onExportRowsChange={setCurrentDonationExportRows}
           rows={filteredDonationRows.map((row) => [
             row.id,
             row.donor,
@@ -4398,6 +4401,7 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
   const [donorToolsOpen, setDonorToolsOpen] = useState(false);
   const [donorPendingDeactivate, setDonorPendingDeactivate] = useState(null);
   const [donorPendingDelete, setDonorPendingDelete] = useState(null);
+  const [currentDonorExportRows, setCurrentDonorExportRows] = useState([]);
   const selectedDonor = donors.find((donor) => donor.donateurID === selectedDonorId);
   const expandedDonor = donors.find((donor) => donor.donateurID === expandedDonorId);
   const filteredDonors = donors.filter((donor) => (
@@ -4495,7 +4499,7 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
               </label>
             </div>
             <div className="export-actions">
-              <ExportMenu filename="donors" rows={donorExportRows} t={t} />
+              <ExportMenu filename="donors" rows={currentDonorExportRows.length ? currentDonorExportRows : donorExportRows} t={t} />
             </div>
           </div>
         </div>
@@ -4510,6 +4514,8 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
             }
           }}
           columns={[t.common.status, "No.", t.donationForm.donor, t.common.email, t.donorForm.city, t.common.member, t.nav.receipts, t.donorForm.lifetime, t.donorForm.lastGift, ""]}
+          exportRows={donorExportRows}
+          onExportRowsChange={setCurrentDonorExportRows}
           rows={filteredDonors.map((donor) => [
             <span className={`status-pill donor-status-pill ${donor.actif ? "is-active" : "is-inactive"}`} key={`status-${donor.donateurID}`}>
               {donor.actif ? t.common.active : t.common.inactive}
@@ -4701,11 +4707,12 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
 }
 
 function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
+  const [currentStatementExportRows, setCurrentStatementExportRows] = useState([]);
   const total = donations.reduce((sum, donation) => sum + Number(donation.montant || 0), 0);
   const averageDonation = donations.length ? total / donations.length : 0;
   const readyReceipts = donations.filter((donation) => donation.receiptStatus === "Ready").length;
   const visibleDonations = isExpanded ? donations : donations.slice(0, 5);
-  const statementRows = donations.map((donation) => ({
+  const visibleStatementRows = visibleDonations.map((donation) => ({
     Date: donation.dateDon,
     Account: `${donation.noCompte} - ${donation.libelleCompte}`,
     Description: donation.description || "",
@@ -4718,7 +4725,7 @@ function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
       <div className="panel-subheader">
         <h3>{t.donorForm.donorStatement}</h3>
         <div className="export-actions">
-          <ExportMenu filename={`donor-${donor.numero}-statement`} rows={statementRows} t={t} />
+          <ExportMenu filename={`donor-${donor.numero}-statement`} rows={currentStatementExportRows.length ? currentStatementExportRows : visibleStatementRows} t={t} />
         </div>
       </div>
       <div className="donor-statement-grid">
@@ -4792,6 +4799,8 @@ function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
           t={t}
           paginate={isExpanded}
           columns={[t.donationForm.date, t.donationForm.account, t.donationForm.description, t.donationForm.amount, t.common.status]}
+          exportRows={visibleStatementRows}
+          onExportRowsChange={setCurrentStatementExportRows}
           emptyMessage={t.donorForm.noDonations}
           rows={visibleDonations.map((donation) => [
             donation.dateDon,
@@ -5317,6 +5326,8 @@ function AccountDetail({ account, donations, isEditing, isExpanded = false, onCa
 }
 
 function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMark }) {
+  const [currentReceiptExportRows, setCurrentReceiptExportRows] = useState([]);
+  const [currentBatchExportRows, setCurrentBatchExportRows] = useState([]);
   const readyRows = donations.filter((donation) => donation.receiptStatus === "Ready");
   const reviewRows = donations.filter((donation) => donation.receiptStatus === "No receipt");
   const receiptExportRows = receipts.map((receipt) => ({
@@ -5395,12 +5406,14 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
           <div className="panel-subheader">
             <h3>{t.nav.receipts}</h3>
             <div className="export-actions">
-              <ExportMenu disabled={!receiptExportRows.length} filename="receipts" rows={receiptExportRows} t={t} />
+              <ExportMenu disabled={!receiptExportRows.length} filename="receipts" rows={currentReceiptExportRows.length ? currentReceiptExportRows : receiptExportRows} t={t} />
             </div>
           </div>
           <DataTable
             t={t}
             columns={["No.", t.donationForm.donor, t.receipts.period, t.donationForm.amount, t.common.status, ""]}
+            exportRows={receiptExportRows}
+            onExportRowsChange={setCurrentReceiptExportRows}
             rows={receipts.map((receipt) => [
               receipt.noRecu || receipt.recuID,
               `${receipt.prenom} ${receipt.nom}`,
@@ -5420,12 +5433,14 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
           <div className="panel-subheader">
             <h3>{t.receipts.batches}</h3>
             <div className="export-actions">
-              <ExportMenu disabled={!batchExportRows.length} filename="receipt-batches" rows={batchExportRows} t={t} />
+              <ExportMenu disabled={!batchExportRows.length} filename="receipt-batches" rows={currentBatchExportRows.length ? currentBatchExportRows : batchExportRows} t={t} />
             </div>
           </div>
           <DataTable
             t={t}
             columns={[t.receipts.created, t.receipts.period, t.receipts.count, t.receipts.total]}
+            exportRows={batchExportRows}
+            onExportRowsChange={setCurrentBatchExportRows}
             rows={batches.map((batch) => [
               new Date(batch.dateCreation).toLocaleString(),
               `${batch.dateDebut} ${t.common.to} ${batch.dateFin}`,
@@ -7099,6 +7114,20 @@ function cellToText(cell) {
   return "";
 }
 
+function tableRowToExportObject(row, columns) {
+  return row.reduce((exportRow, cell, index) => {
+    const column = columns[index];
+    if (!column) {
+      return exportRow;
+    }
+
+    return {
+      ...exportRow,
+      [column]: cellToText(cell),
+    };
+  }, {});
+}
+
 function ExportMenu({ disabled = false, filename, rows, t }) {
   const [open, setOpen] = useState(false);
   const baseFilename = String(filename || "export").replace(/\.[^.]+$/, "");
@@ -7145,19 +7174,38 @@ function ExportMenu({ disabled = false, filename, rows, t }) {
   );
 }
 
-function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowContent, onRowClick, alwaysShowPagination = false, paginate = false, pageSize = 10 }) {
+function DataTable({
+  columns,
+  rows,
+  t,
+  emptyMessage,
+  exportRows,
+  onExportRowsChange,
+  rowClassName,
+  expandedRowContent,
+  onRowClick,
+  alwaysShowPagination = false,
+  paginate = false,
+  pageSize = 10,
+}) {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPageSize, setSelectedPageSize] = useState(pageSize);
   const [sortConfig, setSortConfig] = useState(null);
+  const exportSignatureRef = useRef("");
   const paginationSizes = [10, 50, 100, 500];
-  const sortedRows = useMemo(() => {
+  const rowEntries = useMemo(() => rows.map((row, index) => ({
+    exportRow: exportRows?.[index],
+    originalIndex: index,
+    row,
+  })), [exportRows, rows]);
+  const sortedEntries = useMemo(() => {
     if (!sortConfig) {
-      return rows;
+      return rowEntries;
     }
 
-    return [...rows].sort((left, right) => {
-      const leftValue = sortableCellValue(left[sortConfig.index]);
-      const rightValue = sortableCellValue(right[sortConfig.index]);
+    return [...rowEntries].sort((left, right) => {
+      const leftValue = sortableCellValue(left.row[sortConfig.index]);
+      const rightValue = sortableCellValue(right.row[sortConfig.index]);
 
       if (leftValue < rightValue) {
         return sortConfig.direction === "asc" ? -1 : 1;
@@ -7169,7 +7217,11 @@ function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowCo
 
       return 0;
     });
-  }, [rows, sortConfig]);
+  }, [rowEntries, sortConfig]);
+  const sortedRows = useMemo(() => sortedEntries.map((entry) => entry.row), [sortedEntries]);
+  const currentExportRows = useMemo(() => sortedEntries.map((entry) => (
+    entry.exportRow || tableRowToExportObject(entry.row, columns)
+  )), [columns, sortedEntries]);
   const showPaginationControls = paginate && sortedRows.length > 0 && (alwaysShowPagination || sortedRows.length > paginationSizes[0]);
   const shouldPaginate = paginate && sortedRows.length > selectedPageSize;
   const totalPages = shouldPaginate ? Math.ceil(sortedRows.length / selectedPageSize) : 1;
@@ -7187,6 +7239,18 @@ function DataTable({ columns, rows, t, emptyMessage, rowClassName, expandedRowCo
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    if (!onExportRowsChange) {
+      return;
+    }
+
+    const signature = JSON.stringify(currentExportRows.map((row) => Object.entries(row).map(([key, value]) => [key, formatCell(value)])));
+    if (signature !== exportSignatureRef.current) {
+      exportSignatureRef.current = signature;
+      onExportRowsChange(currentExportRows);
+    }
+  }, [currentExportRows, onExportRowsChange]);
 
   function sortColumn(columnIndex) {
     setSortConfig((currentSort) => {
@@ -7475,37 +7539,68 @@ function downloadPDF(filename, rows) {
 
   const safeFilename = filename.endsWith(".pdf") ? filename : filename.replace(/\.[^.]+$/, "") + ".pdf";
   const title = safeFilename.replace(/\.pdf$/i, "").replace(/[-_]+/g, " ");
-  const lines = [
-    title.toUpperCase(),
-    "",
-    headers.join(" | "),
-    headers.map(() => "-----------").join("-+-"),
-    ...normalizedRows.map((row) => headers.map((header) => formatCell(row[header])).join(" | ")),
-  ].flatMap((line) => wrapPdfLine(line, 108));
-  const pages = chunk(lines, 46);
-  const objects = ["", "", "", ""];
+  const pageWidth = 792;
+  const pageHeight = 612;
+  const margin = 38;
+  const tableWidth = pageWidth - margin * 2;
+  const columnWidths = pdfColumnWidths(headers, normalizedRows, tableWidth);
+  const objects = ["", "", "", "", ""];
   const pageObjectIds = [];
   const fontObjectId = 3;
+  const boldFontObjectId = 4;
+  const generatedAt = new Date().toLocaleString();
+  const rowModels = normalizedRows.map((row, rowIndex) => {
+    const cells = headers.map((header, cellIndex) => wrapPdfCell(formatCell(row[header]), columnWidths[cellIndex] - 12, 7.5));
+    return {
+      cells,
+      height: Math.max(26, Math.max(...cells.map((cell) => cell.length)) * 10 + 14),
+      rowIndex,
+    };
+  });
+  const pages = [];
+  let currentPageRows = [];
+  let remainingHeight = pageHeight - 164;
 
-  pages.forEach((pageLines) => {
-    const content = [
-      "BT",
-      "/F1 8 Tf",
-      "42 760 Td",
-      "10 TL",
-      ...pageLines.map((line, index) => `${index ? "T*" : ""} (${pdfText(line)}) Tj`),
-      "ET",
-    ].join("\n");
+  rowModels.forEach((row) => {
+    if (currentPageRows.length && row.height > remainingHeight) {
+      pages.push(currentPageRows);
+      currentPageRows = [];
+      remainingHeight = pageHeight - 164;
+    }
+
+    currentPageRows.push(row);
+    remainingHeight -= row.height;
+  });
+
+  if (currentPageRows.length) {
+    pages.push(currentPageRows);
+  }
+
+  pages.forEach((pageRows, pageIndex) => {
+    const content = renderPdfExportPage({
+      columnWidths,
+      generatedAt,
+      headers,
+      margin,
+      pageHeight,
+      pageIndex,
+      pageRows,
+      pageWidth,
+      rowCount: normalizedRows.length,
+      title,
+      totalPages: pages.length,
+    });
     const contentObjectId = objects.length;
     objects[contentObjectId] = `<< /Length ${content.length} >>\nstream\n${content}\nendstream`;
     const pageObjectId = objects.length;
     pageObjectIds.push(pageObjectId);
-    objects[pageObjectId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${fontObjectId} 0 R >> >> /Contents ${contentObjectId} 0 R >>`;
+    objects[pageObjectId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontObjectId} 0 R /F2 ${boldFontObjectId} 0 R >> >> /Contents ${contentObjectId} 0 R >>`;
   });
 
   objects[1] = "<< /Type /Catalog /Pages 2 0 R >>";
   objects[2] = `<< /Type /Pages /Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageObjectIds.length} >>`;
-  objects[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>";
+  objects[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+  objects[4] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>";
 
   const bodyParts = ["%PDF-1.4\n"];
   const offsets = [0];
@@ -7559,25 +7654,95 @@ function pdfText(value) {
     .replace(/\)/g, "\\)");
 }
 
-function wrapPdfLine(line, maxLength) {
-  const normalized = String(line || "");
-  if (normalized.length <= maxLength) {
-    return [normalized];
-  }
+function renderPdfExportPage({ columnWidths, generatedAt, headers, margin, pageHeight, pageIndex, pageRows, pageWidth, rowCount, title, totalPages }) {
+  const commands = [
+    "1 1 1 rg 0 0 792 612 re f",
+    "0.114 0.435 0.373 rg 0 548 792 64 re f",
+    "0.890 0.957 0.929 rg 0 536 792 12 re f",
+    pdfTextCommand("WeSERVE", margin, 580, 10, "F2", "1 1 1 rg"),
+    pdfTextCommand(title.toUpperCase(), margin, 561, 20, "F2", "1 1 1 rg"),
+    pdfTextCommand(`Generated ${generatedAt}  |  ${rowCount} rows`, pageWidth - margin - 245, 565, 8.5, "F1", "1 1 1 rg"),
+    "0.945 0.970 0.960 rg 38 506 716 24 re f",
+    "0.114 0.435 0.373 RG 0.8 w 38 506 716 24 re S",
+  ];
+  let x = margin;
+  let y = 514;
 
-  const lines = [];
-  for (let index = 0; index < normalized.length; index += maxLength) {
-    lines.push(normalized.slice(index, index + maxLength));
-  }
-  return lines;
+  headers.forEach((header, index) => {
+    commands.push(pdfTextCommand(truncatePdfText(header, columnWidths[index] - 10, 7.5), x + 6, y, 7.5, "F2", "0.114 0.435 0.373 rg"));
+    x += columnWidths[index];
+  });
+
+  y = 506;
+  pageRows.forEach((row) => {
+    y -= row.height;
+    commands.push(`${row.rowIndex % 2 === 0 ? "1 1 1" : "0.975 0.985 0.982"} rg ${margin} ${y} ${pageWidth - margin * 2} ${row.height} re f`);
+    commands.push(`0.840 0.890 0.880 RG 0.45 w ${margin} ${y} ${pageWidth - margin * 2} ${row.height} re S`);
+    x = margin;
+    row.cells.forEach((cellLines, cellIndex) => {
+      let cellY = y + row.height - 13;
+      cellLines.slice(0, 4).forEach((line) => {
+        commands.push(pdfTextCommand(line, x + 6, cellY, 7.2, "F1", "0.120 0.145 0.160 rg"));
+        cellY -= 9.5;
+      });
+      x += columnWidths[cellIndex];
+    });
+  });
+
+  commands.push("0.840 0.890 0.880 RG 0.7 w 38 34 m 754 34 l S");
+  commands.push(pdfTextCommand(`Page ${pageIndex + 1} of ${totalPages}`, pageWidth - margin - 75, 20, 8, "F1", "0.350 0.410 0.430 rg"));
+  commands.push(pdfTextCommand("WeSERVE export", margin, 20, 8, "F1", "0.350 0.410 0.430 rg"));
+  return commands.join("\n");
 }
 
-function chunk(items, size) {
-  const groups = [];
-  for (let index = 0; index < items.length; index += size) {
-    groups.push(items.slice(index, index + size));
+function pdfTextCommand(text, x, y, size, font = "F1", color = "0 0 0 rg") {
+  return `BT ${color} /${font} ${size} Tf ${x} ${y} Td (${pdfText(text)}) Tj ET`;
+}
+
+function pdfColumnWidths(headers, rows, tableWidth) {
+  const rawWeights = headers.map((header) => Math.max(
+    8,
+    String(header).length,
+    ...rows.slice(0, 50).map((row) => Math.min(28, formatCell(row[header]).length)),
+  ));
+  const totalWeight = rawWeights.reduce((sum, weight) => sum + weight, 0) || 1;
+  const minWidth = Math.min(72, tableWidth / headers.length);
+  const widths = rawWeights.map((weight) => Math.max(minWidth, (weight / totalWeight) * tableWidth));
+  const totalWidth = widths.reduce((sum, width) => sum + width, 0);
+  const adjustment = tableWidth / totalWidth;
+  return widths.map((width) => width * adjustment);
+}
+
+function wrapPdfCell(value, width, fontSize) {
+  const text = String(value || "-").replace(/\s+/g, " ").trim();
+  const maxCharacters = Math.max(8, Math.floor(width / (fontSize * 0.52)));
+  const words = text.split(" ");
+  const lines = [];
+  let line = "";
+
+  words.forEach((word) => {
+    const nextLine = line ? `${line} ${word}` : word;
+    if (nextLine.length <= maxCharacters) {
+      line = nextLine;
+      return;
+    }
+
+    if (line) {
+      lines.push(line);
+    }
+    line = word.length > maxCharacters ? `${word.slice(0, maxCharacters - 1)}.` : word;
+  });
+
+  if (line) {
+    lines.push(line);
   }
-  return groups;
+  return lines.length ? lines : ["-"];
+}
+
+function truncatePdfText(value, width, fontSize) {
+  const text = String(value || "");
+  const maxCharacters = Math.max(5, Math.floor(width / (fontSize * 0.52)));
+  return text.length > maxCharacters ? `${text.slice(0, maxCharacters - 1)}.` : text;
 }
 
 export default App;
