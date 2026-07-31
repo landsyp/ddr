@@ -7546,6 +7546,8 @@ function downloadExcel(filename, rows) {
   }
 
   const safeFilename = filename.endsWith(".xls") ? filename : filename.replace(/\.[^.]+$/, "") + ".xls";
+  const title = safeFilename.replace(/\.xls$/i, "").replace(/[-_]+/g, " ");
+  const generatedAt = new Date().toLocaleString();
   const escapeHtml = (value) => formatCell(value)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -7553,19 +7555,81 @@ function downloadExcel(filename, rows) {
     .replace(/"/g, "&quot;");
   const tableRows = [
     `<tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr>`,
-    ...normalizedRows.map((row) => `<tr>${headers.map((header) => `<td style="mso-number-format:'\\@';">${escapeHtml(row[header])}</td>`).join("")}</tr>`),
+    ...normalizedRows.map((row, rowIndex) => `<tr class="${rowIndex % 2 === 0 ? "is-even" : "is-odd"}">${headers.map((header) => `<td style="mso-number-format:'\\@';">${escapeHtml(row[header])}</td>`).join("")}</tr>`),
   ];
   const worksheet = `<!doctype html>
     <html>
       <head>
         <meta charset="UTF-8" />
         <style>
-          table { border-collapse: collapse; }
-          th, td { border: 1px solid #d9e3e1; padding: 6px 8px; text-align: left; }
-          th { background: #e8f4ef; font-weight: 700; }
+          body {
+            margin: 0;
+            color: #1f2933;
+            font-family: Arial, Helvetica, sans-serif;
+          }
+          .report-shell {
+            padding: 22px;
+          }
+          .report-hero {
+            padding: 18px 20px;
+            background: #1d6f5f;
+            color: #ffffff;
+          }
+          .report-brand {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+          }
+          .report-title {
+            margin-top: 8px;
+            font-size: 24px;
+            font-weight: 800;
+          }
+          .report-meta {
+            padding: 10px 20px;
+            background: #e3f2ec;
+            color: #38534e;
+            font-size: 12px;
+            font-weight: 700;
+          }
+          table {
+            width: 100%;
+            margin-top: 18px;
+            border-collapse: collapse;
+            table-layout: auto;
+          }
+          th {
+            border: 1px solid #1d6f5f;
+            padding: 9px 10px;
+            background: #e8f4ef;
+            color: #1d6f5f;
+            font-size: 12px;
+            font-weight: 800;
+            text-align: left;
+          }
+          td {
+            border: 1px solid #d9e3e1;
+            padding: 9px 10px;
+            color: #1f2933;
+            font-size: 12px;
+            vertical-align: top;
+          }
+          tr.is-odd td {
+            background: #f7fbf9;
+          }
         </style>
       </head>
-      <body><table>${tableRows.join("")}</table></body>
+      <body>
+        <div class="report-shell">
+          <div class="report-hero">
+            <div class="report-brand">WeSERVE</div>
+            <div class="report-title">${escapeHtml(title)}</div>
+          </div>
+          <div class="report-meta">Generated ${escapeHtml(generatedAt)} &nbsp; | &nbsp; ${normalizedRows.length} rows</div>
+          <table>${tableRows.join("")}</table>
+        </div>
+      </body>
     </html>
   `;
   const blob = new Blob([worksheet], { type: "application/vnd.ms-excel;charset=utf-8" });
