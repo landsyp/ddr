@@ -123,6 +123,15 @@ const copy = {
       csv: "CSV",
       excel: "Excel",
       pdf: "PDF",
+      exportNames: {
+        accountList: "account-list",
+        donationRegister: "donation-register",
+        donorDonations: "donations",
+        donorList: "donor-list",
+        receiptBatches: "receipt-batches",
+        receiptList: "receipt-list",
+        report: "weserve-report",
+      },
       noRecords: "No records found",
       status: "Status",
       name: "Name",
@@ -743,6 +752,15 @@ const copy = {
       csv: "CSV",
       excel: "Excel",
       pdf: "PDF",
+      exportNames: {
+        accountList: "liste-comptes",
+        donationRegister: "registre-dons",
+        donorDonations: "dons",
+        donorList: "liste-donateurs",
+        receiptBatches: "lots-recus",
+        receiptList: "liste-recus",
+        report: "rapport-weserve",
+      },
       noRecords: "Aucun dossier trouvé",
       status: "Statut",
       name: "Nom",
@@ -3481,7 +3499,7 @@ function Donations({ accounts, bankingConnections, bootstrap, donations, donors,
               <span className="status-pill pending">{filteredPendingCount} {t.common.pending}</span>
             </div>
             <div className="export-actions">
-              <ExportMenu filename="donation-register" rows={currentDonationExportRows.length ? currentDonationExportRows : donationExportRows} t={t} />
+              <ExportMenu filename={t.common.exportNames.donationRegister} rows={currentDonationExportRows.length ? currentDonationExportRows : donationExportRows} t={t} />
             </div>
           </div>
         </div>
@@ -4499,7 +4517,7 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
               </label>
             </div>
             <div className="export-actions">
-              <ExportMenu filename="donor-list" rows={currentDonorExportRows.length ? currentDonorExportRows : donorExportRows} t={t} />
+              <ExportMenu filename={t.common.exportNames.donorList} rows={currentDonorExportRows.length ? currentDonorExportRows : donorExportRows} t={t} />
             </div>
           </div>
         </div>
@@ -4725,7 +4743,7 @@ function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
       <div className="panel-subheader">
         <h3>{t.donorForm.donorStatement}</h3>
         <div className="export-actions">
-          <ExportMenu filename={`donations-${donor.fullName}`} rows={currentStatementExportRows.length ? currentStatementExportRows : visibleStatementRows} t={t} />
+          <ExportMenu filename={`${t.common.exportNames.donorDonations}-${donor.fullName}`} rows={currentStatementExportRows.length ? currentStatementExportRows : visibleStatementRows} t={t} />
         </div>
       </div>
       <div className="donor-statement-grid">
@@ -5006,7 +5024,7 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
           <div className="panel-subheader">
             <h3>{t.accounts.title}</h3>
             <div className="export-actions">
-              <ExportMenu disabled={!accountExportRows.length} filename="account-list" rows={accountExportRows} t={t} />
+              <ExportMenu disabled={!accountExportRows.length} filename={t.common.exportNames.accountList} rows={accountExportRows} t={t} />
             </div>
           </div>
           <div className="account-accordion">
@@ -5406,7 +5424,7 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
           <div className="panel-subheader">
             <h3>{t.nav.receipts}</h3>
             <div className="export-actions">
-              <ExportMenu disabled={!receiptExportRows.length} filename="receipt-list" rows={currentReceiptExportRows.length ? currentReceiptExportRows : receiptExportRows} t={t} />
+              <ExportMenu disabled={!receiptExportRows.length} filename={t.common.exportNames.receiptList} rows={currentReceiptExportRows.length ? currentReceiptExportRows : receiptExportRows} t={t} />
             </div>
           </div>
           <DataTable
@@ -5433,7 +5451,7 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
           <div className="panel-subheader">
             <h3>{t.receipts.batches}</h3>
             <div className="export-actions">
-              <ExportMenu disabled={!batchExportRows.length} filename="receipt-batches" rows={currentBatchExportRows.length ? currentBatchExportRows : batchExportRows} t={t} />
+              <ExportMenu disabled={!batchExportRows.length} filename={t.common.exportNames.receiptBatches} rows={currentBatchExportRows.length ? currentBatchExportRows : batchExportRows} t={t} />
             </div>
           </div>
           <DataTable
@@ -5668,7 +5686,7 @@ function Reports({ customTemplates = [], reportResult, t, onCreateTemplate, onRu
               <BarChart3 size={17} />
               <span>{t.reports.run}</span>
             </button>
-            <ExportMenu disabled={!downloadableRows.length} filename="weserve-report" rows={downloadableRows} t={t} />
+            <ExportMenu disabled={!downloadableRows.length} filename={t.common.exportNames.report} rows={downloadableRows} t={t} />
           </div>
         </form>
       </Panel>
@@ -7135,7 +7153,11 @@ function exportFilenameBase(filename) {
 }
 
 function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function slugFilename(value) {
