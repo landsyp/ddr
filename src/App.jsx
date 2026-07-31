@@ -7590,11 +7590,12 @@ function downloadPDF(filename, rows) {
   const fontObjectId = 3;
   const boldFontObjectId = 4;
   const generatedAt = new Date().toLocaleString();
+  const bodyFontSize = 8.4;
   const rowModels = normalizedRows.map((row, rowIndex) => {
-    const cells = headers.map((header, cellIndex) => wrapPdfCell(formatCell(row[header]), columnWidths[cellIndex] - 12, 7.5));
+    const cells = headers.map((header, cellIndex) => wrapPdfCell(formatCell(row[header]), columnWidths[cellIndex] - 12, bodyFontSize));
     return {
       cells,
-      height: Math.max(26, Math.max(...cells.map((cell) => cell.length)) * 10 + 14),
+      height: Math.max(30, Math.max(...cells.map((cell) => cell.length)) * 11.2 + 16),
       rowIndex,
     };
   });
@@ -7696,13 +7697,15 @@ function pdfText(value) {
 }
 
 function renderPdfExportPage({ columnWidths, generatedAt, headers, margin, pageHeight, pageIndex, pageRows, pageWidth, rowCount, title, totalPages }) {
+  const headerFontSize = 8.6;
+  const bodyFontSize = 8.4;
   const commands = [
     "1 1 1 rg 0 0 792 612 re f",
     "0.114 0.435 0.373 rg 0 548 792 64 re f",
     "0.890 0.957 0.929 rg 0 536 792 12 re f",
-    pdfTextCommand("WeSERVE", margin, 580, 10, "F2", "1 1 1 rg"),
-    pdfTextCommand(title.toUpperCase(), margin, 561, 20, "F2", "1 1 1 rg"),
-    pdfTextCommand(`Generated ${generatedAt}  |  ${rowCount} rows`, pageWidth - margin - 245, 565, 8.5, "F1", "1 1 1 rg"),
+    pdfTextCommand("WeSERVE", margin, 580, 11.5, "F2", "1 1 1 rg"),
+    pdfTextCommand(title.toUpperCase(), margin, 560, 22, "F2", "1 1 1 rg"),
+    pdfTextCommand(`Generated ${generatedAt}  |  ${rowCount} rows`, pageWidth - margin - 260, 565, 9.5, "F1", "1 1 1 rg"),
     "0.945 0.970 0.960 rg 38 506 716 24 re f",
     "0.114 0.435 0.373 RG 0.8 w 38 506 716 24 re S",
   ];
@@ -7710,7 +7713,7 @@ function renderPdfExportPage({ columnWidths, generatedAt, headers, margin, pageH
   let y = 514;
 
   headers.forEach((header, index) => {
-    commands.push(pdfTextCommand(truncatePdfText(header, columnWidths[index] - 10, 7.5), x + 6, y, 7.5, "F2", "0.114 0.435 0.373 rg"));
+    commands.push(pdfTextCommand(truncatePdfText(header, columnWidths[index] - 10, headerFontSize), x + 6, y, headerFontSize, "F2", "0.114 0.435 0.373 rg"));
     x += columnWidths[index];
   });
 
@@ -7721,18 +7724,18 @@ function renderPdfExportPage({ columnWidths, generatedAt, headers, margin, pageH
     commands.push(`0.840 0.890 0.880 RG 0.45 w ${margin} ${y} ${pageWidth - margin * 2} ${row.height} re S`);
     x = margin;
     row.cells.forEach((cellLines, cellIndex) => {
-      let cellY = y + row.height - 13;
+      let cellY = y + row.height - 14;
       cellLines.slice(0, 4).forEach((line) => {
-        commands.push(pdfTextCommand(line, x + 6, cellY, 7.2, "F1", "0.120 0.145 0.160 rg"));
-        cellY -= 9.5;
+        commands.push(pdfTextCommand(line, x + 6, cellY, bodyFontSize, "F1", "0.120 0.145 0.160 rg"));
+        cellY -= 10.8;
       });
       x += columnWidths[cellIndex];
     });
   });
 
   commands.push("0.840 0.890 0.880 RG 0.7 w 38 34 m 754 34 l S");
-  commands.push(pdfTextCommand(`Page ${pageIndex + 1} of ${totalPages}`, pageWidth - margin - 75, 20, 8, "F1", "0.350 0.410 0.430 rg"));
-  commands.push(pdfTextCommand("WeSERVE export", margin, 20, 8, "F1", "0.350 0.410 0.430 rg"));
+  commands.push(pdfTextCommand(`Page ${pageIndex + 1} of ${totalPages}`, pageWidth - margin - 82, 20, 8.8, "F1", "0.350 0.410 0.430 rg"));
+  commands.push(pdfTextCommand("WeSERVE export", margin, 20, 8.8, "F1", "0.350 0.410 0.430 rg"));
   return commands.join("\n");
 }
 
