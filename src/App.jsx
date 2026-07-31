@@ -3481,7 +3481,7 @@ function Donations({ accounts, bankingConnections, bootstrap, donations, donors,
               <span className="status-pill pending">{filteredPendingCount} {t.common.pending}</span>
             </div>
             <div className="export-actions">
-              <ExportMenu filename="donations" rows={currentDonationExportRows.length ? currentDonationExportRows : donationExportRows} t={t} />
+              <ExportMenu filename="donation-register" rows={currentDonationExportRows.length ? currentDonationExportRows : donationExportRows} t={t} />
             </div>
           </div>
         </div>
@@ -4499,7 +4499,7 @@ function Donors({ bootstrap, donations, donors, query, setQuery, t, onArchive, o
               </label>
             </div>
             <div className="export-actions">
-              <ExportMenu filename="donors" rows={currentDonorExportRows.length ? currentDonorExportRows : donorExportRows} t={t} />
+              <ExportMenu filename="donor-list" rows={currentDonorExportRows.length ? currentDonorExportRows : donorExportRows} t={t} />
             </div>
           </div>
         </div>
@@ -4725,7 +4725,7 @@ function DonorDetail({ donor, donations, isExpanded = false, onExpand, t }) {
       <div className="panel-subheader">
         <h3>{t.donorForm.donorStatement}</h3>
         <div className="export-actions">
-          <ExportMenu filename={`donor-${donor.numero}-statement`} rows={currentStatementExportRows.length ? currentStatementExportRows : visibleStatementRows} t={t} />
+          <ExportMenu filename={`donations-${donor.fullName}`} rows={currentStatementExportRows.length ? currentStatementExportRows : visibleStatementRows} t={t} />
         </div>
       </div>
       <div className="donor-statement-grid">
@@ -5006,7 +5006,7 @@ function Accounts({ accounts, donations, t, onDelete, onSubmit, onToggle, onUpda
           <div className="panel-subheader">
             <h3>{t.accounts.title}</h3>
             <div className="export-actions">
-              <ExportMenu disabled={!accountExportRows.length} filename="accounts" rows={accountExportRows} t={t} />
+              <ExportMenu disabled={!accountExportRows.length} filename="account-list" rows={accountExportRows} t={t} />
             </div>
           </div>
           <div className="account-accordion">
@@ -5406,7 +5406,7 @@ function Receipts({ batches, dashboard, donations, receipts, t, onGenerate, onMa
           <div className="panel-subheader">
             <h3>{t.nav.receipts}</h3>
             <div className="export-actions">
-              <ExportMenu disabled={!receiptExportRows.length} filename="receipts" rows={currentReceiptExportRows.length ? currentReceiptExportRows : receiptExportRows} t={t} />
+              <ExportMenu disabled={!receiptExportRows.length} filename="receipt-list" rows={currentReceiptExportRows.length ? currentReceiptExportRows : receiptExportRows} t={t} />
             </div>
           </div>
           <DataTable
@@ -7128,9 +7128,28 @@ function tableRowToExportObject(row, columns) {
   }, {});
 }
 
+function exportFilenameBase(filename) {
+  const rawBase = String(filename || "export").replace(/\.[^.]+$/, "");
+  const datedBase = rawBase.endsWith(`-${todayKey()}`) ? rawBase : `${rawBase}-${todayKey()}`;
+  return slugFilename(datedBase);
+}
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function slugFilename(value) {
+  return String(value || "export")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
 function ExportMenu({ disabled = false, filename, rows, t }) {
   const [open, setOpen] = useState(false);
-  const baseFilename = String(filename || "export").replace(/\.[^.]+$/, "");
+  const baseFilename = exportFilenameBase(filename);
   const options = [
     { label: t.common.csv, icon: FileText, action: () => downloadCSV(`${baseFilename}.csv`, rows) },
     { label: t.common.excel, icon: FileSpreadsheet, action: () => downloadExcel(`${baseFilename}.xls`, rows) },
