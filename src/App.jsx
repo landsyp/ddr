@@ -7548,91 +7548,73 @@ function downloadExcel(filename, rows) {
   const safeFilename = filename.endsWith(".xls") ? filename : filename.replace(/\.[^.]+$/, "") + ".xls";
   const title = safeFilename.replace(/\.xls$/i, "").replace(/[-_]+/g, " ");
   const generatedAt = new Date().toLocaleString();
-  const escapeHtml = (value) => formatCell(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-  const tableRows = [
-    `<tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr>`,
-    ...normalizedRows.map((row, rowIndex) => `<tr class="${rowIndex % 2 === 0 ? "is-even" : "is-odd"}">${headers.map((header) => `<td style="mso-number-format:'\\@';">${escapeHtml(row[header])}</td>`).join("")}</tr>`),
-  ];
-  const worksheet = `<!doctype html>
-    <html>
-      <head>
-        <meta charset="UTF-8" />
-        <style>
-          body {
-            margin: 0;
-            color: #1f2933;
-            font-family: Arial, Helvetica, sans-serif;
-          }
-          .report-shell {
-            padding: 22px;
-          }
-          .report-hero {
-            padding: 18px 20px;
-            background: #1d6f5f;
-            color: #ffffff;
-          }
-          .report-brand {
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-          }
-          .report-title {
-            margin-top: 8px;
-            font-size: 24px;
-            font-weight: 800;
-          }
-          .report-meta {
-            padding: 10px 20px;
-            background: #e3f2ec;
-            color: #38534e;
-            font-size: 12px;
-            font-weight: 700;
-          }
-          table {
-            width: 100%;
-            margin-top: 18px;
-            border-collapse: collapse;
-            table-layout: auto;
-          }
-          th {
-            border: 1px solid #1d6f5f;
-            padding: 9px 10px;
-            background: #e8f4ef;
-            color: #1d6f5f;
-            font-size: 12px;
-            font-weight: 800;
-            text-align: left;
-          }
-          td {
-            border: 1px solid #d9e3e1;
-            padding: 9px 10px;
-            color: #1f2933;
-            font-size: 12px;
-            vertical-align: top;
-          }
-          tr.is-odd td {
-            background: #f7fbf9;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="report-shell">
-          <div class="report-hero">
-            <div class="report-brand">WeSERVE</div>
-            <div class="report-title">${escapeHtml(title)}</div>
-          </div>
-          <div class="report-meta">Generated ${escapeHtml(generatedAt)} &nbsp; | &nbsp; ${normalizedRows.length} rows</div>
-          <table>${tableRows.join("")}</table>
-        </div>
-      </body>
-    </html>
-  `;
-  const blob = new Blob([worksheet], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const columnCount = Math.max(headers.length, 1);
+  const columnDefinitions = headers.map((header) => (
+    `<Column ss:Width="${Math.max(92, Math.min(220, String(header).length * 11 + 42))}"/>`
+  ));
+  const headerRow = `<Row ss:Height="28">${headers.map((header) => excelCell(header, "Header")).join("")}</Row>`;
+  const bodyRows = normalizedRows.map((row, rowIndex) => (
+    `<Row ss:AutoFitHeight="1">${headers.map((header) => excelCell(formatCell(row[header]), rowIndex % 2 === 0 ? "Body" : "BodyAlt")).join("")}</Row>`
+  ));
+  const worksheet = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:o="urn:schemas-microsoft-com:office:office"
+  xmlns:x="urn:schemas-microsoft-com:office:excel"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:html="http://www.w3.org/TR/REC-html40">
+  <Styles>
+    <Style ss:ID="Hero">
+      <Font ss:FontName="Arial" ss:Size="18" ss:Bold="1" ss:Color="#FFFFFF"/>
+      <Interior ss:Color="#1D6F5F" ss:Pattern="Solid"/>
+      <Alignment ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="Meta">
+      <Font ss:FontName="Arial" ss:Size="11" ss:Bold="1" ss:Color="#38534E"/>
+      <Interior ss:Color="#E3F2EC" ss:Pattern="Solid"/>
+      <Alignment ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="Header">
+      <Font ss:FontName="Arial" ss:Size="11" ss:Bold="1" ss:Color="#1D6F5F"/>
+      <Interior ss:Color="#E8F4EF" ss:Pattern="Solid"/>
+      <Alignment ss:Vertical="Center" ss:WrapText="1"/>
+      <Borders>${excelBorders("#1D6F5F")}</Borders>
+    </Style>
+    <Style ss:ID="Body">
+      <Font ss:FontName="Arial" ss:Size="11" ss:Color="#1F2933"/>
+      <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+      <Borders>${excelBorders("#D9E3E1")}</Borders>
+    </Style>
+    <Style ss:ID="BodyAlt">
+      <Font ss:FontName="Arial" ss:Size="11" ss:Color="#1F2933"/>
+      <Interior ss:Color="#F7FBF9" ss:Pattern="Solid"/>
+      <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+      <Borders>${excelBorders("#D9E3E1")}</Borders>
+    </Style>
+  </Styles>
+  <Worksheet ss:Name="Export">
+    <Table>
+      ${columnDefinitions.join("")}
+      <Row ss:Height="34">
+        <Cell ss:StyleID="Hero" ss:MergeAcross="${columnCount - 1}"><Data ss:Type="String">WeSERVE - ${excelText(title)}</Data></Cell>
+      </Row>
+      <Row ss:Height="24">
+        <Cell ss:StyleID="Meta" ss:MergeAcross="${columnCount - 1}"><Data ss:Type="String">Generated ${excelText(generatedAt)} | ${normalizedRows.length} rows</Data></Cell>
+      </Row>
+      <Row ss:Height="10"><Cell ss:MergeAcross="${columnCount - 1}"><Data ss:Type="String"></Data></Cell></Row>
+      ${headerRow}
+      ${bodyRows.join("")}
+    </Table>
+    <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+      <FreezePanes/>
+      <FrozenNoSplit/>
+      <SplitHorizontal>4</SplitHorizontal>
+      <TopRowBottomPane>4</TopRowBottomPane>
+      <ActivePane>2</ActivePane>
+    </WorksheetOptions>
+  </Worksheet>
+</Workbook>`;
+  const blob = new Blob([`\uFEFF${worksheet}`], { type: "application/vnd.ms-excel;charset=utf-8" });
   downloadBlob(safeFilename, blob);
 }
 
@@ -7750,6 +7732,24 @@ function downloadBlob(filename, blob) {
 function csvValue(value) {
   const normalized = value === null || value === undefined ? "" : String(value);
   return `"${normalized.replaceAll('"', '""')}"`;
+}
+
+function excelCell(value, styleID) {
+  return `<Cell ss:StyleID="${styleID}"><Data ss:Type="String">${excelText(value)}</Data></Cell>`;
+}
+
+function excelText(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function excelBorders(color) {
+  return ["Bottom", "Left", "Right", "Top"]
+    .map((position) => `<Border ss:Position="${position}" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="${color}"/>`)
+    .join("");
 }
 
 function pdfText(value) {
