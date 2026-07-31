@@ -7546,9 +7546,6 @@ function downloadExcel(filename, rows) {
   }
 
   const safeFilename = filename.endsWith(".xls") ? filename : filename.replace(/\.[^.]+$/, "") + ".xls";
-  const title = safeFilename.replace(/\.xls$/i, "").replace(/[-_]+/g, " ");
-  const generatedAt = new Date().toLocaleString();
-  const columnCount = Math.max(headers.length, 1);
   const columnDefinitions = headers.map((header) => (
     `<Column ss:Width="${Math.max(92, Math.min(220, String(header).length * 11 + 42))}"/>`
   ));
@@ -7564,16 +7561,6 @@ function downloadExcel(filename, rows) {
   xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
   xmlns:html="http://www.w3.org/TR/REC-html40">
   <Styles>
-    <Style ss:ID="Hero">
-      <Font ss:FontName="Arial" ss:Size="18" ss:Bold="1" ss:Color="#FFFFFF"/>
-      <Interior ss:Color="#1D6F5F" ss:Pattern="Solid"/>
-      <Alignment ss:Vertical="Center"/>
-    </Style>
-    <Style ss:ID="Meta">
-      <Font ss:FontName="Arial" ss:Size="11" ss:Bold="1" ss:Color="#38534E"/>
-      <Interior ss:Color="#E3F2EC" ss:Pattern="Solid"/>
-      <Alignment ss:Vertical="Center"/>
-    </Style>
     <Style ss:ID="Header">
       <Font ss:FontName="Arial" ss:Size="11" ss:Bold="1" ss:Color="#1D6F5F"/>
       <Interior ss:Color="#E8F4EF" ss:Pattern="Solid"/>
@@ -7595,21 +7582,14 @@ function downloadExcel(filename, rows) {
   <Worksheet ss:Name="Export">
     <Table>
       ${columnDefinitions.join("")}
-      <Row ss:Height="34">
-        <Cell ss:StyleID="Hero" ss:MergeAcross="${columnCount - 1}"><Data ss:Type="String">WeSERVE - ${excelText(title)}</Data></Cell>
-      </Row>
-      <Row ss:Height="24">
-        <Cell ss:StyleID="Meta" ss:MergeAcross="${columnCount - 1}"><Data ss:Type="String">Generated ${excelText(generatedAt)} | ${normalizedRows.length} rows</Data></Cell>
-      </Row>
-      <Row ss:Height="10"><Cell ss:MergeAcross="${columnCount - 1}"><Data ss:Type="String"></Data></Cell></Row>
       ${headerRow}
       ${bodyRows.join("")}
     </Table>
     <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
       <FreezePanes/>
       <FrozenNoSplit/>
-      <SplitHorizontal>4</SplitHorizontal>
-      <TopRowBottomPane>4</TopRowBottomPane>
+      <SplitHorizontal>1</SplitHorizontal>
+      <TopRowBottomPane>1</TopRowBottomPane>
       <ActivePane>2</ActivePane>
     </WorksheetOptions>
   </Worksheet>
