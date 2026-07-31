@@ -7174,7 +7174,7 @@ function ExportMenu({ disabled = false, filename, rows, t }) {
   const baseFilename = exportFilenameBase(filename);
   const options = [
     { label: t.common.csv, icon: FileText, action: () => downloadCSV(`${baseFilename}.csv`, rows) },
-    { label: t.common.excel, icon: FileSpreadsheet, action: () => downloadExcel(`${baseFilename}.xls`, rows) },
+    { label: t.common.excel, icon: FileSpreadsheet, action: () => downloadExcel(`${baseFilename}.xlsx`, rows) },
     { label: t.common.pdf, icon: Download, action: () => downloadPDF(`${baseFilename}.pdf`, rows) },
   ];
 
@@ -7545,56 +7545,28 @@ function downloadExcel(filename, rows) {
     return;
   }
 
-  const safeFilename = filename.endsWith(".xls") ? filename : filename.replace(/\.[^.]+$/, "") + ".xls";
-  const columnDefinitions = headers.map((header) => (
-    `<Column ss:Width="${Math.max(92, Math.min(220, String(header).length * 11 + 42))}"/>`
-  ));
-  const headerRow = `<Row ss:Height="28">${headers.map((header) => excelCell(header, "Header")).join("")}</Row>`;
+  const safeFilename = filename.endsWith(".xlsx") ? filename : filename.replace(/\.[^.]+$/, "") + ".xlsx";
+  const columnDefinitions = headers.map((header, index) => {
+    const width = Math.max(12, Math.min(34, String(header).length + 8));
+    return `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`;
+  });
+  const headerRow = `<row r="1" ht="24" customHeight="1">${headers.map((header, index) => xlsxCell(index + 1, 1, header, 1)).join("")}</row>`;
   const bodyRows = normalizedRows.map((row, rowIndex) => (
-    `<Row ss:AutoFitHeight="1">${headers.map((header) => excelCell(formatCell(row[header]), rowIndex % 2 === 0 ? "Body" : "BodyAlt")).join("")}</Row>`
+    `<row r="${rowIndex + 2}">${headers.map((header, columnIndex) => xlsxCell(columnIndex + 1, rowIndex + 2, row[header], rowIndex % 2 === 0 ? 2 : 3)).join("")}</row>`
   ));
-  const worksheet = `<?xml version="1.0"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
-  xmlns:o="urn:schemas-microsoft-com:office:office"
-  xmlns:x="urn:schemas-microsoft-com:office:excel"
-  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
-  xmlns:html="http://www.w3.org/TR/REC-html40">
-  <Styles>
-    <Style ss:ID="Header">
-      <Font ss:FontName="Arial" ss:Size="11" ss:Bold="1" ss:Color="#1D6F5F"/>
-      <Interior ss:Color="#E8F4EF" ss:Pattern="Solid"/>
-      <Alignment ss:Vertical="Center" ss:WrapText="1"/>
-      <Borders>${excelBorders("#1D6F5F")}</Borders>
-    </Style>
-    <Style ss:ID="Body">
-      <Font ss:FontName="Arial" ss:Size="11" ss:Color="#1F2933"/>
-      <Alignment ss:Vertical="Top" ss:WrapText="1"/>
-      <Borders>${excelBorders("#D9E3E1")}</Borders>
-    </Style>
-    <Style ss:ID="BodyAlt">
-      <Font ss:FontName="Arial" ss:Size="11" ss:Color="#1F2933"/>
-      <Interior ss:Color="#F7FBF9" ss:Pattern="Solid"/>
-      <Alignment ss:Vertical="Top" ss:WrapText="1"/>
-      <Borders>${excelBorders("#D9E3E1")}</Borders>
-    </Style>
-  </Styles>
-  <Worksheet ss:Name="Export">
-    <Table>
-      ${columnDefinitions.join("")}
-      ${headerRow}
-      ${bodyRows.join("")}
-    </Table>
-    <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
-      <FreezePanes/>
-      <FrozenNoSplit/>
-      <SplitHorizontal>1</SplitHorizontal>
-      <TopRowBottomPane>1</TopRowBottomPane>
-      <ActivePane>2</ActivePane>
-    </WorksheetOptions>
-  </Worksheet>
-</Workbook>`;
-  const blob = new Blob([`\uFEFF${worksheet}`], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const worksheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheetViews>
+    <sheetView workbookViewId="0">
+      <pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>
+    </sheetView>
+  </sheetViews>
+  <cols>${columnDefinitions.join("")}</cols>
+  <sheetData>${headerRow}${bodyRows.join("")}</sheetData>
+  <autoFilter ref="A1:${xlsxColumnName(headers.length)}${normalizedRows.length + 1}"/>
+  <pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>
+</worksheet>`;
+  const blob = createXlsxBlob(worksheet);
   downloadBlob(safeFilename, blob);
 }
 
@@ -7714,23 +7686,184 @@ function csvValue(value) {
   return `"${normalized.replaceAll('"', '""')}"`;
 }
 
-function excelCell(value, styleID) {
-  return `<Cell ss:StyleID="${styleID}"><Data ss:Type="String">${excelText(value)}</Data></Cell>`;
+function createXlsxBlob(worksheet) {
+  const files = {
+    "[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`,
+    "_rels/.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`,
+    "xl/workbook.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="Export" sheetId="1" r:id="rId1"/>
+  </sheets>
+</workbook>`,
+    "xl/_rels/workbook.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`,
+    "xl/styles.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="2">
+    <font><sz val="11"/><color rgb="FF1F2933"/><name val="Arial"/></font>
+    <font><b/><sz val="11"/><color rgb="FF1D6F5F"/><name val="Arial"/></font>
+  </fonts>
+  <fills count="4">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFE8F4EF"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFF7FBF9"/><bgColor indexed="64"/></patternFill></fill>
+  </fills>
+  <borders count="2">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+    <border>
+      <left style="thin"><color rgb="FFD9E3E1"/></left>
+      <right style="thin"><color rgb="FFD9E3E1"/></right>
+      <top style="thin"><color rgb="FFD9E3E1"/></top>
+      <bottom style="thin"><color rgb="FFD9E3E1"/></bottom>
+      <diagonal/>
+    </border>
+  </borders>
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+  <cellXfs count="4">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+  </cellXfs>
+  <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`,
+    "xl/worksheets/sheet1.xml": worksheet,
+  };
+
+  return zipXlsx(files);
 }
 
-function excelText(value) {
+function xlsxCell(columnIndex, rowIndex, value, styleID) {
+  const reference = `${xlsxColumnName(columnIndex)}${rowIndex}`;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return `<c r="${reference}" s="${styleID}"><v>${value}</v></c>`;
+  }
+
+  return `<c r="${reference}" s="${styleID}" t="inlineStr"><is><t>${xlsxText(formatCell(value))}</t></is></c>`;
+}
+
+function xlsxText(value) {
   return String(value ?? "")
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
 
-function excelBorders(color) {
-  return ["Bottom", "Left", "Right", "Top"]
-    .map((position) => `<Border ss:Position="${position}" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="${color}"/>`)
-    .join("");
+function xlsxColumnName(index) {
+  let name = "";
+  let cursor = index;
+  while (cursor > 0) {
+    cursor -= 1;
+    name = String.fromCharCode(65 + (cursor % 26)) + name;
+    cursor = Math.floor(cursor / 26);
+  }
+  return name;
 }
+
+function zipXlsx(files) {
+  const encoder = new TextEncoder();
+  const parts = [];
+  const centralDirectory = [];
+  let offset = 0;
+
+  Object.entries(files).forEach(([name, content]) => {
+    const nameBytes = encoder.encode(name);
+    const data = encoder.encode(content);
+    const crc = crc32(data);
+    const localHeader = zipHeader(30 + nameBytes.length);
+    const localView = new DataView(localHeader.buffer);
+    localView.setUint32(0, 0x04034b50, true);
+    localView.setUint16(4, 20, true);
+    localView.setUint16(6, 0x0800, true);
+    localView.setUint16(8, 0, true);
+    localView.setUint16(10, 0, true);
+    localView.setUint16(12, 0, true);
+    localView.setUint32(14, crc, true);
+    localView.setUint32(18, data.length, true);
+    localView.setUint32(22, data.length, true);
+    localView.setUint16(26, nameBytes.length, true);
+    localHeader.set(nameBytes, 30);
+
+    parts.push(localHeader, data);
+
+    const centralHeader = zipHeader(46 + nameBytes.length);
+    const centralView = new DataView(centralHeader.buffer);
+    centralView.setUint32(0, 0x02014b50, true);
+    centralView.setUint16(4, 20, true);
+    centralView.setUint16(6, 20, true);
+    centralView.setUint16(8, 0x0800, true);
+    centralView.setUint16(10, 0, true);
+    centralView.setUint16(12, 0, true);
+    centralView.setUint16(14, 0, true);
+    centralView.setUint32(16, crc, true);
+    centralView.setUint32(20, data.length, true);
+    centralView.setUint32(24, data.length, true);
+    centralView.setUint16(28, nameBytes.length, true);
+    centralView.setUint32(42, offset, true);
+    centralHeader.set(nameBytes, 46);
+    centralDirectory.push(centralHeader);
+
+    offset += localHeader.length + data.length;
+  });
+
+  const centralOffset = offset;
+  centralDirectory.forEach((header) => {
+    parts.push(header);
+    offset += header.length;
+  });
+  const centralSize = offset - centralOffset;
+  const endRecord = zipHeader(22);
+  const endView = new DataView(endRecord.buffer);
+  endView.setUint32(0, 0x06054b50, true);
+  endView.setUint16(8, centralDirectory.length, true);
+  endView.setUint16(10, centralDirectory.length, true);
+  endView.setUint32(12, centralSize, true);
+  endView.setUint32(16, centralOffset, true);
+  parts.push(endRecord);
+
+  return new Blob(parts, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+
+function zipHeader(length) {
+  return new Uint8Array(length);
+}
+
+function crc32(data) {
+  let crc = 0xffffffff;
+  for (let index = 0; index < data.length; index += 1) {
+    crc = (crc >>> 8) ^ CRC32_TABLE[(crc ^ data[index]) & 0xff];
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+const CRC32_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let index = 0; index < 256; index += 1) {
+    let cursor = index;
+    for (let bit = 0; bit < 8; bit += 1) {
+      cursor = cursor & 1 ? 0xedb88320 ^ (cursor >>> 1) : cursor >>> 1;
+    }
+    table[index] = cursor >>> 0;
+  }
+  return table;
+})();
 
 function pdfText(value) {
   return String(value || "")
