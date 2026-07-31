@@ -7531,12 +7531,13 @@ function downloadCSV(filename, rows) {
     return;
   }
 
+  const safeFilename = filename.endsWith(".csv") ? filename : filename.replace(/\.[^.]+$/, "") + ".csv";
   const csvRows = [
     headers.map(csvValue).join(","),
-    ...normalizedRows.map((row) => headers.map((header) => csvValue(row[header])).join(",")),
+    ...normalizedRows.map((row) => headers.map((header) => csvValue(exportCellValue(row[header]))).join(",")),
   ];
   const blob = new Blob([`\uFEFF${csvRows.join("\r\n")}`], { type: "text/csv;charset=utf-8" });
-  downloadBlob(filename, blob);
+  downloadBlob(safeFilename, blob);
 }
 
 function downloadExcel(filename, rows) {
@@ -7682,8 +7683,32 @@ function downloadBlob(filename, blob) {
 }
 
 function csvValue(value) {
-  const normalized = value === null || value === undefined ? "" : String(value);
+  const normalized = exportCellValue(value);
   return `"${normalized.replaceAll('"', '""')}"`;
+}
+
+function exportCellValue(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(exportCellValue).filter(Boolean).join(", ");
+  }
+
+  if (typeof value === "object") {
+    const text = cellToText(value);
+    return cleanExportText(text);
+  }
+
+  return cleanExportText(formatCell(value));
+}
+
+function cleanExportText(value) {
+  return String(value ?? "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function createXlsxBlob(worksheet) {
@@ -7754,7 +7779,7 @@ function xlsxCell(columnIndex, rowIndex, value, styleID) {
     return `<c r="${reference}" s="${styleID}"><v>${value}</v></c>`;
   }
 
-  return `<c r="${reference}" s="${styleID}" t="inlineStr"><is><t>${xlsxText(formatCell(value))}</t></is></c>`;
+  return `<c r="${reference}" s="${styleID}" t="inlineStr"><is><t>${xlsxText(exportCellValue(value))}</t></is></c>`;
 }
 
 function xlsxText(value) {
