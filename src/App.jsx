@@ -7579,6 +7579,11 @@ function downloadPDF(filename, rows) {
 
   const safeFilename = filename.endsWith(".pdf") ? filename : filename.replace(/\.[^.]+$/, "") + ".pdf";
   const title = safeFilename.replace(/\.pdf$/i, "").replace(/[-_]+/g, " ");
+  if (isAccountMonthReport(headers)) {
+    downloadAccountMonthReportPDF(safeFilename, normalizedRows, title);
+    return;
+  }
+
   const pageWidth = 792;
   const pageHeight = 612;
   const margin = 38;
@@ -7658,6 +7663,98 @@ function downloadPDF(filename, rows) {
 
   const blob = new Blob([bodyParts.join("")], { type: "application/pdf" });
   downloadBlob(safeFilename, blob);
+}
+
+function isAccountMonthReport(headers) {
+  return ["Month", "Account", "Total"].every((header) => headers.includes(header));
+}
+
+function downloadAccountMonthReportPDF(filename, rows, title) {
+  const sections = groupAccountMonthRows(rows);
+  const grandTotal = sections.reduce((sum, section) => sum + section.total, 0);
+  const pageWidth = 612;
+  const pageHeight = 792;
+  const margin = 42;
+  const contentWidth = pageWidth - margin * 2;
+  const objects = ["", "", "", "", ""];
+  const pageObjectIds = [];
+  const pages = [];
+  const generatedAt = new Date().toLocaleDateString();
+  let commands = [];
+  let y = 0;
+
+  function startPage() {
+    commands = renderAccountMonthPageHeader({
+      contentWidth,
+      generatedAt,
+      grandTotal,
+      margin,
+      pageHeight,
+      pageWidth,
+      sectionCount: sections.length,
+      title,
+    });
+    y = pageHeight - 188;
+  }
+
+  function finishPage() {
+    pages.push(commands);
+  }
+
+  startPage();
+  sections.forEach((section) => {
+    const sectionHeight = 48 + section.items.length * 24 + 32;
+    if (y - Math.min(sectionHeight, 128) < 64) {
+      finishPage();
+      startPage();
+    }
+
+    commands.push(...renderAccountMonthSectionHeader(section, margin, y, contentWidth));
+    y -= 48;
+    commands.push(...renderAccountMonthTableHeader(margin, y, contentWidth));
+    y -= 24;
+
+    section.items.forEach((item, index) => {
+      if (y < 72) {
+        finishPage();
+        startPage();
+        commands.push(...renderAccountMonthContinuedHeader(section, margin, y, contentWidth));
+        y -= 42;
+        commands.push(...renderAccountMonthTableHeader(margin, y, contentWidth));
+        y -= 24;
+      }
+
+      commands.push(...renderAccountMonthRow(item, index, margin, y, contentWidth));
+      y -= 24;
+    });
+
+    commands.push(...renderAccountMonthTotal(section, margin, y, contentWidth));
+    y -= 40;
+  });
+
+  if (y < 94) {
+    finishPage();
+    startPage();
+  }
+  commands.push(...renderAccountMonthGrandTotal(grandTotal, margin, y, contentWidth));
+  finishPage();
+
+  pages.forEach((pageCommands, pageIndex) => {
+    pageCommands.push(...renderAccountMonthFooter(pageIndex, pages.length, margin, pageWidth));
+    const content = pageCommands.join("\n");
+    const contentObjectId = objects.length;
+    objects[contentObjectId] = `<< /Length ${content.length} >>\nstream\n${content}\nendstream`;
+    const pageObjectId = objects.length;
+    pageObjectIds.push(pageObjectId);
+    objects[pageObjectId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentObjectId} 0 R >>`;
+  });
+
+  objects[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+  objects[2] = `<< /Type /Pages /Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageObjectIds.length} >>`;
+  objects[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+  objects[4] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>";
+  const blob = new Blob([buildPdfDocument(objects)], { type: "application/pdf" });
+  downloadBlob(filename, blob);
 }
 
 function normalizeExportRows(rows) {
@@ -7892,10 +7989,137 @@ const CRC32_TABLE = (() => {
 
 function pdfText(value) {
   return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^\x20-\x7E]/g, "?")
     .replace(/\\/g, "\\\\")
     .replace(/\(/g, "\\(")
     .replace(/\)/g, "\\)");
+}
+
+function buildPdfDocument(objects) {
+  const bodyParts = ["%PDF-1.4\n"];
+  const offsets = [0];
+  for (let index = 1; index < objects.length; index += 1) {
+    offsets[index] = bodyParts.join("").length;
+    bodyParts.push(`${index} 0 obj\n${objects[index]}\nendobj\n`);
+  }
+  const xrefOffset = bodyParts.join("").length;
+  bodyParts.push(`xref\n0 ${objects.length}\n0000000000 65535 f \n`);
+  for (let index = 1; index < objects.length; index += 1) {
+    bodyParts.push(`${String(offsets[index]).padStart(10, "0")} 00000 n \n`);
+  }
+  bodyParts.push(`trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+  return bodyParts.join("");
+}
+
+function groupAccountMonthRows(rows) {
+  const groups = new Map();
+  rows.forEach((row) => {
+    const month = cleanExportText(row.Month || "Unspecified");
+    if (!groups.has(month)) {
+      groups.set(month, { title: month, items: [], total: 0 });
+    }
+    const total = Number(row.Total || 0);
+    groups.get(month).items.push({
+      account: cleanExportText(row.Account || "Unspecified"),
+      count: Number(row.Donations || 0),
+      total: Number.isFinite(total) ? total : 0,
+    });
+    groups.get(month).total += Number.isFinite(total) ? total : 0;
+  });
+
+  return Array.from(groups.values());
+}
+
+function renderAccountMonthPageHeader({ contentWidth, generatedAt, grandTotal, margin, pageHeight, pageWidth, sectionCount, title }) {
+  const cardWidth = (contentWidth - 20) / 3;
+  return [
+    "1 1 1 rg 0 0 612 792 re f",
+    "0.105 0.378 0.333 rg 0 0 612 792 re f",
+    "1 1 1 rg 0 96 612 696 re f",
+    "0.920 0.965 0.945 rg 0 676 612 20 re f",
+    pdfTextCommand("WeSERVE", margin, 744, 13, "F2", "1 1 1 rg"),
+    pdfTextCommand("DONATION REPORT", margin, 718, 23, "F2", "1 1 1 rg"),
+    pdfTextCommand(truncatePdfText(title, 300, 9.4), margin, 700, 9.4, "F1", "0.865 0.955 0.925 rg"),
+    pdfRightTextCommand(`Generated ${generatedAt}`, pageWidth - margin, 744, 9.4, "F1", "0.865 0.955 0.925 rg"),
+    `0.955 0.985 0.972 rg ${margin} 616 ${cardWidth} 54 re f`,
+    `0.880 0.930 0.910 RG 0.7 w ${margin} 616 ${cardWidth} 54 re S`,
+    pdfTextCommand("Grand total", margin + 12, 650, 8.8, "F1", "0.335 0.430 0.400 rg"),
+    pdfTextCommand(formatPdfCurrency(grandTotal), margin + 12, 628, 17, "F2", "0.105 0.378 0.333 rg"),
+    `0.980 0.990 0.985 rg ${margin + cardWidth + 10} 616 ${cardWidth} 54 re f`,
+    `0.880 0.930 0.910 RG 0.7 w ${margin + cardWidth + 10} 616 ${cardWidth} 54 re S`,
+    pdfTextCommand("Months", margin + cardWidth + 22, 650, 8.8, "F1", "0.335 0.430 0.400 rg"),
+    pdfTextCommand(String(sectionCount), margin + cardWidth + 22, 628, 17, "F2", "0.105 0.378 0.333 rg"),
+    `0.980 0.990 0.985 rg ${margin + cardWidth * 2 + 20} 616 ${cardWidth} 54 re f`,
+    `0.880 0.930 0.910 RG 0.7 w ${margin + cardWidth * 2 + 20} 616 ${cardWidth} 54 re S`,
+    pdfTextCommand("Format", margin + cardWidth * 2 + 32, 650, 8.8, "F1", "0.335 0.430 0.400 rg"),
+    pdfTextCommand("Monthly by account", margin + cardWidth * 2 + 32, 628, 13, "F2", "0.105 0.378 0.333 rg"),
+  ];
+}
+
+function renderAccountMonthSectionHeader(section, margin, y, contentWidth) {
+  return [
+    `0.945 0.980 0.965 rg ${margin} ${y - 30} ${contentWidth} 34 re f`,
+    `0.760 0.870 0.830 RG 0.8 w ${margin} ${y - 30} ${contentWidth} 34 re S`,
+    `0.105 0.378 0.333 rg ${margin} ${y - 30} 5 34 re f`,
+    pdfTextCommand(section.title, margin + 16, y - 10, 13.5, "F2", "0.105 0.378 0.333 rg"),
+    pdfRightTextCommand(formatPdfCurrency(section.total), margin + contentWidth - 16, y - 10, 13.5, "F2", "0.105 0.378 0.333 rg"),
+    pdfRightTextCommand("Month total", margin + contentWidth - 16, y - 24, 7.8, "F1", "0.390 0.490 0.460 rg"),
+  ];
+}
+
+function renderAccountMonthContinuedHeader(section, margin, y, contentWidth) {
+  return [
+    `0.965 0.985 0.975 rg ${margin} ${y - 28} ${contentWidth} 30 re f`,
+    `0.760 0.870 0.830 RG 0.8 w ${margin} ${y - 28} ${contentWidth} 30 re S`,
+    pdfTextCommand(`${section.title} continued`, margin + 14, y - 10, 12.2, "F2", "0.105 0.378 0.333 rg"),
+  ];
+}
+
+function renderAccountMonthTableHeader(margin, y, contentWidth) {
+  return [
+    `0.105 0.378 0.333 rg ${margin} ${y - 18} ${contentWidth} 20 re f`,
+    pdfTextCommand("Account", margin + 12, y - 12, 8.6, "F2", "1 1 1 rg"),
+    pdfRightTextCommand("Donations", margin + contentWidth - 132, y - 12, 8.6, "F2", "1 1 1 rg"),
+    pdfRightTextCommand("Total", margin + contentWidth - 12, y - 12, 8.6, "F2", "1 1 1 rg"),
+  ];
+}
+
+function renderAccountMonthRow(item, index, margin, y, contentWidth) {
+  const fill = index % 2 === 0 ? "1 1 1" : "0.980 0.990 0.985";
+  return [
+    `${fill} rg ${margin} ${y - 20} ${contentWidth} 24 re f`,
+    `0.875 0.925 0.905 RG 0.45 w ${margin} ${y - 20} ${contentWidth} 24 re S`,
+    pdfTextCommand(truncatePdfText(item.account, contentWidth - 188, 9.5), margin + 12, y - 12, 9.5, "F1", "0.120 0.145 0.160 rg"),
+    pdfRightTextCommand(String(item.count), margin + contentWidth - 132, y - 12, 9.5, "F1", "0.245 0.315 0.295 rg"),
+    pdfRightTextCommand(formatPdfCurrency(item.total), margin + contentWidth - 12, y - 12, 9.5, "F2", "0.120 0.145 0.160 rg"),
+  ];
+}
+
+function renderAccountMonthTotal(section, margin, y, contentWidth) {
+  return [
+    `0.925 0.965 0.948 rg ${margin + contentWidth - 194} ${y - 24} 194 28 re f`,
+    `0.105 0.378 0.333 RG 0.8 w ${margin + contentWidth - 194} ${y - 24} 194 28 re S`,
+    pdfTextCommand("Total", margin + contentWidth - 182, y - 13, 10.2, "F2", "0.105 0.378 0.333 rg"),
+    pdfRightTextCommand(formatPdfCurrency(section.total), margin + contentWidth - 12, y - 13, 10.8, "F2", "0.105 0.378 0.333 rg"),
+  ];
+}
+
+function renderAccountMonthGrandTotal(grandTotal, margin, y, contentWidth) {
+  return [
+    `0.105 0.378 0.333 rg ${margin} ${y - 46} ${contentWidth} 46 re f`,
+    pdfTextCommand("GRAND TOTAL", margin + 16, y - 28, 13, "F2", "1 1 1 rg"),
+    pdfRightTextCommand(formatPdfCurrency(grandTotal), margin + contentWidth - 16, y - 28, 17, "F2", "1 1 1 rg"),
+  ];
+}
+
+function renderAccountMonthFooter(pageIndex, totalPages, margin, pageWidth) {
+  return [
+    "0.840 0.890 0.880 RG 0.7 w 42 34 m 570 34 l S",
+    pdfTextCommand("WeSERVE report", margin, 20, 8.8, "F1", "0.350 0.410 0.430 rg"),
+    pdfRightTextCommand(`Page ${pageIndex + 1} of ${totalPages}`, pageWidth - margin, 20, 8.8, "F1", "0.350 0.410 0.430 rg"),
+  ];
 }
 
 function renderPdfExportPage({ columnWidths, generatedAt, headers, margin, pageHeight, pageIndex, pageRows, pageWidth, rowCount, title, totalPages }) {
@@ -7943,6 +8167,20 @@ function renderPdfExportPage({ columnWidths, generatedAt, headers, margin, pageH
 
 function pdfTextCommand(text, x, y, size, font = "F1", color = "0 0 0 rg") {
   return `BT ${color} /${font} ${size} Tf ${x} ${y} Td (${pdfText(text)}) Tj ET`;
+}
+
+function pdfRightTextCommand(text, x, y, size, font = "F1", color = "0 0 0 rg") {
+  const normalized = String(text || "");
+  const estimatedWidth = normalized.length * size * 0.52;
+  return pdfTextCommand(normalized, x - estimatedWidth, y, size, font, color);
+}
+
+function formatPdfCurrency(value) {
+  const amount = Number(value || 0);
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+  const sign = safeAmount < 0 ? "-" : "";
+  const [integer, decimal] = Math.abs(safeAmount).toFixed(2).split(".");
+  return `${sign}${integer.replace(/\B(?=(\d{3})+(?!\d))/g, " ")},${decimal} $`;
 }
 
 function pdfColumnWidths(headers, rows, tableWidth) {
