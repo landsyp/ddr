@@ -7701,6 +7701,8 @@ function isAccountMonthReport(headers) {
 
 function downloadAccountMonthReportPDF(filename, rows, reportHeaderData, t) {
   const sections = groupAccountMonthRows(rows);
+  const grandTotal = sections.reduce((sum, section) => sum + section.total, 0);
+  const donationCount = sections.reduce((sum, section) => sum + section.count, 0);
   const pageWidth = 612;
   const pageHeight = 792;
   const margin = 42;
@@ -7755,6 +7757,12 @@ function downloadAccountMonthReportPDF(filename, rows, reportHeaderData, t) {
 
     y -= 14;
   });
+
+  if (y < 190) {
+    finishPage();
+    startPage();
+  }
+  commands.push(...renderAccountMonthReportTotals({ contentWidth, donationCount, grandTotal, margin, t, y }));
   finishPage();
 
   pages.forEach((pageCommands, pageIndex) => {
@@ -8096,6 +8104,30 @@ function renderAccountMonthRow(item, index, margin, y, contentWidth, t) {
     pdfTextCommand(truncatePdfText(item.account, contentWidth - 190, 10.3), margin + 20, y - 14, 10.3, "F2", "0.120 0.145 0.160 rg"),
     pdfTextCommand(`${item.count} ${t?.reports?.countLabel || "donations"}`, margin + 20, y - 29, 8.7, "F1", "0.430 0.500 0.480 rg"),
     pdfRightTextCommand(formatPdfCurrency(item.total), margin + contentWidth - 20, y - 21, 10.8, "F2", "0.120 0.145 0.160 rg"),
+  ];
+}
+
+function renderAccountMonthReportTotals({ contentWidth, donationCount, grandTotal, margin, t, y }) {
+  const countLabel = t?.reports?.rows || "Rows";
+  const summaryLabel = t?.reports?.summary || "Summary";
+  const totalLabel = t?.receipts?.total || "Total";
+  const cardGap = 12;
+  const cardWidth = (contentWidth - cardGap) / 2;
+
+  return [
+    `0.105 0.378 0.333 rg ${margin} ${y - 72} ${contentWidth} 64 re f`,
+    `0.920 0.965 0.945 rg ${margin} ${y - 8} ${contentWidth} 6 re f`,
+    pdfTextCommand(summaryLabel.toUpperCase(), margin + 18, y - 30, 8.4, "F2", "0.865 0.955 0.925 rg"),
+    pdfTextCommand(totalLabel, margin + 18, y - 52, 10.4, "F1", "1 1 1 rg"),
+    pdfTextCommand(formatPdfCurrency(grandTotal), margin + 90, y - 53, 18, "F2", "1 1 1 rg"),
+    `0.955 0.985 0.972 rg ${margin} ${y - 136} ${cardWidth} 48 re f`,
+    `0.815 0.885 0.860 RG 0.8 w ${margin} ${y - 136} ${cardWidth} 48 re S`,
+    pdfTextCommand(countLabel, margin + 14, y - 108, 8.8, "F1", "0.430 0.500 0.480 rg"),
+    pdfTextCommand(String(donationCount), margin + 14, y - 128, 15.5, "F2", "0.105 0.378 0.333 rg"),
+    `0.955 0.985 0.972 rg ${margin + cardWidth + cardGap} ${y - 136} ${cardWidth} 48 re f`,
+    `0.815 0.885 0.860 RG 0.8 w ${margin + cardWidth + cardGap} ${y - 136} ${cardWidth} 48 re S`,
+    pdfTextCommand(totalLabel, margin + cardWidth + cardGap + 14, y - 108, 8.8, "F1", "0.430 0.500 0.480 rg"),
+    pdfTextCommand(formatPdfCurrency(grandTotal), margin + cardWidth + cardGap + 14, y - 128, 15.5, "F2", "0.105 0.378 0.333 rg"),
   ];
 }
 
