@@ -156,6 +156,7 @@ const copy = {
       delivered: "Delivered",
       print: "Print",
       invalidEmail: "Invalid email",
+      from: "from",
       to: "to",
       previous: "Previous",
       next: "Next",
@@ -785,6 +786,7 @@ const copy = {
       delivered: "Livré",
       print: "Imprimer",
       invalidEmail: "Courriel non valide",
+      from: "du",
       to: "au",
       previous: "Précédent",
       next: "Suivant",
@@ -1987,7 +1989,13 @@ function App() {
       const data = formObject(event.currentTarget);
       const params = new URLSearchParams(data);
       const result = await api(`/api/reports?${params.toString()}`);
-      setReportResult({ type: data.type, ...result });
+      setReportResult({
+        type: data.type,
+        groupBy: data.groupBy,
+        dateDebut: data.dateDebut,
+        dateFin: data.dateFin,
+        ...result,
+      });
       showNotice(t.reports.refreshed);
     } catch (saveError) {
       showError(saveError.message);
@@ -5489,6 +5497,7 @@ function Reports({ customTemplates = [], reportResult, t, onCreateTemplate, onRu
   const reportTemplates = [...t.reports.templates, ...customTemplates];
   const selectedTemplate = reportTemplates.find((template) => template.id === selectedTemplateId) || reportTemplates[0];
   const downloadableRows = reportExportRows(rows, summary, selectedTemplate, t);
+  const reportPdfTitle = reportTitle(selectedTemplate, reportResult, t);
   const reportRowCount = Array.isArray(rows) ? rows.length : 0;
   const reportGroupCount = summary.length;
   const reportTotal = summary.reduce((sum, item) => sum + Number(item.total || 0), 0);
@@ -5689,7 +5698,7 @@ function Reports({ customTemplates = [], reportResult, t, onCreateTemplate, onRu
             <ExportMenu
               disabled={!downloadableRows.length}
               filename={t.common.exportNames.report}
-              pdfOptions={{ type: "report", template: selectedTemplate }}
+              pdfOptions={{ reportTitle: reportPdfTitle, type: "report", template: selectedTemplate }}
               rows={downloadableRows}
               t={t}
             />
@@ -5893,6 +5902,18 @@ function reportExportRows(rows, summary, selectedTemplate, t) {
     Amount: row.montant,
     Status: translateStatus(row.receiptStatus, t),
   }));
+}
+
+function reportTitle(selectedTemplate, reportResult, t) {
+  const templateTitle = selectedTemplate?.title || t.reports.report;
+  const start = reportResult?.dateDebut;
+  const end = reportResult?.dateFin;
+
+  if (start && end) {
+    return `${templateTitle} ${t.common.from} ${start} ${t.common.to} ${end}`;
+  }
+
+  return templateTitle;
 }
 
 function TenantsView({ tenants = [], t }) {
@@ -7586,7 +7607,7 @@ function downloadPDF(filename, rows, t, pdfOptions = {}) {
   const safeFilename = filename.endsWith(".pdf") ? filename : filename.replace(/\.[^.]+$/, "") + ".pdf";
   const title = safeFilename.replace(/\.pdf$/i, "").replace(/[-_]+/g, " ");
   if (pdfOptions.type === "report" && pdfOptions.template?.groupBy === "accountMonth" && isAccountMonthReport(headers)) {
-    downloadAccountMonthReportPDF(safeFilename, normalizedRows, title, t);
+    downloadAccountMonthReportPDF(safeFilename, normalizedRows, pdfOptions.reportTitle || title, t);
     return;
   }
 
@@ -8032,8 +8053,8 @@ function renderAccountMonthPageHeader({ contentWidth, generatedAt, margin, pageH
     "0.105 0.378 0.333 rg 0 716 612 76 re f",
     "0.920 0.965 0.945 rg 0 704 612 12 re f",
     pdfTextCommand("WeSERVE", margin, 758, 12, "F2", "1 1 1 rg"),
-    pdfTextCommand(t?.reports?.generatedView || "Generated view", margin, 733, 20, "F2", "1 1 1 rg"),
-    pdfTextCommand(truncatePdfText(title, 300, 9.2), margin, 718, 9.2, "F1", "0.865 0.955 0.925 rg"),
+    pdfTextCommand(truncatePdfText(title, 425, 20), margin, 733, 20, "F2", "1 1 1 rg"),
+    pdfTextCommand(t?.reports?.generatedView || "Generated view", margin, 718, 9.2, "F1", "0.865 0.955 0.925 rg"),
     pdfRightTextCommand(`Generated ${generatedAt}`, pageWidth - margin, 758, 9.2, "F1", "0.865 0.955 0.925 rg"),
     `1 1 1 rg ${margin} ${pageHeight - 128} ${contentWidth} 1 re f`,
   ];
