@@ -393,6 +393,11 @@ const copy = {
       group: "Group",
       rows: "Rows",
       details: "Details",
+      dateCreated: "Date Created",
+      dateEntered: "Date Entered",
+      donorNumber: "Donor Number",
+      receiptNumber: "Receipt Number",
+      deliveryCode: "Delivery Code",
       month: "Month",
       accountsByMonth: "Accounts by month",
       generatedView: "Generated view",
@@ -1022,6 +1027,11 @@ const copy = {
       group: "Groupe",
       rows: "Lignes",
       details: "Détails",
+      dateCreated: "Date créée",
+      dateEntered: "Date saisie",
+      donorNumber: "Numéro de donateur",
+      receiptNumber: "Numéro de reçu",
+      deliveryCode: "Code d'envoi",
       month: "Mois",
       accountsByMonth: "Comptes par mois",
       generatedView: "Vue générée",
@@ -5752,10 +5762,11 @@ function ReportResultView({ rows, selectedTemplate, summary, t }) {
   }
 
   if (selectedTemplate.type === "receipts") {
+    const receiptRows = receiptReportRows(rows, t);
     return (
       <DataTable
-        columns={Object.keys(rows[0] || {}).slice(0, 8)}
-        rows={rows.slice(0, 50).map((row) => Object.values(row).slice(0, 8).map(formatCell))}
+        columns={Object.keys(receiptRows[0] || {})}
+        rows={receiptRows.map((row) => Object.values(row).map(formatCell))}
         t={t}
       />
     );
@@ -5889,7 +5900,7 @@ function reportExportRows(rows, summary, selectedTemplate, t) {
   }
 
   if (selectedTemplate?.type === "receipts") {
-    return rows.map((row) => ({ ...row }));
+    return receiptReportRows(rows, t);
   }
 
   return rows.map((row) => ({
@@ -5915,6 +5926,21 @@ function reportHeader(selectedTemplate, reportResult, t) {
   }
 
   return { title: templateTitle, subtitle: "" };
+}
+
+function receiptReportRows(rows, t) {
+  return rows.map((row) => ({
+    [t.reports.receiptNumber]: row.noRecu || row.recuID || "",
+    [t.reports.donorNumber]: row.numero || "",
+    [t.reports.donor]: `${row.prenom || ""} ${row.nom || ""}`.trim() || t.common.unspecified,
+    [t.common.email]: row.courriel || "",
+    [t.reports.dateCreated]: row.dateCreation || "",
+    [t.receipts.startDate]: row.dateDebut || "",
+    [t.receipts.endDate]: row.dateFin || "",
+    [t.receipts.total]: row.montant || 0,
+    [t.common.status]: humanStatus(row.statut, t),
+    [t.reports.deliveryCode]: row.envoiCode || "",
+  }));
 }
 
 function TenantsView({ tenants = [], t }) {
