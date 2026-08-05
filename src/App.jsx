@@ -5686,7 +5686,13 @@ function Reports({ customTemplates = [], reportResult, t, onCreateTemplate, onRu
               <BarChart3 size={17} />
               <span>{t.reports.run}</span>
             </button>
-            <ExportMenu disabled={!downloadableRows.length} filename={t.common.exportNames.report} rows={downloadableRows} t={t} />
+            <ExportMenu
+              disabled={!downloadableRows.length}
+              filename={t.common.exportNames.report}
+              pdfOptions={{ type: "report", template: selectedTemplate }}
+              rows={downloadableRows}
+              t={t}
+            />
           </div>
         </form>
       </Panel>
@@ -7169,13 +7175,13 @@ function slugFilename(value) {
     .replace(/-{2,}/g, "-");
 }
 
-function ExportMenu({ disabled = false, filename, rows, t }) {
+function ExportMenu({ disabled = false, filename, pdfOptions, rows, t }) {
   const [open, setOpen] = useState(false);
   const baseFilename = exportFilenameBase(filename);
   const options = [
     { label: t.common.csv, icon: FileText, action: () => downloadCSV(`${baseFilename}.csv`, rows) },
     { label: t.common.excel, icon: FileSpreadsheet, action: () => downloadExcel(`${baseFilename}.xlsx`, rows) },
-    { label: t.common.pdf, icon: Download, action: () => downloadPDF(`${baseFilename}.pdf`, rows) },
+    { label: t.common.pdf, icon: Download, action: () => downloadPDF(`${baseFilename}.pdf`, rows, t, pdfOptions) },
   ];
 
   function runExport(action) {
@@ -7571,7 +7577,7 @@ function downloadExcel(filename, rows) {
   downloadBlob(safeFilename, blob);
 }
 
-function downloadPDF(filename, rows) {
+function downloadPDF(filename, rows, t, pdfOptions = {}) {
   const { headers, normalizedRows } = normalizeExportRows(rows);
   if (!normalizedRows.length) {
     return;
@@ -7579,8 +7585,8 @@ function downloadPDF(filename, rows) {
 
   const safeFilename = filename.endsWith(".pdf") ? filename : filename.replace(/\.[^.]+$/, "") + ".pdf";
   const title = safeFilename.replace(/\.pdf$/i, "").replace(/[-_]+/g, " ");
-  if (isAccountMonthReport(headers)) {
-    downloadAccountMonthReportPDF(safeFilename, normalizedRows, title);
+  if (pdfOptions.type === "report" && pdfOptions.template?.groupBy === "accountMonth" && isAccountMonthReport(headers)) {
+    downloadAccountMonthReportPDF(safeFilename, normalizedRows, title, t);
     return;
   }
 
@@ -7669,9 +7675,8 @@ function isAccountMonthReport(headers) {
   return ["Month", "Account", "Total"].every((header) => headers.includes(header));
 }
 
-function downloadAccountMonthReportPDF(filename, rows, title) {
+function downloadAccountMonthReportPDF(filename, rows, title, t) {
   const sections = groupAccountMonthRows(rows);
-  const grandTotal = sections.reduce((sum, section) => sum + section.total, 0);
   const pageWidth = 612;
   const pageHeight = 792;
   const margin = 42;
@@ -7687,14 +7692,13 @@ function downloadAccountMonthReportPDF(filename, rows, title) {
     commands = renderAccountMonthPageHeader({
       contentWidth,
       generatedAt,
-      grandTotal,
       margin,
       pageHeight,
       pageWidth,
-      sectionCount: sections.length,
       title,
+      t,
     });
-    y = pageHeight - 188;
+    y = pageHeight - 142;
   }
 
   function finishPage() {
@@ -7703,40 +7707,29 @@ function downloadAccountMonthReportPDF(filename, rows, title) {
 
   startPage();
   sections.forEach((section) => {
-    const sectionHeight = 48 + section.items.length * 24 + 32;
+    const sectionHeight = 64 + section.items.length * 44 + 18;
     if (y - Math.min(sectionHeight, 128) < 64) {
       finishPage();
       startPage();
     }
 
-    commands.push(...renderAccountMonthSectionHeader(section, margin, y, contentWidth));
-    y -= 48;
-    commands.push(...renderAccountMonthTableHeader(margin, y, contentWidth));
-    y -= 24;
+    commands.push(...renderAccountMonthSectionHeader(section, margin, y, contentWidth, t));
+    y -= 64;
 
     section.items.forEach((item, index) => {
       if (y < 72) {
         finishPage();
         startPage();
-        commands.push(...renderAccountMonthContinuedHeader(section, margin, y, contentWidth));
-        y -= 42;
-        commands.push(...renderAccountMonthTableHeader(margin, y, contentWidth));
-        y -= 24;
+        commands.push(...renderAccountMonthContinuedHeader(section, margin, y, contentWidth, t));
+        y -= 58;
       }
 
-      commands.push(...renderAccountMonthRow(item, index, margin, y, contentWidth));
-      y -= 24;
+      commands.push(...renderAccountMonthRow(item, index, margin, y, contentWidth, t));
+      y -= 44;
     });
 
-    commands.push(...renderAccountMonthTotal(section, margin, y, contentWidth));
-    y -= 40;
+    y -= 14;
   });
-
-  if (y < 94) {
-    finishPage();
-    startPage();
-  }
-  commands.push(...renderAccountMonthGrandTotal(grandTotal, margin, y, contentWidth));
   finishPage();
 
   pages.forEach((pageCommands, pageIndex) => {
@@ -8032,85 +8025,52 @@ function groupAccountMonthRows(rows) {
   return Array.from(groups.values());
 }
 
-function renderAccountMonthPageHeader({ contentWidth, generatedAt, grandTotal, margin, pageHeight, pageWidth, sectionCount, title }) {
-  const cardWidth = (contentWidth - 20) / 3;
+function renderAccountMonthPageHeader({ contentWidth, generatedAt, margin, pageHeight, pageWidth, title, t }) {
   return [
     "1 1 1 rg 0 0 612 792 re f",
-    "0.105 0.378 0.333 rg 0 0 612 792 re f",
-    "1 1 1 rg 0 96 612 696 re f",
-    "0.920 0.965 0.945 rg 0 676 612 20 re f",
-    pdfTextCommand("WeSERVE", margin, 744, 13, "F2", "1 1 1 rg"),
-    pdfTextCommand("DONATION REPORT", margin, 718, 23, "F2", "1 1 1 rg"),
-    pdfTextCommand(truncatePdfText(title, 300, 9.4), margin, 700, 9.4, "F1", "0.865 0.955 0.925 rg"),
-    pdfRightTextCommand(`Generated ${generatedAt}`, pageWidth - margin, 744, 9.4, "F1", "0.865 0.955 0.925 rg"),
-    `0.955 0.985 0.972 rg ${margin} 616 ${cardWidth} 54 re f`,
-    `0.880 0.930 0.910 RG 0.7 w ${margin} 616 ${cardWidth} 54 re S`,
-    pdfTextCommand("Grand total", margin + 12, 650, 8.8, "F1", "0.335 0.430 0.400 rg"),
-    pdfTextCommand(formatPdfCurrency(grandTotal), margin + 12, 628, 17, "F2", "0.105 0.378 0.333 rg"),
-    `0.980 0.990 0.985 rg ${margin + cardWidth + 10} 616 ${cardWidth} 54 re f`,
-    `0.880 0.930 0.910 RG 0.7 w ${margin + cardWidth + 10} 616 ${cardWidth} 54 re S`,
-    pdfTextCommand("Months", margin + cardWidth + 22, 650, 8.8, "F1", "0.335 0.430 0.400 rg"),
-    pdfTextCommand(String(sectionCount), margin + cardWidth + 22, 628, 17, "F2", "0.105 0.378 0.333 rg"),
-    `0.980 0.990 0.985 rg ${margin + cardWidth * 2 + 20} 616 ${cardWidth} 54 re f`,
-    `0.880 0.930 0.910 RG 0.7 w ${margin + cardWidth * 2 + 20} 616 ${cardWidth} 54 re S`,
-    pdfTextCommand("Format", margin + cardWidth * 2 + 32, 650, 8.8, "F1", "0.335 0.430 0.400 rg"),
-    pdfTextCommand("Monthly by account", margin + cardWidth * 2 + 32, 628, 13, "F2", "0.105 0.378 0.333 rg"),
+    "0.985 0.992 0.988 rg 0 0 612 792 re f",
+    "0.105 0.378 0.333 rg 0 716 612 76 re f",
+    "0.920 0.965 0.945 rg 0 704 612 12 re f",
+    pdfTextCommand("WeSERVE", margin, 758, 12, "F2", "1 1 1 rg"),
+    pdfTextCommand(t?.reports?.generatedView || "Generated view", margin, 733, 20, "F2", "1 1 1 rg"),
+    pdfTextCommand(truncatePdfText(title, 300, 9.2), margin, 718, 9.2, "F1", "0.865 0.955 0.925 rg"),
+    pdfRightTextCommand(`Generated ${generatedAt}`, pageWidth - margin, 758, 9.2, "F1", "0.865 0.955 0.925 rg"),
+    `1 1 1 rg ${margin} ${pageHeight - 128} ${contentWidth} 1 re f`,
   ];
 }
 
-function renderAccountMonthSectionHeader(section, margin, y, contentWidth) {
+function renderAccountMonthSectionHeader(section, margin, y, contentWidth, t) {
   return [
-    `0.945 0.980 0.965 rg ${margin} ${y - 30} ${contentWidth} 34 re f`,
-    `0.760 0.870 0.830 RG 0.8 w ${margin} ${y - 30} ${contentWidth} 34 re S`,
-    `0.105 0.378 0.333 rg ${margin} ${y - 30} 5 34 re f`,
-    pdfTextCommand(section.title, margin + 16, y - 10, 13.5, "F2", "0.105 0.378 0.333 rg"),
-    pdfRightTextCommand(formatPdfCurrency(section.total), margin + contentWidth - 16, y - 10, 13.5, "F2", "0.105 0.378 0.333 rg"),
-    pdfRightTextCommand("Month total", margin + contentWidth - 16, y - 24, 7.8, "F1", "0.390 0.490 0.460 rg"),
+    `1 1 1 rg ${margin} ${y - 54} ${contentWidth} 58 re f`,
+    `0.815 0.885 0.860 RG 0.8 w ${margin} ${y - 54} ${contentWidth} 58 re S`,
+    `0.930 0.975 0.955 rg ${margin} ${y - 54} ${contentWidth} 58 re f`,
+    `0.105 0.378 0.333 rg ${margin} ${y - 54} 5 58 re f`,
+    pdfTextCommand((t?.reports?.monthlySections || "Monthly sections").toUpperCase(), margin + 18, y - 18, 7.8, "F2", "0.430 0.500 0.480 rg"),
+    pdfTextCommand(section.title, margin + 18, y - 39, 15.2, "F2", "0.120 0.145 0.160 rg"),
+    pdfRightTextCommand(formatPdfCurrency(section.total), margin + contentWidth - 18, y - 28, 17, "F2", "0.105 0.378 0.333 rg"),
   ];
 }
 
-function renderAccountMonthContinuedHeader(section, margin, y, contentWidth) {
+function renderAccountMonthContinuedHeader(section, margin, y, contentWidth, t) {
   return [
-    `0.965 0.985 0.975 rg ${margin} ${y - 28} ${contentWidth} 30 re f`,
-    `0.760 0.870 0.830 RG 0.8 w ${margin} ${y - 28} ${contentWidth} 30 re S`,
-    pdfTextCommand(`${section.title} continued`, margin + 14, y - 10, 12.2, "F2", "0.105 0.378 0.333 rg"),
+    `1 1 1 rg ${margin} ${y - 48} ${contentWidth} 52 re f`,
+    `0.815 0.885 0.860 RG 0.8 w ${margin} ${y - 48} ${contentWidth} 52 re S`,
+    `0.930 0.975 0.955 rg ${margin} ${y - 48} ${contentWidth} 52 re f`,
+    `0.105 0.378 0.333 rg ${margin} ${y - 48} 5 52 re f`,
+    pdfTextCommand((t?.reports?.monthlySections || "Monthly sections").toUpperCase(), margin + 18, y - 17, 7.8, "F2", "0.430 0.500 0.480 rg"),
+    pdfTextCommand(`${section.title} continued`, margin + 18, y - 36, 13.2, "F2", "0.120 0.145 0.160 rg"),
+    pdfRightTextCommand(formatPdfCurrency(section.total), margin + contentWidth - 18, y - 28, 14, "F2", "0.105 0.378 0.333 rg"),
   ];
 }
 
-function renderAccountMonthTableHeader(margin, y, contentWidth) {
+function renderAccountMonthRow(item, index, margin, y, contentWidth, t) {
+  const fill = index % 2 === 0 ? "1 1 1" : "0.985 0.992 0.988";
   return [
-    `0.105 0.378 0.333 rg ${margin} ${y - 18} ${contentWidth} 20 re f`,
-    pdfTextCommand("Account", margin + 12, y - 12, 8.6, "F2", "1 1 1 rg"),
-    pdfRightTextCommand("Donations", margin + contentWidth - 132, y - 12, 8.6, "F2", "1 1 1 rg"),
-    pdfRightTextCommand("Total", margin + contentWidth - 12, y - 12, 8.6, "F2", "1 1 1 rg"),
-  ];
-}
-
-function renderAccountMonthRow(item, index, margin, y, contentWidth) {
-  const fill = index % 2 === 0 ? "1 1 1" : "0.980 0.990 0.985";
-  return [
-    `${fill} rg ${margin} ${y - 20} ${contentWidth} 24 re f`,
-    `0.875 0.925 0.905 RG 0.45 w ${margin} ${y - 20} ${contentWidth} 24 re S`,
-    pdfTextCommand(truncatePdfText(item.account, contentWidth - 188, 9.5), margin + 12, y - 12, 9.5, "F1", "0.120 0.145 0.160 rg"),
-    pdfRightTextCommand(String(item.count), margin + contentWidth - 132, y - 12, 9.5, "F1", "0.245 0.315 0.295 rg"),
-    pdfRightTextCommand(formatPdfCurrency(item.total), margin + contentWidth - 12, y - 12, 9.5, "F2", "0.120 0.145 0.160 rg"),
-  ];
-}
-
-function renderAccountMonthTotal(section, margin, y, contentWidth) {
-  return [
-    `0.925 0.965 0.948 rg ${margin + contentWidth - 194} ${y - 24} 194 28 re f`,
-    `0.105 0.378 0.333 RG 0.8 w ${margin + contentWidth - 194} ${y - 24} 194 28 re S`,
-    pdfTextCommand("Total", margin + contentWidth - 182, y - 13, 10.2, "F2", "0.105 0.378 0.333 rg"),
-    pdfRightTextCommand(formatPdfCurrency(section.total), margin + contentWidth - 12, y - 13, 10.8, "F2", "0.105 0.378 0.333 rg"),
-  ];
-}
-
-function renderAccountMonthGrandTotal(grandTotal, margin, y, contentWidth) {
-  return [
-    `0.105 0.378 0.333 rg ${margin} ${y - 46} ${contentWidth} 46 re f`,
-    pdfTextCommand("GRAND TOTAL", margin + 16, y - 28, 13, "F2", "1 1 1 rg"),
-    pdfRightTextCommand(formatPdfCurrency(grandTotal), margin + contentWidth - 16, y - 28, 17, "F2", "1 1 1 rg"),
+    `${fill} rg ${margin + 8} ${y - 36} ${contentWidth - 16} 42 re f`,
+    `0.870 0.900 0.890 RG 0.45 w ${margin + 8} ${y - 36} ${contentWidth - 16} 42 re S`,
+    pdfTextCommand(truncatePdfText(item.account, contentWidth - 190, 10.3), margin + 20, y - 14, 10.3, "F2", "0.120 0.145 0.160 rg"),
+    pdfTextCommand(`${item.count} ${t?.reports?.countLabel || "donations"}`, margin + 20, y - 29, 8.7, "F1", "0.430 0.500 0.480 rg"),
+    pdfRightTextCommand(formatPdfCurrency(item.total), margin + contentWidth - 20, y - 21, 10.8, "F2", "0.120 0.145 0.160 rg"),
   ];
 }
 
