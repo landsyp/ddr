@@ -5910,7 +5910,7 @@ function reportTitle(selectedTemplate, reportResult, t) {
   const end = reportResult?.dateFin;
 
   if (start && end) {
-    return `${templateTitle} ${t.common.from} ${start} ${t.common.to} ${end}`;
+    return `${templateTitle} (${start} ${t.common.to} ${end})`;
   }
 
   return templateTitle;
