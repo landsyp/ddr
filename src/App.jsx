@@ -1997,12 +1997,13 @@ function App() {
       const data = formObject(event.currentTarget);
       const params = new URLSearchParams(data);
       const result = await api(`/api/reports?${params.toString()}`);
+      const normalizedResult = Array.isArray(result) ? { rows: result, summary: [] } : result;
       setReportResult({
         type: data.type,
         groupBy: data.groupBy,
         dateDebut: data.dateDebut,
         dateFin: data.dateFin,
-        ...result,
+        ...normalizedResult,
       });
       showNotice(t.reports.refreshed);
     } catch (saveError) {
@@ -5874,8 +5875,11 @@ function DonationDetailReport({ rows, t }) {
 }
 
 function reportExportRows(rows, summary, selectedTemplate, t) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+  const safeSummary = Array.isArray(summary) ? summary : [];
+
   if (selectedTemplate?.groupBy === "accountMonth") {
-    return accountMonthSummary(rows, t).flatMap((section) => section.items.map((item) => ({
+    return accountMonthSummary(safeRows, t).flatMap((section) => section.items.map((item) => ({
       Month: section.title,
       Account: item.label,
       Donations: item.count,
@@ -5884,7 +5888,7 @@ function reportExportRows(rows, summary, selectedTemplate, t) {
   }
 
   if (selectedTemplate?.groupBy === "month") {
-    return summary.map((item) => ({
+    return safeSummary.map((item) => ({
       Month: monthName(item.label, t),
       Donations: item.count,
       Total: item.total,
@@ -5892,7 +5896,7 @@ function reportExportRows(rows, summary, selectedTemplate, t) {
   }
 
   if (["account", "donor", "method"].includes(selectedTemplate?.groupBy)) {
-    return summary.map((item) => ({
+    return safeSummary.map((item) => ({
       Group: formatReportLabel(item.label, t),
       Donations: item.count,
       Total: item.total,
@@ -5900,10 +5904,10 @@ function reportExportRows(rows, summary, selectedTemplate, t) {
   }
 
   if (selectedTemplate?.type === "receipts") {
-    return receiptReportRows(rows, t);
+    return receiptReportRows(safeRows, t);
   }
 
-  return rows.map((row) => ({
+  return safeRows.map((row) => ({
     Date: row.dateDon,
     Donor: row.donorName || t.common.unspecified,
     Account: `${row.noCompte || ""} - ${row.libelleCompte || t.common.unspecified}`,
