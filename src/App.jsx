@@ -424,7 +424,6 @@ const copy = {
       refreshed: "Report refreshed.",
       templates: [
         { id: "donation-detail", title: "Detailed donations", description: "All donation rows with donor, account, method, date, and amount.", type: "donations", groupBy: "date" },
-        { id: "monthly-ytd", title: "Monthly YTD summary", description: "Totals by month for the selected year-to-date period.", type: "donations", groupBy: "month" },
         { id: "account-month", title: "Accounts by month", description: "Monthly totals split by each SaaS account.", type: "donations", groupBy: "accountMonth" },
         { id: "donor-totals", title: "Donor totals", description: "Total giving by donor over the selected period.", type: "donations", groupBy: "donor" },
         { id: "account-totals", title: "Account totals", description: "Total giving by account over the selected period.", type: "donations", groupBy: "account" },
@@ -1054,7 +1053,6 @@ const copy = {
       refreshed: "Rapport actualisé.",
       templates: [
         { id: "donation-detail", title: "Dons détaillés", description: "Toutes les lignes de dons avec donateur, compte, méthode, date et montant.", type: "donations", groupBy: "date" },
-        { id: "monthly-ytd", title: "Sommaire mensuel YTD", description: "Totaux par mois pour la période sélectionnée.", type: "donations", groupBy: "month" },
         { id: "account-month", title: "Comptes par mois", description: "Totaux mensuels séparés par compte SaaS.", type: "donations", groupBy: "accountMonth" },
         { id: "donor-totals", title: "Totaux par donateur", description: "Total des dons par donateur sur la période sélectionnée.", type: "donations", groupBy: "donor" },
         { id: "account-totals", title: "Totaux par compte", description: "Total des dons par compte sur la période sélectionnée.", type: "donations", groupBy: "account" },
